@@ -24,10 +24,42 @@ $(BUILD_DIRECTORY)/$(BIN_NAME): api.go ./**/*.go
 	mkdir -p build
 	GOOS=$(OS) GOARCH="$(GOARCH)" go build -o $(BUILD_DIRECTORY)/$(BIN_NAME) api.go
 
+app.yaml: app.dev.yaml check-env
+	@cat app.dev.yaml \
+	| sed "s#{{SUPABASE_URL}}#${SUPABASE_URL}#" \
+	| sed "s/{{SUPABASE_KEY}}/${SUPABASE_KEY}/" \
+	| sed "s/{{OPENAI_API_KEY}}/${OPENAI_API_KEY}/" \
+	| sed "s/{{OPENAI_ORGANIZATION}}/${OPENAI_ORGANIZATION}/" \
+	| sed "s/{{OPENAI_MODEL}}/${OPENAI_MODEL}/" \
+	| sed "s/{{JWT_SECRET}}/${JWT_SECRET}/" > app.yaml
+
+check-env:
+ifndef SUPABASE_URL
+	$(error SUPABASE_URL is undefined)
+endif
+ifndef SUPABASE_KEY
+	$(error SUPABASE_KEY is undefined)
+endif
+ifndef OPENAI_API_KEY
+	$(error OPENAI_API_KEY is undefined)
+endif
+ifndef OPENAI_ORGANIZATION
+	$(error OPENAI_ORGANIZATION is undefined)
+endif
+ifndef OPENAI_MODEL
+	$(error OPENAI_MODEL is undefined)
+endif
+ifndef JWT_SECRET
+	$(error JWT_SECRET is undefined)
+endif
+
+deploy: app.yaml
+	gcloud app deploy
+
 clean:
-	rm -f ./build/*
+	rm -f ./build/* app.yaml
 
 fmt:
 	go fmt $$(go list ./...)
 
-.PHONY: install clean fmt
+.PHONY: clean fmt check-env deploy
