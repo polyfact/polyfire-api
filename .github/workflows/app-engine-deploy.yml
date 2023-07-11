@@ -1,0 +1,25 @@
+name: Deploy on Google App Engine
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: 'actions/checkout@v3'
+    - id: 'auth'
+      name: 'Authenticate to Google Cloud'
+      uses: 'google-github-actions/auth@v1'
+      with:
+        credentials_json: '${{ secrets.GOOGLE_CREDENTIALS }}'
+    - id: 'deploy'
+      name: 'Deploying to Google Cloud App Engine'
+      run: 'gcloud app deploy'
+
