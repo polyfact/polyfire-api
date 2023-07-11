@@ -85,6 +85,7 @@ func authMiddleware(handler func(http.ResponseWriter, *http.Request)) func(http.
 }
 
 func main() {
+	log.Print("Starting the server on :8080")
 	http.HandleFunc("/generate", authMiddleware(generate))
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
