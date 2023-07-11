@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"log"
+	"os"
 	"strings"
 
 	"github.com/tmc/langchaingo/llms/openai"
@@ -21,7 +22,7 @@ func removeMarkdownCodeBlock(s string) string {
 	return strings.TrimPrefix(strings.Trim(strings.TrimSpace(s), "`"), "json")
 }
 
-func Generate(type_format any, task string) (any, error) {
+func Generate(type_format any, task string, c *func(string, int, int)) (any, error) {
 	type_string, err := type_parser.TypeToString(type_format, 0)
 	if err != nil {
 		return "", err
@@ -33,12 +34,18 @@ func Generate(type_format any, task string) (any, error) {
 		if err != nil {
 			return "", err
 		}
+
+		input_prompt := generateTypedPrompt(type_string, task)
 		ctx := context.Background()
 		completion, err := llm.Call(ctx, []schema.ChatMessage{
-			schema.HumanChatMessage{Text: generateTypedPrompt(type_string, task)},
+			schema.HumanChatMessage{Text: input_prompt},
 		})
 		if err != nil {
 			return "", err
+		}
+
+		if c != nil {
+			(*c)(os.Getenv("OPENAI_MODEL"), llm.GetNumTokens(input_prompt), llm.GetNumTokens(completion))
 		}
 
 		result_json := removeMarkdownCodeBlock(completion)
