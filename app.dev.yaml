@@ -1,5 +1,7 @@
 runtime: custom
 env: flex
+automatic_scaling:
+  max_num_instances: 1
 
 env_variables:
   SUPABASE_URL: "{{SUPABASE_URL}}"
