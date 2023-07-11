@@ -21,5 +21,11 @@ jobs:
         credentials_json: '${{ secrets.GOOGLE_CREDENTIALS }}'
     - id: 'deploy'
       name: 'Deploying to Google Cloud App Engine'
-      run: 'gcloud app deploy'
-
+      run: 'make deploy'
+      env:
+        SUPABASE_URL: '${{ secrets.SUPABASE_URL }}'
+        SUPABASE_KEY: '${{ secrets.SUPABASE_KEY }}'
+        OPENAI_API_KEY: '${{ secrets.OPENAI_API_KEY }}'
+        OPENAI_ORGANIZATION: '${{ secrets.OPENAI_ORGANIZATION }}'
+        OPENAI_MODEL: '${{ vars.OPENAI_MODEL }}'
+        JWT_SECRET: '${{ secrets.JWT_SECRET }}'
