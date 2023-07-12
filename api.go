@@ -45,8 +45,11 @@ func generate(w http.ResponseWriter, r *http.Request) {
 
 	result, err := llm.Generate(input.ReturnType, input.Task, &callback)
 
+	w.Header()["Content-Type"] = []string{"application/json"}
+
 	if err != nil {
-		http.Error(w, "500 task failed to execute", http.StatusInternalServerError)
+		w.WriteHeader(500)
+		w.Write([]byte(result.(string)))
 		return
 	}
 
