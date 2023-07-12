@@ -22,17 +22,28 @@ func removeMarkdownCodeBlock(s string) string {
 	return strings.TrimPrefix(strings.Trim(strings.TrimSpace(s), "`"), "json")
 }
 
-func Generate(type_format any, task string, c *func(string, int, int)) (any, error) {
+type TokenUsage struct {
+	Input  int `json:"input"`
+	Output int `json:"output"`
+}
+
+type Result struct {
+	Result     any        `json:"result"`
+	TokenUsage TokenUsage `json:"token_usage"`
+}
+
+func Generate(type_format any, task string, c *func(string, int, int)) (Result, error) {
+	tokenUsage := TokenUsage{Input: 0, Output: 0}
 	type_string, err := type_parser.TypeToString(type_format, 0)
 	if err != nil {
-		return "{\"error\":\"parse_type_failed\"}", err
+		return Result{Result: "{\"error\":\"parse_type_failed\"}", TokenUsage: tokenUsage}, err
 	}
 
 	for i := 0; i < 5; i++ {
 		log.Printf("Trying generation %d/5\n", i+1)
 		llm, err := openai.NewChat()
 		if err != nil {
-			return "{\"error\":\"llm_init_failed\"}", err
+			return Result{Result: "{\"error\":\"llm_init_failed\"}", TokenUsage: tokenUsage}, err
 		}
 
 		input_prompt := generateTypedPrompt(type_string, task)
@@ -46,6 +57,8 @@ func Generate(type_format any, task string, c *func(string, int, int)) (any, err
 
 		if c != nil {
 			(*c)(os.Getenv("OPENAI_MODEL"), llm.GetNumTokens(input_prompt), llm.GetNumTokens(completion))
+			tokenUsage.Input += llm.GetNumTokens(input_prompt)
+			tokenUsage.Output += llm.GetNumTokens(completion)
 		}
 
 		result_json := removeMarkdownCodeBlock(completion)
@@ -56,7 +69,7 @@ func Generate(type_format any, task string, c *func(string, int, int)) (any, err
 		}
 		log.Printf("SUCCESS ATTEMPT: %s\n", result_json)
 
-		var result interface{}
+		var result any
 		json.Unmarshal([]byte(result_json), &result)
 
 		type_check := type_parser.CheckAgainstType(type_format, result)
@@ -65,8 +78,9 @@ func Generate(type_format any, task string, c *func(string, int, int)) (any, err
 			continue
 		}
 
-		return result, nil
+		log.Printf("TOKEN USAGE %v", tokenUsage)
+		return Result{Result: result, TokenUsage: tokenUsage}, err
 	}
 
-	return "{\"error\":\"generation_failed\"}", errors.New("Generation failed after 5 retries")
+	return Result{Result: "{\"error\":\"generation_failed\"}", TokenUsage: tokenUsage}, errors.New("Generation failed after 5 retries")
 }

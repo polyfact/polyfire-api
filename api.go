@@ -49,7 +49,7 @@ func generate(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		w.WriteHeader(500)
-		w.Write([]byte(result.(string)))
+		w.Write([]byte(result.Result.(string)))
 		return
 	}
 
