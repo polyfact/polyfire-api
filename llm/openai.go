@@ -25,14 +25,14 @@ func removeMarkdownCodeBlock(s string) string {
 func Generate(type_format any, task string, c *func(string, int, int)) (any, error) {
 	type_string, err := type_parser.TypeToString(type_format, 0)
 	if err != nil {
-		return "", err
+		return "{\"error\":\"parse_type_failed\"}", err
 	}
 
 	for i := 0; i < 5; i++ {
 		log.Printf("Trying generation %d/5\n", i+1)
 		llm, err := openai.NewChat()
 		if err != nil {
-			return "", err
+			return "{\"error\":\"llm_init_failed\"}", err
 		}
 
 		input_prompt := generateTypedPrompt(type_string, task)
@@ -41,7 +41,7 @@ func Generate(type_format any, task string, c *func(string, int, int)) (any, err
 			schema.HumanChatMessage{Text: input_prompt},
 		})
 		if err != nil {
-			return "", err
+			continue
 		}
 
 		if c != nil {
@@ -68,5 +68,5 @@ func Generate(type_format any, task string, c *func(string, int, int)) (any, err
 		return result, nil
 	}
 
-	return "", errors.New("Generation failed after 5 retries")
+	return "{\"error\":\"generation_failed\"}", errors.New("Generation failed after 5 retries")
 }
