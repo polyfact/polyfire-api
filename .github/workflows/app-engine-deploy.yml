@@ -17,6 +17,11 @@ jobs:
       uses: 'google-github-actions/auth@v1'
       with:
         credentials_json: '${{ secrets.GOOGLE_CREDENTIALS }}'
+    - id: 'setup-gcloud'
+      name: 'Set up Cloud SDK'
+      uses: 'google-github-actions/setup-gcloud@v1'
+      with:
+        version: '>= 363.0.0'
     - id: 'deploy'
       name: 'Deploying to Google Cloud App Engine'
       run: 'make deploy'
