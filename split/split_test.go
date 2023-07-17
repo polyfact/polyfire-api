@@ -1,7 +1,6 @@
 package split
 
 import (
-	"fmt"
 	"reflect"
 	"testing"
 )
@@ -66,9 +65,6 @@ func TestBinarySplit(t *testing.T) {
 		" BENSON’S BEDROOM ANGLE ON:",
 	}
 
-	for i := 0; i < len(res); i++ {
-		fmt.Printf("\"%v\",\n", res[i])
-	}
 	if !reflect.DeepEqual(res, want) {
 		t.Errorf("got (%v) wanted (%v)", res, want)
 	}
