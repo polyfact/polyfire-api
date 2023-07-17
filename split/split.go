@@ -1,7 +1,10 @@
 package split
 
 import (
+	"fmt"
 	"math"
+
+	llm "github.com/polyfact/api/llm"
 )
 
 func stirling(n float64) float64 {
@@ -60,4 +63,41 @@ func BinarySplit(s string, max_token int) []string {
 	left, right := Split(s)
 
 	return append(BinarySplit(left, max_token), BinarySplit(right, max_token)...)
+}
+
+func GenerateWithSplit(type_format any, s string, c *func(string, int, int), max_token int) (llm.Result, error) {
+	b_split := BinarySplit(s, max_token)
+
+	task := ExtractTaskFromSplits(b_split)
+
+	fmt.Printf("task %v", task)
+
+	var merged_results interface{}
+	token_usage := llm.TokenUsage{Input: 0, Output: 0}
+	for i := 0; i < len(b_split); i++ {
+		b_split[i] = task + "\n\n" + b_split[i]
+
+		result, err := llm.Generate(type_format, b_split[i], c)
+
+		token_usage.Input += result.TokenUsage.Input
+		token_usage.Output += result.TokenUsage.Output
+
+		fmt.Printf("Chunk %v/%v\n", i, len(b_split))
+		fmt.Printf("Token Usage %v\n", token_usage)
+
+		if err != nil {
+			return result, err
+		}
+
+		if i == 0 {
+			merged_results = result.Result
+		} else {
+			merged_results = Merge(merged_results, result.Result)
+		}
+	}
+
+	return llm.Result{
+		Result:     merged_results,
+		TokenUsage: token_usage,
+	}, nil
 }

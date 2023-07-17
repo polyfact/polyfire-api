@@ -74,6 +74,7 @@ func CheckAgainstType(t interface{}, v interface{}) bool {
 
 	switch s {
 	default:
+		fmt.Printf("AAAAAAAAAAAAAAAAAAAAAAAAAAA\n")
 		return false
 
 	case typePair{t_t: "string", v_t: "string"}:
@@ -93,15 +94,18 @@ func CheckAgainstType(t interface{}, v interface{}) bool {
 		v := v.(map[string]interface{})
 
 		if len(t) != len(v) {
+			fmt.Printf("DDDDDDDDDDDDDDDDDDDDDDDDDDDDD\n")
 			return false
 		}
 
 		for key, t_val := range t {
 			if v_val, ok := v[key]; ok {
 				if !CheckAgainstType(t_val, v_val) {
+					fmt.Printf("BBBBBBBBBBBBBBBBBBBBBBBBBBB\n")
 					return false
 				}
 			} else {
+				fmt.Printf("CCCCCCCCCCCCCCCCCCCCCCCCCCC\n")
 				return false
 			}
 		}
@@ -110,11 +114,13 @@ func CheckAgainstType(t interface{}, v interface{}) bool {
 		t := t.([]interface{})
 		v := v.([]interface{})
 		if len(t) != 1 {
+			fmt.Printf("FFFFFFFFFFFFFFFFFFFFFFFFFFFFF\n")
 			return false
 		}
 
 		for _, v_val := range v {
 			if !CheckAgainstType(t[0], v_val) {
+				fmt.Printf("EEEEEEEEEEEEEEEEEEEEEEEEEEEEE\n")
 				return false
 			}
 		}

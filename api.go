@@ -9,8 +9,10 @@ import (
 	"os"
 
 	jwt "github.com/golang-jwt/jwt/v5"
+
 	db "github.com/polyfact/api/db"
 	llm "github.com/polyfact/api/llm"
+	split "github.com/polyfact/api/split"
 )
 
 type GenerateRequestBody struct {
@@ -43,7 +45,12 @@ func generate(w http.ResponseWriter, r *http.Request) {
 		db.LogRequests(user_id, model_name, input_count, output_count)
 	}
 
-	result, err := llm.Generate(input.ReturnType, input.Task, &callback)
+	var result llm.Result
+	if split.TokenCount(input.Task) > 1000 {
+		result, err = split.GenerateWithSplit(input.ReturnType, input.Task, &callback, 1000)
+	} else {
+		result, err = llm.Generate(input.ReturnType, input.Task, &callback)
+	}
 
 	w.Header()["Content-Type"] = []string{"application/json"}
 
@@ -73,6 +80,11 @@ func authMiddleware(handler func(http.ResponseWriter, *http.Request)) func(http.
 		})
 
 		var user_id string
+
+		if token == nil {
+			http.Error(w, "403 forbidden", http.StatusForbidden)
+			return
+		}
 
 		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid && err == nil {
 			user_id = claims["user_id"].(string)
