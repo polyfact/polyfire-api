@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"fmt"
 
 	"github.com/tmc/langchaingo/llms/openai"
 	"github.com/tmc/langchaingo/schema"
@@ -52,6 +53,7 @@ func Generate(type_format any, task string, c *func(string, int, int)) (Result, 
 			schema.HumanChatMessage{Text: input_prompt},
 		})
 		if err != nil {
+			fmt.Printf("%v\n", err)
 			continue
 		}
 
