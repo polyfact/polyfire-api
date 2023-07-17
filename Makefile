@@ -54,7 +54,7 @@ ifndef JWT_SECRET
 endif
 
 deploy: app.yaml
-	gcloud app deploy
+	gcloud app deploy --quiet
 
 clean:
 	rm -f ./build/* app.yaml
