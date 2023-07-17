@@ -4,10 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"os"
 	"strings"
-	"fmt"
 
 	"github.com/tmc/langchaingo/llms/openai"
 	"github.com/tmc/langchaingo/schema"
@@ -16,7 +16,7 @@ import (
 )
 
 func generateTypedPrompt(type_format string, task string) string {
-	return "Your goal is to write a JSON object that will accomplish a specific task.\nThe string inside the JSON must be plain text, and not contain any markdown or HTML unless explicitely mentionned in the task.\nThe JSON object should follow this type:\n```\n" + type_format + "\n``` The task you must accomplish:\n" + task + "\n\nPlease only provide the JSON in a single json markdown code block with the keys described above. Do not include any other text.\nPlease make sure the JSON is a single line and does not contain any newlines outside of the strings."
+	return "Your goal is to write a JSON object that will accomplish a specific task.\nThe string inside the JSON must be plain text, and not contain any markdown or HTML unless explicitely mentionned in the task.\nThe JSON object should follow this type:\n```\n" + type_format + "\n``` The task you must accomplish:\n" + task + "\n\nPlease only provide the JSON in a single json markdown code block with the keys described above. Do not include any other text.\nPlease make sure the JSON is a single line and does not contain any newlines outside of the strings. The type must be strictly respected. Do not skip any of the fields. If a field is not relevant, use an empty string, a 0 or an empty array."
 }
 
 func removeMarkdownCodeBlock(s string) string {
@@ -59,17 +59,17 @@ func Generate(type_format any, task string, c *func(string, int, int)) (Result, 
 
 		if c != nil {
 			(*c)(os.Getenv("OPENAI_MODEL"), llm.GetNumTokens(input_prompt), llm.GetNumTokens(completion))
-			tokenUsage.Input += llm.GetNumTokens(input_prompt)
-			tokenUsage.Output += llm.GetNumTokens(completion)
 		}
+
+		tokenUsage.Input += llm.GetNumTokens(input_prompt)
+		tokenUsage.Output += llm.GetNumTokens(completion)
 
 		result_json := removeMarkdownCodeBlock(completion)
 
 		if !json.Valid([]byte(result_json)) {
-			log.Printf("FAILED ATTEMPT: %s\n", result_json)
+			fmt.Printf("%v\n", result_json)
 			continue
 		}
-		log.Printf("SUCCESS ATTEMPT: %s\n", result_json)
 
 		var result any
 		json.Unmarshal([]byte(result_json), &result)
@@ -77,10 +77,10 @@ func Generate(type_format any, task string, c *func(string, int, int)) (Result, 
 		type_check := type_parser.CheckAgainstType(type_format, result)
 
 		if !type_check {
+			fmt.Printf("%v\n", result)
 			continue
 		}
 
-		log.Printf("TOKEN USAGE %v", tokenUsage)
 		return Result{Result: result, TokenUsage: tokenUsage}, err
 	}
 
