@@ -22,7 +22,7 @@ func TypeToString(t interface{}, indent int) (string, error) {
 	case string:
 		switch t {
 		default:
-			return "", errors.New(fmt.Sprintf("Unexpected type %s", "", t))
+			return "", errors.New(fmt.Sprintf("Unexpected type %s", t))
 
 		case "string":
 			return "string", nil
