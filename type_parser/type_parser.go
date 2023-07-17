@@ -22,7 +22,7 @@ func TypeToString(t interface{}, indent int) (string, error) {
 	case string:
 		switch t {
 		default:
-			return "", errors.New(fmt.Sprintf("Unexpected type %s", "", t))
+			return "", errors.New(fmt.Sprintf("Unexpected type %s", t))
 
 		case "string":
 			return "string", nil
@@ -30,6 +30,8 @@ func TypeToString(t interface{}, indent int) (string, error) {
 		case "number":
 			return "number", nil
 
+		case "boolean":
+			return "boolean", nil
 		}
 
 	case []interface{}:
@@ -74,6 +76,8 @@ func CheckAgainstType(t interface{}, v interface{}) bool {
 
 	switch s {
 	default:
+		fmt.Printf("%v\n", s)
+		fmt.Printf("%v, %v\n", t, v)
 		return false
 
 	case typePair{t_t: "string", v_t: "string"}:
@@ -84,6 +88,12 @@ func CheckAgainstType(t interface{}, v interface{}) bool {
 
 	case typePair{t_t: "string", v_t: "float64"}:
 		if t.(string) != "number" {
+			fmt.Printf("[[%s]]\n", t.(string))
+			return false
+		}
+
+	case typePair{t_t: "string", v_t: "bool"}:
+		if t.(string) != "boolean" {
 			fmt.Printf("[[%s]]\n", t.(string))
 			return false
 		}
@@ -119,5 +129,6 @@ func CheckAgainstType(t interface{}, v interface{}) bool {
 			}
 		}
 	}
+
 	return true
 }
