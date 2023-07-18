@@ -12,12 +12,10 @@ import (
 
 	db "github.com/polyfact/api/db"
 	llm "github.com/polyfact/api/llm"
-	split "github.com/polyfact/api/split"
 )
 
 type GenerateRequestBody struct {
-	Task       string `json:"task"`
-	ReturnType any    `json:"return_type"`
+	Task string `json:"task"`
 }
 
 func generate(w http.ResponseWriter, r *http.Request) {
@@ -46,17 +44,12 @@ func generate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var result llm.Result
-	if split.TokenCount(input.Task) > 1000 {
-		result, err = split.GenerateWithSplit(input.ReturnType, input.Task, &callback, 1000)
-	} else {
-		result, err = llm.Generate(input.ReturnType, input.Task, &callback)
-	}
+	result, err = llm.Generate(input.Task, &callback)
 
 	w.Header()["Content-Type"] = []string{"application/json"}
 
 	if err != nil {
-		w.WriteHeader(500)
-		w.Write([]byte(result.Result.(string)))
+		http.Error(w, "500 Internal server error", http.StatusInternalServerError)
 		return
 	}
 
