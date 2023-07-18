@@ -9,13 +9,13 @@ import (
 	"os"
 
 	jwt "github.com/golang-jwt/jwt/v5"
+
 	db "github.com/polyfact/api/db"
 	llm "github.com/polyfact/api/llm"
 )
 
 type GenerateRequestBody struct {
-	Task       string `json:"task"`
-	ReturnType any    `json:"return_type"`
+	Task string `json:"task"`
 }
 
 func generate(w http.ResponseWriter, r *http.Request) {
@@ -43,13 +43,13 @@ func generate(w http.ResponseWriter, r *http.Request) {
 		db.LogRequests(user_id, model_name, input_count, output_count)
 	}
 
-	result, err := llm.Generate(input.ReturnType, input.Task, &callback)
+	var result llm.Result
+	result, err = llm.Generate(input.Task, &callback)
 
 	w.Header()["Content-Type"] = []string{"application/json"}
 
 	if err != nil {
-		w.WriteHeader(500)
-		w.Write([]byte(result.Result.(string)))
+		http.Error(w, "500 Internal server error", http.StatusInternalServerError)
 		return
 	}
 
@@ -73,6 +73,11 @@ func authMiddleware(handler func(http.ResponseWriter, *http.Request)) func(http.
 		})
 
 		var user_id string
+
+		if token == nil {
+			http.Error(w, "403 forbidden", http.StatusForbidden)
+			return
+		}
 
 		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid && err == nil {
 			user_id = claims["user_id"].(string)
