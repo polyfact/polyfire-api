@@ -1,9 +1,5 @@
-runtime: go
+runtime: custom
 env: flex
-
-runtime_config:
-    operating_system: "ubuntu22"
-
 automatic_scaling:
   max_num_instances: 1
 
@@ -11,6 +7,7 @@ env_variables:
   SUPABASE_URL: "{{SUPABASE_URL}}"
   SUPABASE_KEY: "{{SUPABASE_KEY}}"
   OPENAI_API_KEY: "{{OPENAI_API_KEY}}"
+  COHERE_API_KEY: "{{COHERE_API_KEY}}"
   OPENAI_ORGANIZATION: "{{OPENAI_ORGANIZATION}}"
   OPENAI_MODEL: "{{OPENAI_MODEL}}"
   JWT_SECRET: "{{JWT_SECRET}}"
