@@ -12,6 +12,7 @@ import (
 
 	db "github.com/polyfact/api/db"
 	llm "github.com/polyfact/api/llm"
+	memory "github.com/polyfact/api/memory"
 )
 
 type GenerateRequestBody struct {
@@ -63,7 +64,6 @@ func authMiddleware(handler func(http.ResponseWriter, *http.Request)) func(http.
 			return
 		}
 		access_token := r.Header["X-Access-Token"][0]
-
 		token, err := jwt.Parse(access_token, func(token *jwt.Token) (interface{}, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
@@ -95,6 +95,16 @@ func authMiddleware(handler func(http.ResponseWriter, *http.Request)) func(http.
 func main() {
 	log.Print("Starting the server on :8080")
 	http.HandleFunc("/generate", authMiddleware(generate))
+	http.HandleFunc("/memory", authMiddleware(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			memory.Create(w, r)
+		} else if r.Method == http.MethodPut {
+			memory.Add(w, r)
+		} else {
+			http.Error(w, "405 method not allowed", http.StatusMethodNotAllowed)
+		}
+	}))
+	// http.HandleFunc("/memories", memory.Get)
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
