@@ -7,7 +7,7 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.0.0
 	github.com/google/uuid v1.3.0
 	github.com/nedpals/supabase-go v0.3.0
-	github.com/tmc/langchaingo v0.0.0-20230712211228-31d6e35cd545
+	github.com/tmc/langchaingo v0.0.0-20230718035245-c01f5d3bd72e
 )
 
 require (
@@ -42,6 +42,7 @@ require (
 	github.com/nedpals/postgrest-go v0.1.3 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.8 // indirect
 	github.com/pkoukk/tiktoken-go v0.1.2 // indirect
+	github.com/supabase/postgrest-go v0.0.7 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.2.11 // indirect
 	go.opencensus.io v0.24.0 // indirect
