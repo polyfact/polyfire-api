@@ -100,6 +100,7 @@ github.com/googleapis/enterprise-certificate-proxy v0.2.3/go.mod h1:AwSRAtLfXpU5
 github.com/googleapis/gax-go/v2 v2.8.0 h1:UBtEZqx1bjXtOQ5BVTkuYghXrr3N4V123VKJK67vJZc=
 github.com/googleapis/gax-go/v2 v2.8.0/go.mod h1:4orTrqY6hXxxaUL4LHIPl6lGo8vAE38/qKbhSAKP6QI=
 github.com/grpc-ecosystem/grpc-gateway v1.16.0/go.mod h1:BDjrQk3hbvj6Nolgz8mAMFbcEtjT1g+wF4CSlocrBnw=
+github.com/jarcoal/httpmock v1.1.0/go.mod h1:ATjnClrvW/3tijVmpL/va5Z3aAyGvqU3gCT8nX0Txik=
 github.com/json-iterator/go v1.1.12 h1:PV8peI4a0ysnczrg+LtxykD8LfKY9ML6u2jnxaEnrnM=
 github.com/json-iterator/go v1.1.12/go.mod h1:e30LSqwooZae/UwlEbR2852Gd8hjQvJoHmT4TnhNGBo=
 github.com/klauspost/cpuid/v2 v2.0.9/go.mod h1:FInQzS24/EEf25PyTYn52gqo7WaD8xa0213Md/qVLRg=
@@ -136,10 +137,14 @@ github.com/stretchr/testify v1.8.0/go.mod h1:yNjHg4UonilssWZ8iaSj1OCr/vHnekPRkoO
 github.com/stretchr/testify v1.8.1/go.mod h1:w2LPCIKwWwSfY2zedu0+kehJoqGctiVI29o6fzry7u4=
 github.com/stretchr/testify v1.8.2/go.mod h1:w2LPCIKwWwSfY2zedu0+kehJoqGctiVI29o6fzry7u4=
 github.com/stretchr/testify v1.8.3/go.mod h1:sz/lmYIOXD/1dqDmKjjqLyZ2RngseejIcXlSw2iwfAo=
+github.com/supabase/postgrest-go v0.0.7 h1:wkOzrndF/KliPEVHM84lNnET7ZFjAk1OPpAxz8hgzRs=
+github.com/supabase/postgrest-go v0.0.7/go.mod h1:sqnMeRGv0p8BzJX7busTdpT51tRdJHX9R5kd8oziovo=
 github.com/tmc/langchaingo v0.0.0-20230710003020-1319cd99b031 h1:uOH8AM9uN3c8thvUvXQeLTGqtGx6pNPa9XDFTSvpnQM=
 github.com/tmc/langchaingo v0.0.0-20230710003020-1319cd99b031/go.mod h1:IkN52/XAQwAbscbatQibuBbB2BKpSWQ6mhCRK8oCZjI=
 github.com/tmc/langchaingo v0.0.0-20230712211228-31d6e35cd545 h1:7UBqXSPhKekYFDYLZenK9sEfl3+VX8k4jdL8VKGsPmc=
 github.com/tmc/langchaingo v0.0.0-20230712211228-31d6e35cd545/go.mod h1:IkN52/XAQwAbscbatQibuBbB2BKpSWQ6mhCRK8oCZjI=
+github.com/tmc/langchaingo v0.0.0-20230718035245-c01f5d3bd72e h1:ncZ0Ks/7zpYBwI083ZK2ERZW6b47S0VG+uPvcczdIvw=
+github.com/tmc/langchaingo v0.0.0-20230718035245-c01f5d3bd72e/go.mod h1:mTzgQfAGwmBz2hhQELZfu2bwsbHwyKHA6IHOa+9LDFg=
 github.com/twitchyliquid64/golang-asm v0.15.1 h1:SU5vSMR7hnwNxj24w34ZyCi/FmDZTkS4MhqMhdFk5YI=
 github.com/twitchyliquid64/golang-asm v0.15.1/go.mod h1:a1lVb/DtPvCB8fslRZhAngC2+aY1QWCk3Cedj/Gdt08=
 github.com/ugorji/go/codec v1.2.11 h1:BMaWp1Bb6fHwEtbplGBGJ498wD+LKlNSl25MjdZY4dU=

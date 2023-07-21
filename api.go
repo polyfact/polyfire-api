@@ -9,6 +9,7 @@ import (
 	"os"
 
 	jwt "github.com/golang-jwt/jwt/v5"
+	"github.com/tmc/langchaingo/llms/openai"
 
 	db "github.com/polyfact/api/db"
 	llm "github.com/polyfact/api/llm"
@@ -16,7 +17,8 @@ import (
 )
 
 type GenerateRequestBody struct {
-	Task string `json:"task"`
+	Task      string  `json:"task"`
+	Memory_id *string `json:"memory_id,omitempty"`
 }
 
 func generate(w http.ResponseWriter, r *http.Request) {
@@ -40,12 +42,43 @@ func generate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	contextCompletion := ""
+
+	if input.Memory_id != nil {
+		results, err := memory.Embedder(input.Task)
+
+		if err != nil {
+			http.Error(w, "500 Internal server error", http.StatusInternalServerError)
+			return
+		}
+
+		llms, err := openai.NewChat()
+
+		totalTokens := 0
+
+		contextCompletion += "Context:\n"
+		for _, item := range results {
+			textTokens := llms.GetNumTokens(item.Content)
+
+			if totalTokens+textTokens > 2000 {
+				break
+			}
+			contextCompletion += "\n" + item.Content
+			totalTokens += textTokens
+		}
+
+		contextCompletion += "\n\n"
+
+	}
+
 	callback := func(model_name string, input_count int, output_count int) {
 		db.LogRequests(user_id, model_name, input_count, output_count)
 	}
 
 	var result llm.Result
-	result, err = llm.Generate(input.Task, &callback)
+	var prompt string = contextCompletion + input.Task
+	
+	result, err = llm.Generate(prompt, &callback)
 
 	w.Header()["Content-Type"] = []string{"application/json"}
 
@@ -104,7 +137,7 @@ func main() {
 			http.Error(w, "405 method not allowed", http.StatusMethodNotAllowed)
 		}
 	}))
-	// http.HandleFunc("/memories", memory.Get)
+	http.HandleFunc("/memories", authMiddleware(memory.Get))
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
