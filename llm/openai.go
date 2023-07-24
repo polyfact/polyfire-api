@@ -51,5 +51,10 @@ func Generate(task string, c *func(string, int, int)) (Result, error) {
 		return Result{Result: completion, TokenUsage: tokenUsage}, err
 	}
 
-	return Result{Result: "{\"error\":\"generation_failed\"}", TokenUsage: tokenUsage}, errors.New("Generation failed after 5 retries")
+	return Result{
+			Result:     "{\"error\":\"generation_failed\"}",
+			TokenUsage: tokenUsage,
+		}, errors.New(
+			"Generation failed after 5 retries",
+		)
 }

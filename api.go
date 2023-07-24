@@ -1,10 +1,14 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
+	"mime"
+	"mime/multipart"
 	"net/http"
 	"os"
 
@@ -12,6 +16,7 @@ import (
 
 	db "github.com/polyfact/api/db"
 	llm "github.com/polyfact/api/llm"
+	stt "github.com/polyfact/api/stt"
 )
 
 type GenerateRequestBody struct {
@@ -56,6 +61,32 @@ func generate(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(result)
 }
 
+func transcribe(w http.ResponseWriter, r *http.Request) {
+	_, p, _ := mime.ParseMediaType(r.Header.Get("Content-Type"))
+	boundary := p["boundary"]
+	reader := multipart.NewReader(r.Body, boundary)
+	part, err := reader.NextPart()
+	if err == io.EOF {
+		http.Error(w, "400 Bad Request", http.StatusBadRequest)
+		return
+	}
+	if err != nil {
+		http.Error(w, "500 Internal server error", http.StatusInternalServerError)
+		return
+	}
+	file_buf_reader := bufio.NewReader(part)
+
+	// The format doesn't seem to really matter
+	res, err := stt.Transcribe(file_buf_reader, "mp3")
+	if err != nil {
+		log.Printf("%w", err)
+		http.Error(w, "500 Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(res)
+}
+
 func authMiddleware(handler func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if len(r.Header["X-Access-Token"]) == 0 {
@@ -95,6 +126,7 @@ func authMiddleware(handler func(http.ResponseWriter, *http.Request)) func(http.
 func main() {
 	log.Print("Starting the server on :8080")
 	http.HandleFunc("/generate", authMiddleware(generate))
+	http.HandleFunc("/transcribe", authMiddleware(transcribe))
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
