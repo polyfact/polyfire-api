@@ -29,6 +29,7 @@ app.yaml: app.dev.yaml check-env
 	| sed "s#{{SUPABASE_URL}}#${SUPABASE_URL}#" \
 	| sed "s/{{SUPABASE_KEY}}/${SUPABASE_KEY}/" \
 	| sed "s/{{OPENAI_API_KEY}}/${OPENAI_API_KEY}/" \
+	| sed "s/{{COHERE_API_KEY}}/${COHERE_API_KEY}/" \
 	| sed "s/{{OPENAI_ORGANIZATION}}/${OPENAI_ORGANIZATION}/" \
 	| sed "s/{{OPENAI_MODEL}}/${OPENAI_MODEL}/" \
 	| sed "s/{{JWT_SECRET}}/${JWT_SECRET}/" > app.yaml
@@ -42,6 +43,9 @@ ifndef SUPABASE_KEY
 endif
 ifndef OPENAI_API_KEY
 	$(error OPENAI_API_KEY is undefined)
+endif
+ifndef COHERE_API_KEY
+	$(error COHERE_API_KEY is undefined)
 endif
 ifndef OPENAI_ORGANIZATION
 	$(error OPENAI_ORGANIZATION is undefined)
