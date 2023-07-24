@@ -42,6 +42,7 @@ require (
 	github.com/nedpals/postgrest-go v0.1.3 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.8 // indirect
 	github.com/pkoukk/tiktoken-go v0.1.2 // indirect
+	github.com/rakyll/openai-go v1.0.9 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.2.11 // indirect
 	go.opencensus.io v0.24.0 // indirect
