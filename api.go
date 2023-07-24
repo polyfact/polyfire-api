@@ -20,7 +20,8 @@ import (
 )
 
 type GenerateRequestBody struct {
-	Task string `json:"task"`
+	Task     string `json:"task"`
+	Provider string `json:"provider"`
 }
 
 func generate(w http.ResponseWriter, r *http.Request) {
@@ -48,8 +49,24 @@ func generate(w http.ResponseWriter, r *http.Request) {
 		db.LogRequests(user_id, model_name, input_count, output_count)
 	}
 
+	if input.Provider == "" {
+		input.Provider = "openai"
+	}
+
+	provider, err := llm.NewLLMProvider(input.Provider)
+	if err == llm.ErrUnknownModel {
+		http.Error(w, "400 Unknown model provider", http.StatusBadRequest)
+		return
+	}
+
+	if err != nil {
+		http.Error(w, "500 Internal server error", http.StatusInternalServerError)
+		fmt.Println(err)
+		return
+	}
+
 	var result llm.Result
-	result, err = llm.Generate(input.Task, &callback)
+	result, err = provider.Generate(input.Task, &callback)
 
 	w.Header()["Content-Type"] = []string{"application/json"}
 
