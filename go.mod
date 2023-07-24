@@ -6,7 +6,7 @@ require (
 	github.com/gin-gonic/gin v1.9.1
 	github.com/golang-jwt/jwt/v5 v5.0.0
 	github.com/nedpals/supabase-go v0.3.0
-	github.com/tmc/langchaingo v0.0.0-20230712211228-31d6e35cd545
+	github.com/tmc/langchaingo v0.0.0-20230723211647-311c3ee65e1e
 )
 
 require (
