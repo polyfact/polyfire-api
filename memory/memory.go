@@ -1,62 +1,40 @@
 package memory
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
-	"os"
 
 	"github.com/google/uuid"
 
-	supa "github.com/nedpals/supabase-go"
-	embeddings "github.com/tmc/langchaingo/embeddings"
 	textsplitter "github.com/tmc/langchaingo/textsplitter"
 
-	rpcsupa "github.com/supabase/postgrest-go"
+	db "github.com/polyfact/api/db"
+	"github.com/polyfact/api/llm"
 )
-
-type Memory struct {
-	ID      string `json:"id"`
-	USER_ID string `json:"user_id"`
-}
 
 const BatchSize int = 512
 
 func Create(w http.ResponseWriter, r *http.Request) {
-	id := uuid.New().String()
-	user_id := r.Context().Value("user_id").(string)
+	memoryId := uuid.New().String()
+	userId := r.Context().Value("user_id").(string)
 
-	supabaseUrl := os.Getenv("SUPABASE_URL")
-	supabaseKey := os.Getenv("SUPABASE_KEY")
-	client := supa.CreateClient(supabaseUrl, supabaseKey)
-
-	var results []Memory
-
-	err := client.DB.From("memories").Insert(Memory{ID: id, USER_ID: user_id}).Execute(&results)
+	err := db.CreateMemory(memoryId, userId)
 
 	if err != nil {
 		http.Error(w, fmt.Sprintf("500 Internal Server Error: %v", err), http.StatusInternalServerError)
 		return
 	}
 
-	response := Memory{ID: id, USER_ID: user_id}
+	response := db.Memory{ID: memoryId, USER_ID: userId}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
 
-type Embedding struct {
-	MEMORY_ID string    `json:"memory_id"`
-	USER_ID   string    `json:"user_id"`
-	CONTENT   string    `json:"content"`
-	EMBEDDING []float64 `json:"embedding"`
-}
-
 func Add(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
-	user_id := r.Context().Value("user_id").(string)
+	userId := r.Context().Value("user_id").(string)
 
 	var requestBody struct {
 		ID    string `json:"id"`
@@ -67,20 +45,6 @@ func Add(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "400 Bad Request", http.StatusBadRequest)
 		return
 	}
-
-	supabaseUrl := os.Getenv("SUPABASE_URL")
-	supabaseKey := os.Getenv("SUPABASE_KEY")
-	client := supa.CreateClient(supabaseUrl, supabaseKey)
-
-	value := os.Getenv("OPENAI_MODEL")
-
-	os.Setenv("OPENAI_MODEL", "text-embedding-ada-002")
-
-	embedder, err := embeddings.NewOpenAI(
-		embeddings.WithStripNewLines(true),
-		embeddings.WithBatchSize(BatchSize),
-	)
-	os.Setenv("OPENAI_MODEL", value)
 
 	if err != nil {
 		http.Error(w, fmt.Sprintf("500 Internal Server Error: %v", err), http.StatusInternalServerError)
@@ -96,25 +60,25 @@ func Add(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx := context.Background()
+	callback := func(model_name string, input_count int) {
+		db.LogRequests(userId, model_name, input_count, 0, "embedding")
+	}
+
 	for _, chunk := range chunks {
-		embedding, err := embedder.EmbedQuery(ctx, chunk)
+		embedding, err := llm.Embed(chunk, &callback)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("500 Internal Server Error: %v", err), http.StatusInternalServerError)
 			return
 		}
 
-		err = client.DB.From("embeddings").Insert(Embedding{
-			USER_ID:   user_id,
-			MEMORY_ID: requestBody.ID,
-			CONTENT:   chunk,
-			EMBEDDING: embedding,
-		}).Execute(nil)
+		err = db.AddMemory(userId, requestBody.ID, chunk, embedding[0])
 
 		if err != nil {
 			http.Error(w, fmt.Sprintf("500 Internal Server Error: %v", err), http.StatusInternalServerError)
 			return
 		}
+
+		fmt.Printf("%v\n", embedding)
 	}
 
 	response := map[string]bool{"success": true}
@@ -127,21 +91,14 @@ type memoryRecord struct {
 	ID string `json:"id"`
 }
 
-var results []memoryRecord
-
 func Get(w http.ResponseWriter, r *http.Request) {
-	user_id, ok := r.Context().Value("user_id").(string)
+	userId, ok := r.Context().Value("user_id").(string)
 	if !ok {
 		http.Error(w, "User ID not found in context", http.StatusBadRequest)
 		return
 	}
 
-	supabaseUrl := os.Getenv("SUPABASE_URL")
-	supabaseKey := os.Getenv("SUPABASE_KEY")
-	client := supa.CreateClient(supabaseUrl, supabaseKey)
-
-	var results []memoryRecord
-	err := client.DB.From("memories").Select("id").Eq("user_id", user_id).Execute(&results)
+	results, err := db.GetMemoryIds(userId)
 
 	if err != nil {
 		http.Error(w, fmt.Sprintf("500 Internal Server Error: %v", err), http.StatusInternalServerError)
@@ -159,59 +116,20 @@ func Get(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
-type Result struct {
-	ID         string  `json:"id"`
-	Content    string  `json:"content"`
-	Similarity float64 `json:"similarity"`
-}
-
-func Embedder(task string) ([]Result, error) {
-	supabaseUrl := os.Getenv("SUPABASE_URL")
-	supabaseKey := os.Getenv("SUPABASE_KEY")
-
-	fmt.Println(supabaseUrl, supabaseKey)
-	client := rpcsupa.NewClient(supabaseUrl+"/rest/v1", "", nil)
-	if client.ClientError != nil {
-		panic(client.ClientError)
+func Embedder(userId string, memoryId string, task string) ([]db.MatchResult, error) {
+	callback := func(model_name string, input_count int) {
+		db.LogRequests(userId, model_name, input_count, 0, "embedding")
 	}
 
-	client.TokenAuth(supabaseKey)
-
-	value := os.Getenv("OPENAI_MODEL")
-
-	os.Setenv("OPENAI_MODEL", "text-embedding-ada-002")
-
-	embedder, err := embeddings.NewOpenAI(
-		embeddings.WithStripNewLines(true),
-		embeddings.WithBatchSize(512),
-	)
-	os.Setenv("OPENAI_MODEL", value)
+	embeddings, err := llm.Embed(task, &callback)
 
 	if err != nil {
 		return nil, err
 	}
-	ctx := context.Background()
-	embedding, err := embedder.EmbedQuery(ctx, task)
-	if err != nil {
-		return nil, err
-	}
 
-	params := map[string]interface{}{
-		"query_embedding": embedding,
-		"match_threshold": 0.70,
-		"match_count":     10,
-	}
-
-	response := client.Rpc("match_embeddings", "", params)
-
-	var results []Result
-	err = json.Unmarshal([]byte(response), &results)
+	results, err := db.MatchEmbeddings(memoryId, embeddings[0])
 
 	if err != nil {
-		log.Fatal(err)
-	}
-
-	if client.ClientError != nil {
 		return nil, err
 	}
 

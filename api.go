@@ -1,134 +1,18 @@
 package main
 
 import (
-	"context"
-	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
-	"os"
 
-	jwt "github.com/golang-jwt/jwt/v5"
-	"github.com/tmc/langchaingo/llms/openai"
-
-	db "github.com/polyfact/api/db"
-	llm "github.com/polyfact/api/llm"
+	completion "github.com/polyfact/api/completion"
 	memory "github.com/polyfact/api/memory"
+	middlewares "github.com/polyfact/api/middlewares"
 )
-
-type GenerateRequestBody struct {
-	Task      string  `json:"task"`
-	Memory_id *string `json:"memory_id,omitempty"`
-}
-
-func generate(w http.ResponseWriter, r *http.Request) {
-	user_id := r.Context().Value("user_id").(string)
-
-	if r.Method != "POST" {
-		http.Error(w, "405 method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	if len(r.Header["Content-Type"]) == 0 || r.Header["Content-Type"][0] != "application/json" {
-		http.Error(w, "400 bad request", http.StatusBadRequest)
-		return
-	}
-
-	var input GenerateRequestBody
-
-	err := json.NewDecoder(r.Body).Decode(&input)
-	if err != nil {
-		http.Error(w, "400 bad request", http.StatusBadRequest)
-		return
-	}
-
-	contextCompletion := ""
-
-	if input.Memory_id != nil {
-		results, err := memory.Embedder(input.Task)
-
-		if err != nil {
-			http.Error(w, "500 Internal server error", http.StatusInternalServerError)
-			return
-		}
-
-		llms, err := openai.NewChat()
-
-		totalTokens := 0
-
-		contextCompletion += "Context:\n"
-		for _, item := range results {
-			textTokens := llms.GetNumTokens(item.Content)
-
-			if totalTokens+textTokens > 2000 {
-				break
-			}
-			contextCompletion += "\n" + item.Content
-			totalTokens += textTokens
-		}
-
-		contextCompletion += "\n\n"
-
-	}
-
-	callback := func(model_name string, input_count int, output_count int) {
-		db.LogRequests(user_id, model_name, input_count, output_count)
-	}
-
-	var result llm.Result
-	var prompt string = contextCompletion + input.Task
-	
-	result, err = llm.Generate(prompt, &callback)
-
-	w.Header()["Content-Type"] = []string{"application/json"}
-
-	if err != nil {
-		http.Error(w, "500 Internal server error", http.StatusInternalServerError)
-		return
-	}
-
-	json.NewEncoder(w).Encode(result)
-}
-
-func authMiddleware(handler func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if len(r.Header["X-Access-Token"]) == 0 {
-			http.Error(w, "403 forbidden", http.StatusForbidden)
-			return
-		}
-		access_token := r.Header["X-Access-Token"][0]
-		token, err := jwt.Parse(access_token, func(token *jwt.Token) (interface{}, error) {
-			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
-			}
-
-			return []byte(os.Getenv("JWT_SECRET")), nil
-		})
-
-		var user_id string
-
-		if token == nil {
-			http.Error(w, "403 forbidden", http.StatusForbidden)
-			return
-		}
-
-		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid && err == nil {
-			user_id = claims["user_id"].(string)
-		} else {
-			http.Error(w, "403 forbidden", http.StatusForbidden)
-			return
-		}
-
-		ctx := context.WithValue(r.Context(), "user_id", user_id)
-
-		handler(w, r.WithContext(ctx))
-	}
-}
 
 func main() {
 	log.Print("Starting the server on :8080")
-	http.HandleFunc("/generate", authMiddleware(generate))
-	http.HandleFunc("/memory", authMiddleware(func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/generate", middlewares.Auth(completion.Generate))
+	http.HandleFunc("/memory", middlewares.Auth(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
 			memory.Create(w, r)
 		} else if r.Method == http.MethodPut {
@@ -137,7 +21,7 @@ func main() {
 			http.Error(w, "405 method not allowed", http.StatusMethodNotAllowed)
 		}
 	}))
-	http.HandleFunc("/memories", authMiddleware(memory.Get))
+	http.HandleFunc("/memories", middlewares.Auth(memory.Get))
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
