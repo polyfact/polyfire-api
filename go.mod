@@ -6,7 +6,7 @@ require (
 	github.com/gin-gonic/gin v1.9.1
 	github.com/golang-jwt/jwt/v5 v5.0.0
 	github.com/nedpals/supabase-go v0.3.0
-	github.com/tmc/langchaingo v0.0.0-20230712211228-31d6e35cd545
+	github.com/tmc/langchaingo v0.0.0-20230723211647-311c3ee65e1e
 )
 
 require (
@@ -18,6 +18,7 @@ require (
 	cloud.google.com/go/longrunning v0.4.2 // indirect
 	github.com/bytedance/sonic v1.9.1 // indirect
 	github.com/chenzhuoyu/base64x v0.0.0-20221115062448-fe3a3abad311 // indirect
+	github.com/cohere-ai/tokenizer v1.1.2 // indirect
 	github.com/dlclark/regexp2 v1.8.1 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.2 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
@@ -41,6 +42,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/nedpals/postgrest-go v0.1.3 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.8 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pkoukk/tiktoken-go v0.1.2 // indirect
 	github.com/rakyll/openai-go v1.0.9 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
