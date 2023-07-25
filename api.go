@@ -7,6 +7,7 @@ import (
 	completion "github.com/polyfact/api/completion"
 	memory "github.com/polyfact/api/memory"
 	middlewares "github.com/polyfact/api/middlewares"
+	transcription "github.com/polyfact/api/transcription"
 )
 
 func main() {
@@ -22,6 +23,7 @@ func main() {
 		}
 	}))
 	http.HandleFunc("/memories", middlewares.Auth(memory.Get))
+	http.HandleFunc("/transcribe", middlewares.Auth(transcription.Transcribe))
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
