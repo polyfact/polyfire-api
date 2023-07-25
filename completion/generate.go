@@ -2,6 +2,7 @@ package completion
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	db "github.com/polyfact/api/db"
@@ -11,12 +12,13 @@ import (
 )
 
 type GenerateRequestBody struct {
-	Task      string  `json:"task"`
-	Memory_id *string `json:"memory_id,omitempty"`
+	Task     string  `json:"task"`
+	MemoryId *string `json:"memory_id,omitempty"`
+	Provider string  `json:"provider,omitempty"`
 }
 
 func Generate(w http.ResponseWriter, r *http.Request) {
-	userId := r.Context().Value("user_id").(string)
+	user_id := r.Context().Value("user_id").(string)
 
 	if r.Method != "POST" {
 		http.Error(w, "405 method not allowed", http.StatusMethodNotAllowed)
@@ -36,17 +38,16 @@ func Generate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	contextCompletion := ""
+	context_completion := ""
 
-	if input.Memory_id != nil {
-		results, err := memory.Embedder(userId, *input.Memory_id, input.Task)
-
+	if input.MemoryId != nil {
+		results, err := memory.Embedder(user_id, *input.MemoryId, input.Task)
 		if err != nil {
 			http.Error(w, "500 Internal server error", http.StatusInternalServerError)
 			return
 		}
 
-		contextCompletion, err = helpers.FillContext(results)
+		context_completion, err = helpers.FillContext(results)
 
 		if err != nil {
 			http.Error(w, "500 Internal server error", http.StatusInternalServerError)
@@ -56,13 +57,29 @@ func Generate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	callback := func(model_name string, input_count int, output_count int) {
-		db.LogRequests(userId, model_name, input_count, output_count, "completion")
+		db.LogRequests(user_id, model_name, input_count, output_count, "completion")
+	}
+
+	if input.Provider == "" {
+		input.Provider = "openai"
+	}
+
+	provider, err := llm.NewLLMProvider(input.Provider)
+	if err == llm.ErrUnknownModel {
+		http.Error(w, "400 Unknown model provider", http.StatusBadRequest)
+		return
+	}
+
+	if err != nil {
+		http.Error(w, "500 Internal server error", http.StatusInternalServerError)
+		fmt.Println(err)
+		return
 	}
 
 	var result llm.Result
-	var prompt string = contextCompletion + input.Task
+	var prompt string = context_completion + input.Task
 
-	result, err = llm.Generate(prompt, &callback)
+	result, err = provider.Generate(prompt, &callback)
 
 	w.Header()["Content-Type"] = []string{"application/json"}
 
