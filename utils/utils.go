@@ -27,5 +27,24 @@ func FillContext(embeddings []db.MatchResult) (string, error) {
 	}
 
 	return context, nil
+}
 
+const PROMPT_IDENTIFIER_TOKEN_COUNT int = 5
+
+func CutChatHistory(chat_messages []db.ChatMessage, max_token int) []db.ChatMessage {
+	var res []db.ChatMessage
+	tokens := 0
+
+	for _, item := range chat_messages {
+		textTokens := llm.CountTokens(item.Content, os.Getenv("OPENAI_MODEL"))
+
+		if tokens+textTokens > max_token {
+			break
+		}
+
+		res = append(res, item)
+		tokens += textTokens
+	}
+
+	return res
 }

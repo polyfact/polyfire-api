@@ -13,6 +13,7 @@ import (
 func main() {
 	log.Print("Starting the server on :8080")
 	http.HandleFunc("/generate", middlewares.Auth(completion.Generate))
+	http.HandleFunc("/chats", middlewares.Auth(completion.CreateChat))
 	http.HandleFunc("/memory", middlewares.Auth(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {
 			memory.Create(w, r)

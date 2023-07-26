@@ -2,7 +2,6 @@ package db
 
 import (
 	"encoding/json"
-	"log"
 )
 
 type Memory struct {
@@ -92,7 +91,7 @@ func MatchEmbeddings(memoryId string, embedding []float64) ([]MatchResult, error
 	err = json.Unmarshal([]byte(response), &results)
 
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	if client.ClientError != nil {
