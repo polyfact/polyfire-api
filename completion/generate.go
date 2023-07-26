@@ -40,7 +40,7 @@ func Generate(w http.ResponseWriter, r *http.Request) {
 
 	context_completion := ""
 
-	if input.MemoryId != nil {
+	if input.MemoryId != nil && len(*input.MemoryId) > 0 {
 		results, err := memory.Embedder(user_id, *input.MemoryId, input.Task)
 		if err != nil {
 			http.Error(w, "500 Internal server error", http.StatusInternalServerError)
