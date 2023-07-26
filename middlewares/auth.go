@@ -7,11 +7,13 @@ import (
 	"os"
 
 	jwt "github.com/golang-jwt/jwt/v5"
+	router "github.com/julienschmidt/httprouter"
 )
 
-func Auth(handler func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-
+func Auth(
+	handler func(http.ResponseWriter, *http.Request, router.Params),
+) func(http.ResponseWriter, *http.Request, router.Params) {
+	return func(w http.ResponseWriter, r *http.Request, httprouter router.Params) {
 		if len(r.Header["X-Access-Token"]) == 0 {
 			http.Error(w, "403 forbidden", http.StatusForbidden)
 			return
@@ -41,6 +43,6 @@ func Auth(handler func(http.ResponseWriter, *http.Request)) func(http.ResponseWr
 
 		ctx := context.WithValue(r.Context(), "user_id", userId)
 
-		handler(w, r.WithContext(ctx))
+		handler(w, r.WithContext(ctx), httprouter)
 	}
 }

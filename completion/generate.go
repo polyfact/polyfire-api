@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"net/http"
 
+	router "github.com/julienschmidt/httprouter"
 	db "github.com/polyfact/api/db"
 	llm "github.com/polyfact/api/llm"
 	memory "github.com/polyfact/api/memory"
-	helpers "github.com/polyfact/api/utils"
 	utils "github.com/polyfact/api/utils"
-	"github.com/tmc/langchaingo/llms"
+	llms "github.com/tmc/langchaingo/llms"
 )
 
 type GenerateRequestBody struct {
@@ -20,7 +20,7 @@ type GenerateRequestBody struct {
 	Provider string  `json:"provider,omitempty"`
 }
 
-func Generate(w http.ResponseWriter, r *http.Request) {
+func Generate(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	user_id := r.Context().Value("user_id").(string)
 
 	if r.Method != "POST" {
@@ -50,7 +50,7 @@ func Generate(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		context_completion, err = helpers.FillContext(results)
+		context_completion, err = utils.FillContext(results)
 
 		if err != nil {
 			http.Error(w, "500 Internal server error", http.StatusInternalServerError)

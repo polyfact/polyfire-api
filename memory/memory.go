@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 
+	router "github.com/julienschmidt/httprouter"
 	textsplitter "github.com/tmc/langchaingo/textsplitter"
 
 	db "github.com/polyfact/api/db"
@@ -15,12 +16,11 @@ import (
 
 const BatchSize int = 512
 
-func Create(w http.ResponseWriter, r *http.Request) {
+func Create(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	memoryId := uuid.New().String()
 	userId := r.Context().Value("user_id").(string)
 
 	err := db.CreateMemory(memoryId, userId)
-
 	if err != nil {
 		http.Error(w, fmt.Sprintf("500 Internal Server Error: %v", err), http.StatusInternalServerError)
 		return
@@ -32,7 +32,7 @@ func Create(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
-func Add(w http.ResponseWriter, r *http.Request) {
+func Add(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	decoder := json.NewDecoder(r.Body)
 	userId := r.Context().Value("user_id").(string)
 
@@ -91,7 +91,7 @@ type memoryRecord struct {
 	ID string `json:"id"`
 }
 
-func Get(w http.ResponseWriter, r *http.Request) {
+func Get(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	userId, ok := r.Context().Value("user_id").(string)
 	if !ok {
 		http.Error(w, "User ID not found in context", http.StatusBadRequest)
@@ -99,7 +99,6 @@ func Get(w http.ResponseWriter, r *http.Request) {
 	}
 
 	results, err := db.GetMemoryIds(userId)
-
 	if err != nil {
 		http.Error(w, fmt.Sprintf("500 Internal Server Error: %v", err), http.StatusInternalServerError)
 		return
@@ -122,13 +121,11 @@ func Embedder(userId string, memoryId string, task string) ([]db.MatchResult, er
 	}
 
 	embeddings, err := llm.Embed(task, &callback)
-
 	if err != nil {
 		return nil, err
 	}
 
 	results, err := db.MatchEmbeddings(memoryId, embeddings[0])
-
 	if err != nil {
 		return nil, err
 	}
