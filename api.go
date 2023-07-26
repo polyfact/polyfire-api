@@ -19,6 +19,7 @@ func main() {
 
 	router.POST("/generate", middlewares.Auth(completion.Generate))
 	router.POST("/chats", middlewares.Auth(completion.CreateChat))
+	router.GET("/chat/:id/history", middlewares.Auth(completion.GetChatHistory))
 	router.POST("/transcribe", middlewares.Auth(transcription.Transcribe))
 	router.POST("/memory", middlewares.Auth(memory.Create))
 	router.PUT("/memory", middlewares.Auth(memory.Add))

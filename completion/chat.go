@@ -40,3 +40,16 @@ func CreateChat(w http.ResponseWriter, r *http.Request, _ router.Params) {
 
 	json.NewEncoder(w).Encode(chat)
 }
+
+func GetChatHistory(w http.ResponseWriter, r *http.Request, ps router.Params) {
+	id := ps.ByName("id")
+	user_id := r.Context().Value("user_id").(string)
+
+	messages, err := db.GetChatMessages(user_id, id)
+	if err != nil {
+		http.Error(w, "500 Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(messages)
+}

@@ -70,6 +70,7 @@ type ChatMessage struct {
 	ChatID        string  `json:"chat_id"`
 	IsUserMessage bool    `json:"is_user_message"`
 	Content       string  `json:"content"`
+	CreatedAt     string  `json:"created_at",omitempty`
 }
 
 type ChatMessageInsert struct {
