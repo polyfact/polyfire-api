@@ -1,12 +1,20 @@
 package db
 
+import (
+	postgrest "github.com/supabase/postgrest-go"
+)
+
 type Chat struct {
-	ID            string        `json:"id"`
-	UserID        string        `json:"user_id"`
-	chat_messages []ChatMessage `json:"chat_messages"`
+	ID           string        `json:"id,omitempty"`
+	UserID       string        `json:"user_id"`
+	ChatMessages []ChatMessage `json:"chat_messages"`
 }
 
-func GetChatIds(userId string) ([]Chat, error) {
+type ChatInsert struct {
+	UserID string `json:"user_id"`
+}
+
+func GetChatForUser(userId string) ([]Chat, error) {
 	client, err := CreateClient()
 	if err != nil {
 		return nil, err
@@ -22,33 +30,96 @@ func GetChatIds(userId string) ([]Chat, error) {
 	return results, nil
 }
 
+func GetChatById(id string) (*Chat, error) {
+	client, err := CreateClient()
+	if err != nil {
+		return nil, err
+	}
+
+	var result *Chat
+
+	_, err = client.From("chats").Select("*", "exact", false).Eq("id", id).Single().ExecuteTo(&result)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func CreateChat(userId string) (*Chat, error) {
+	client, err := CreateClient()
+	if err != nil {
+		return nil, err
+	}
+
+	var result *Chat
+
+	_, err = client.From("chats").Insert(ChatInsert{
+		UserID: userId,
+	}, false, "", "", "exact").Single().ExecuteTo(&result)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
 type ChatMessage struct {
-	ID            string `json:"id"`
+	ID            *string `json:"id",omitempty`
+	ChatID        string  `json:"chat_id"`
+	IsUserMessage bool    `json:"is_user_message"`
+	Content       string  `json:"content"`
+}
+
+type ChatMessageInsert struct {
 	ChatID        string `json:"chat_id"`
 	IsUserMessage bool   `json:"is_user_message"`
 	Content       string `json:"content"`
 }
 
-func GetChatMessages(userId string, chatId string) (Chat, error) {
+func GetChatMessages(userId string, chatId string) ([]ChatMessage, error) {
 	client, err := CreateClient()
 	if err != nil {
 		panic(err)
 	}
 
-	var results Chat
+	var result *Chat
 
-	str, _, err := client.From("chats").
+	_, err = client.From("chats").
 		Select("*, chat_messages(*)", "exact", false).
 		Single().
 		Eq("id", chatId).
 		Eq("user_id", userId).
-		ExecuteString()
+		Order("created_at", &postgrest.OrderOpts{
+			Ascending:    false,
+			ForeignTable: "chat_messages",
+		}).
+		Limit(20, "chat_messages").
+		ExecuteTo(&result)
 
-	panic(str)
-	// if err != nil {
-	// 	panic(err)
-	// 	// return , err
-	// }
+	if err != nil || result == nil {
+		return nil, err
+	}
 
-	return results, nil
+	return result.ChatMessages, nil
+}
+
+func AddChatMessage(chatId string, isUserMessage bool, content string) error {
+	client, err := CreateClient()
+	if err != nil {
+		return err
+	}
+
+	_, _, err = client.From("chat_messages").Insert(ChatMessageInsert{
+		ChatID:        chatId,
+		IsUserMessage: isUserMessage,
+		Content:       content,
+	}, false, "", "", "exact").Execute()
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
