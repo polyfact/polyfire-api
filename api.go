@@ -4,6 +4,8 @@ import (
 	"log"
 	"net/http"
 
+	httprouter "github.com/julienschmidt/httprouter"
+
 	completion "github.com/polyfact/api/completion"
 	memory "github.com/polyfact/api/memory"
 	middlewares "github.com/polyfact/api/middlewares"
@@ -12,18 +14,16 @@ import (
 
 func main() {
 	log.Print("Starting the server on :8080")
-	http.HandleFunc("/generate", middlewares.Auth(completion.Generate))
-	http.HandleFunc("/memory", middlewares.Auth(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodPost {
-			memory.Create(w, r)
-		} else if r.Method == http.MethodPut {
-			memory.Add(w, r)
-		} else {
-			http.Error(w, "405 method not allowed", http.StatusMethodNotAllowed)
-		}
-	}))
-	http.HandleFunc("/memories", middlewares.Auth(memory.Get))
-	http.HandleFunc("/transcribe", middlewares.Auth(transcription.Transcribe))
 
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	router := httprouter.New()
+
+	router.POST("/generate", middlewares.Auth(completion.Generate))
+	router.POST("/chats", middlewares.Auth(completion.CreateChat))
+	router.GET("/chat/:id/history", middlewares.Auth(completion.GetChatHistory))
+	router.POST("/transcribe", middlewares.Auth(transcription.Transcribe))
+	router.POST("/memory", middlewares.Auth(memory.Create))
+	router.PUT("/memory", middlewares.Auth(memory.Add))
+	router.GET("/memories", middlewares.Auth(memory.Get))
+
+	log.Fatal(http.ListenAndServe(":8080", router))
 }

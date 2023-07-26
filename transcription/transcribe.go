@@ -9,10 +9,11 @@ import (
 	"mime/multipart"
 	"net/http"
 
+	router "github.com/julienschmidt/httprouter"
 	stt "github.com/polyfact/api/stt"
 )
 
-func Transcribe(w http.ResponseWriter, r *http.Request) {
+func Transcribe(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	_, p, _ := mime.ParseMediaType(r.Header.Get("Content-Type"))
 	boundary := p["boundary"]
 	reader := multipart.NewReader(r.Body, boundary)
