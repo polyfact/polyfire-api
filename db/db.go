@@ -2,7 +2,6 @@ package db
 
 import (
 	"encoding/json"
-	"log"
 	"os"
 
 	supa "github.com/nedpals/supabase-go"
@@ -99,7 +98,6 @@ func LogRequests(
 
 	var results []RequestLog
 	err := supabase.DB.From("request_logs").Insert(row).Execute(&results)
-
 	if err != nil {
 		panic(err)
 	}
@@ -136,7 +134,6 @@ func GetMemoryIds(userId string) ([]MemoryRecord, error) {
 	var results []MemoryRecord
 
 	err := client.DB.From("memories").Select("id").Eq("user_id", userId).Execute(&results)
-
 	if err != nil {
 		return nil, err
 	}
@@ -160,7 +157,7 @@ func MatchEmbeddings(memoryId string, embedding []float64) ([]MatchResult, error
 	err = json.Unmarshal([]byte(response), &results)
 
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	if client.ClientError != nil {
