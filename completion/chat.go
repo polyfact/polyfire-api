@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	router "github.com/julienschmidt/httprouter"
 	db "github.com/polyfact/api/db"
 )
 
@@ -23,7 +24,7 @@ func FormatPrompt(systemPrompt string, chatHistory []db.ChatMessage, userPrompt 
 	return res
 }
 
-func CreateChat(w http.ResponseWriter, r *http.Request) {
+func CreateChat(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	user_id := r.Context().Value("user_id").(string)
 
 	if r.Method != "POST" {
