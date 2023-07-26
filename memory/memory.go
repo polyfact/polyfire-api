@@ -37,10 +37,13 @@ func Add(w http.ResponseWriter, r *http.Request) {
 	userId := r.Context().Value("user_id").(string)
 
 	var requestBody struct {
-		ID    string `json:"id"`
-		Input string `json:"input"`
+		ID       string `json:"id"`
+		Input    string `json:"input"`
+		MaxToken int    `json:"max_token"`
 	}
+
 	err := decoder.Decode(&requestBody)
+
 	if err != nil {
 		http.Error(w, "400 Bad Request", http.StatusBadRequest)
 		return
@@ -52,7 +55,12 @@ func Add(w http.ResponseWriter, r *http.Request) {
 	}
 
 	splitter := textsplitter.NewTokenSplitter()
-	splitter.ChunkSize = BatchSize
+
+	if requestBody.MaxToken != 0 {
+		splitter.ChunkSize = requestBody.MaxToken
+	} else {
+		splitter.ChunkSize = BatchSize
+	}
 
 	chunks, err := splitter.SplitText(requestBody.Input)
 	if err != nil {
