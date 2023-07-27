@@ -27,12 +27,20 @@ func FormatPrompt(systemPrompt string, chatHistory []db.ChatMessage, userPrompt 
 func CreateChat(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	user_id := r.Context().Value("user_id").(string)
 
+	var requestBody struct {
+		SystemPrompt *string `json:"system_prompt"`
+	}
+
+	decoder := json.NewDecoder(r.Body)
+
+	decoder.Decode(&requestBody)
+
 	if r.Method != "POST" {
 		http.Error(w, "405 method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	chat, err := db.CreateChat(user_id)
+	chat, err := db.CreateChat(user_id, requestBody.SystemPrompt)
 	if err != nil {
 		http.Error(w, "500 Internal server error", http.StatusInternalServerError)
 		return
