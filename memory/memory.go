@@ -43,7 +43,6 @@ func Add(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	}
 
 	err := decoder.Decode(&requestBody)
-
 	if err != nil {
 		http.Error(w, "400 Bad Request", http.StatusBadRequest)
 		return

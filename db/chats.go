@@ -7,11 +7,13 @@ import (
 type Chat struct {
 	ID           string        `json:"id,omitempty"`
 	UserID       string        `json:"user_id"`
+	SystemPrompt *string       `json:"system_prompt"`
 	ChatMessages []ChatMessage `json:"chat_messages"`
 }
 
 type ChatInsert struct {
-	UserID string `json:"user_id"`
+	UserID       string  `json:"user_id"`
+	SystemPrompt *string `json:"system_prompt"`
 }
 
 func GetChatForUser(userId string) ([]Chat, error) {
@@ -46,7 +48,7 @@ func GetChatById(id string) (*Chat, error) {
 	return result, nil
 }
 
-func CreateChat(userId string) (*Chat, error) {
+func CreateChat(userId string, systemPrompt *string) (*Chat, error) {
 	client, err := CreateClient()
 	if err != nil {
 		return nil, err
@@ -55,7 +57,8 @@ func CreateChat(userId string) (*Chat, error) {
 	var result *Chat
 
 	_, err = client.From("chats").Insert(ChatInsert{
-		UserID: userId,
+		UserID:       userId,
+		SystemPrompt: systemPrompt,
 	}, false, "", "", "exact").Single().ExecuteTo(&result)
 
 	if err != nil {
