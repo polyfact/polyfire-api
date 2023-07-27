@@ -100,7 +100,14 @@ func Generate(w http.ResponseWriter, r *http.Request, _ router.Params) {
 
 		chatHistory := utils.CutChatHistory(allHistory, 1000)
 
-		prompt := FormatPrompt(context_completion, chatHistory, input.Task)
+		var system_prompt string
+		if chat.SystemPrompt == nil {
+			system_prompt = ""
+		} else {
+			system_prompt = *(chat.SystemPrompt)
+		}
+
+		prompt := FormatPrompt(context_completion+"\n"+system_prompt, chatHistory, input.Task)
 
 		fmt.Println(chat.ID)
 		err = db.AddChatMessage(chat.ID, true, input.Task)
