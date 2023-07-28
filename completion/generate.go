@@ -14,10 +14,11 @@ import (
 )
 
 type GenerateRequestBody struct {
-	Task     string  `json:"task"`
-	MemoryId *string `json:"memory_id,omitempty"`
-	ChatId   *string `json:"chat_id,omitempty"`
-	Provider string  `json:"provider,omitempty"`
+	Task     string    `json:"task"`
+	MemoryId *string   `json:"memory_id,omitempty"`
+	ChatId   *string   `json:"chat_id,omitempty"`
+	Provider string    `json:"provider,omitempty"`
+	Stop     *[]string `json:"stop,omitempty"`
 }
 
 func Generate(w http.ResponseWriter, r *http.Request, _ router.Params) {
@@ -129,7 +130,12 @@ func Generate(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	} else {
 		prompt := context_completion + input.Task
 
-		result, err = provider.Generate(prompt, &callback, nil)
+		if input.Stop != nil {
+			fmt.Println(*input.Stop)
+			result, err = provider.Generate(prompt, &callback, &llms.CallOptions{StopWords: *input.Stop})
+		} else {
+			result, err = provider.Generate(prompt, &callback, nil)
+		}
 	}
 
 	w.Header()["Content-Type"] = []string{"application/json"}
