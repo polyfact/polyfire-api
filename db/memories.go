@@ -13,6 +13,7 @@ type MatchParams struct {
 	MatchTreshold  float64   `json:"match_threshold"`
 	MatchCount     int16     `json:"match_count"`
 	MemoryID       string    `json:"memory_id"`
+	UserID		   string    `json:"user_id"`
 }
 
 type MatchResult struct {
@@ -75,12 +76,13 @@ func GetMemoryIds(userId string) ([]MemoryRecord, error) {
 	return results, nil
 }
 
-func MatchEmbeddings(memoryId string, embedding []float64) ([]MatchResult, error) {
+func MatchEmbeddings(memoryId string, userId string, embedding []float64) ([]MatchResult, error) {
 	params := MatchParams{
 		QueryEmbedding: embedding,
 		MatchTreshold:  0.70,
 		MatchCount:     10,
 		MemoryID:       memoryId,
+		UserID:			userId,
 	}
 
 	client, err := CreateClient()
