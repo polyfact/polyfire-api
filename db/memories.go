@@ -12,8 +12,8 @@ type MatchParams struct {
 	QueryEmbedding []float64 `json:"query_embedding"`
 	MatchTreshold  float64   `json:"match_threshold"`
 	MatchCount     int16     `json:"match_count"`
-	MemoryID       string    `json:"memory_id"`
-	UserID		   string    `json:"user_id"`
+	MemoryID       string    `json:"memoryid"`
+	UserID         string    `json:"userid"`
 }
 
 type MatchResult struct {
@@ -82,12 +82,12 @@ func MatchEmbeddings(memoryId string, userId string, embedding []float64) ([]Mat
 		MatchTreshold:  0.70,
 		MatchCount:     10,
 		MemoryID:       memoryId,
-		UserID:			userId,
+		UserID:         userId,
 	}
 
 	client, err := CreateClient()
 
-	response := client.Rpc("match_embeddings", "", params)
+	response := client.Rpc("search_embeddings", "", params)
 
 	var results []MatchResult
 	err = json.Unmarshal([]byte(response), &results)
