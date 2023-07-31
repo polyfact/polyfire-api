@@ -1,11 +1,11 @@
 package db
 
 type KVStore struct {
-	ID        string `json:"id",omitempty`
+	ID        string `json:"id"`
 	UserID    string `json:"user_id"`
 	Key       string `json:"key"`
 	Value     string `json:"value"`
-	CreatedAt string `json:"created_at",omitempty`
+	CreatedAt string `json:"created_at"`
 }
 
 type KVStoreInsert struct {
