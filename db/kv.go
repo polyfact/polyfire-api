@@ -17,7 +17,7 @@ type KVStoreInsert struct {
 func GetKV(userId string, key string) (*KVStore, error) {
 	client, err := CreateClient()
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	var result *KVStore
