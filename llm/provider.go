@@ -9,6 +9,7 @@ import (
 
 	"github.com/tmc/langchaingo/llms"
 	"github.com/tmc/langchaingo/llms/cohere"
+	"github.com/tmc/langchaingo/llms/local"
 	"github.com/tmc/langchaingo/llms/openai"
 	"github.com/tmc/langchaingo/schema"
 )
@@ -45,6 +46,18 @@ func NewLLMProvider(model string) (*LLMProvider, error) {
 			return nil, err
 		}
 		return &LLMProvider{model: llm}, nil
+	case "llama":
+		fmt.Println("Using LLama")
+		opts := []local.Option{
+			local.WithBin(os.Getenv("LLAMA_BIN")),
+			local.WithArgs("-m " + os.Getenv("LLAMA_MODEL") + " -p"),
+			local.WithGlobalAsArgs(),
+		}
+		llm, err := local.New(opts...)
+		if err != nil {
+			return nil, err
+		}
+		return &LLMProvider{model: llm}, nil
 	default:
 		return nil, ErrUnknownModel
 	}
@@ -62,9 +75,11 @@ func (m LLMProvider) Call(prompt string, opts *llms.CallOptions) (string, error)
 	if llm, ok := m.model.(llms.LLM); ok {
 		result, err = llm.Call(ctx, prompt, llms.WithOptions(*opts))
 	} else if chat, ok := m.model.(llms.ChatLLM); ok {
-		result, err = chat.Call(ctx, []schema.ChatMessage{
-			schema.HumanChatMessage{Text: prompt},
+		var chatMessage *schema.AIChatMessage
+		chatMessage, err = chat.Call(ctx, []schema.ChatMessage{
+			schema.HumanChatMessage{Content: prompt},
 		}, llms.WithOptions(*opts))
+		result = chatMessage.Content
 	} else {
 		return "", errors.New("Model is neither LLM nor Chat")
 	}
