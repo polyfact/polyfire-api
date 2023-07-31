@@ -19,6 +19,7 @@ type GenerateRequestBody struct {
 	ChatId   *string   `json:"chat_id,omitempty"`
 	Provider string    `json:"provider,omitempty"`
 	Stop     *[]string `json:"stop,omitempty"`
+	Stream   bool      `json:"stream,omitempty"`
 }
 
 func Generate(w http.ResponseWriter, r *http.Request, _ router.Params) {
