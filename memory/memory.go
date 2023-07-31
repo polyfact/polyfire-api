@@ -132,7 +132,7 @@ func Embedder(userId string, memoryId string, task string) ([]db.MatchResult, er
 		return nil, err
 	}
 
-	results, err := db.MatchEmbeddings(memoryId, embeddings[0])
+	results, err := db.MatchEmbeddings(memoryId, userId, embeddings[0])
 	if err != nil {
 		return nil, err
 	}
