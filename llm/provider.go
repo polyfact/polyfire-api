@@ -92,7 +92,7 @@ func (m LLMProvider) Call(prompt string, opts *ProviderOptions) (string, error) 
 func (m LLMProvider) Generate(task string, c *func(string, int, int), opts *ProviderOptions) chan Result {
 	chan_res := make(chan Result)
 
-	go func() {
+	go func(chan_res chan Result) {
 		defer close(chan_res)
 		tokenUsage := TokenUsage{Input: 0, Output: 0}
 		for i := 0; i < 5; i++ {
@@ -125,7 +125,7 @@ func (m LLMProvider) Generate(task string, c *func(string, int, int), opts *Prov
 			),
 		}
 		return
-	}()
+	}(chan_res)
 
 	return chan_res
 }

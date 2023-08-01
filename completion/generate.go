@@ -3,7 +3,6 @@ package completion
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 
 	router "github.com/julienschmidt/httprouter"
@@ -29,7 +28,7 @@ var (
 )
 
 func GenerationStart(user_id string, input GenerateRequestBody) (*chan llm.Result, error) {
-	var result chan llm.Result
+	result := make(chan llm.Result)
 	context_completion := ""
 
 	if input.MemoryId != nil && len(*input.MemoryId) > 0 {
@@ -89,7 +88,6 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan llm.Resul
 
 		prompt := FormatPrompt(context_completion+"\n"+system_prompt, chatHistory, input.Task)
 
-		fmt.Println(chat.ID)
 		err = db.AddChatMessage(chat.ID, true, input.Task)
 		if err != nil {
 			return nil, InternalServerError
@@ -111,7 +109,6 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan llm.Resul
 		prompt := context_completion + input.Task
 
 		if input.Stop != nil {
-			fmt.Println(*input.Stop)
 			result = provider.Generate(prompt, &callback, &llm.ProviderOptions{StopWords: input.Stop})
 		} else {
 			result = provider.Generate(prompt, &callback, nil)
