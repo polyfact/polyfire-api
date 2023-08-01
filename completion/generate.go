@@ -54,7 +54,7 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan llm.Resul
 		input.Provider = "openai"
 	}
 
-	provider, err := llm.NewLLMProvider(input.Provider)
+	provider, err := llm.NewProvider(input.Provider)
 	if err == llm.ErrUnknownModel {
 		return nil, UnknownModelProvider
 	}
