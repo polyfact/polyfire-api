@@ -41,7 +41,9 @@ func AuthenticateRequest(r *http.Request) (context.Context, error) {
 	return ctx, nil
 }
 
-func Auth(handler func(http.ResponseWriter, *http.Request, router.Params)) func(http.ResponseWriter, *http.Request, router.Params) {
+func Auth(
+	handler func(http.ResponseWriter, *http.Request, router.Params),
+) func(http.ResponseWriter, *http.Request, router.Params) {
 	return func(w http.ResponseWriter, r *http.Request, params router.Params) {
 		ctx, err := AuthenticateRequest(r)
 		if err != nil {
@@ -51,16 +53,4 @@ func Auth(handler func(http.ResponseWriter, *http.Request, router.Params)) func(
 
 		handler(w, r.WithContext(ctx), params)
 	}
-}
-
-func StreamAuth(handler http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx, err := AuthenticateRequest(r)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusForbidden)
-			return
-		}
-
-		handler.ServeHTTP(w, r.WithContext(ctx))
-	})
 }
