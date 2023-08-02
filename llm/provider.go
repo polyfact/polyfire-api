@@ -36,7 +36,8 @@ type Provider interface {
 }
 
 type LLMProvider struct {
-	model interface{ GetNumTokens(string) int }
+	model      interface{ GetNumTokens(string) int }
+	model_name string
 }
 
 func NewProvider(model string) (Provider, error) {
@@ -51,7 +52,7 @@ func NewProvider(model string) (Provider, error) {
 		if err != nil {
 			return nil, err
 		}
-		return LLMProvider{model: llm}, nil
+		return LLMProvider{model: llm, model_name: "cohere"}, nil
 	default:
 		return nil, ErrUnknownModel
 	}
@@ -106,7 +107,7 @@ func (m LLMProvider) Generate(task string, c *func(string, int, int), opts *Prov
 			}
 
 			if c != nil {
-				(*c)(os.Getenv("OPENAI_MODEL"), m.model.GetNumTokens(input_prompt), m.model.GetNumTokens(completion))
+				(*c)(m.model_name, m.model.GetNumTokens(input_prompt), m.model.GetNumTokens(completion))
 			}
 
 			tokenUsage.Input += m.model.GetNumTokens(input_prompt)
@@ -186,7 +187,7 @@ func (m OpenAIStreamProvider) Generate(task string, c *func(string, int, int), o
 			}
 
 			if c != nil {
-				(*c)(os.Getenv("OPENAI_MODEL"), tokenUsage.Input, tokenUsage.Output)
+				(*c)("gpt-3.5-turbo", tokenUsage.Input, tokenUsage.Output)
 			}
 			return
 		}
