@@ -31,6 +31,6 @@ func main() {
 
 	router.GET("/kv", middlewares.Auth(kv.Get))
 	router.PUT("/kv", middlewares.Auth(kv.Set))
-
+	router.GET("/stream", middlewares.Auth(completion.Stream))
 	log.Fatal(http.ListenAndServe(":8080", router))
 }
