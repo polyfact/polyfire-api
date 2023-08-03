@@ -28,9 +28,11 @@ var (
 	NotFound             error = errors.New("404 Not Found")
 )
 
-func GenerationStart(user_id string, input GenerateRequestBody, ressources *[]db.MatchResult) (*chan llm.Result, error) {
+func GenerationStart(user_id string, input GenerateRequestBody) (*chan llm.Result, error) {
 	result := make(chan llm.Result)
 	context_completion := ""
+
+	ressources := []db.MatchResult{}
 
 	if input.MemoryId != nil && len(*input.MemoryId) > 0 {
 		results, err := memory.Embedder(user_id, *input.MemoryId, input.Task)
@@ -38,7 +40,7 @@ func GenerationStart(user_id string, input GenerateRequestBody, ressources *[]db
 			return nil, InternalServerError
 		}
 		if input.Infos {
-			*ressources = results
+			ressources = results
 		}
 		context_completion, err = utils.FillContext(results)
 
@@ -102,6 +104,10 @@ func GenerationStart(user_id string, input GenerateRequestBody, ressources *[]db
 			defer close(result)
 			total_result := ""
 			for v := range pre_result {
+				if input.MemoryId != nil && *input.MemoryId != "" && input.Infos && len(ressources) > 0 {
+					v.Ressources = ressources
+				}
+
 				total_result += v.Result
 				result <- v
 			}
@@ -130,7 +136,6 @@ func Generate(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	}
 
 	var input GenerateRequestBody
-	ressources := &[]db.MatchResult{}
 
 	err := json.NewDecoder(r.Body).Decode(&input)
 	if err != nil {
@@ -138,7 +143,7 @@ func Generate(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		return
 	}
 
-	res_chan, err := GenerationStart(user_id, input, ressources)
+	res_chan, err := GenerationStart(user_id, input)
 
 	if err != nil {
 		switch err {
@@ -157,14 +162,14 @@ func Generate(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		TokenUsage: llm.TokenUsage{Input: 0, Output: 0},
 	}
 
-	if input.MemoryId != nil && *input.MemoryId != "" && input.Infos {
-		result.Ressources = *ressources
-	}
-
 	for v := range *res_chan {
 		result.Result += v.Result
 		result.TokenUsage.Input += v.TokenUsage.Input
 		result.TokenUsage.Output += v.TokenUsage.Output
+
+		if len(v.Ressources) > 0 {
+			result.Ressources = v.Ressources
+		}
 	}
 
 	w.Header()["Content-Type"] = []string{"application/json"}
