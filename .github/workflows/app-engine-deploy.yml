@@ -33,3 +33,4 @@ jobs:
         OPENAI_ORGANIZATION: '${{ secrets.OPENAI_ORGANIZATION }}'
         OPENAI_MODEL: '${{ vars.OPENAI_MODEL }}'
         JWT_SECRET: '${{ secrets.JWT_SECRET }}'
+        LLAMA_URL: '${{ secrets.LLAMA_URL }}'
