@@ -6,7 +6,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	router "github.com/julienschmidt/httprouter"
-	llm "github.com/polyfact/api/llm"
+	providers "github.com/polyfact/api/llm/providers"
 )
 
 var upgrader = websocket.Upgrader{
@@ -70,9 +70,9 @@ func Stream(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		return
 	}
 
-	result := llm.Result{
+	result := providers.Result{
 		Result:     "",
-		TokenUsage: llm.TokenUsage{Input: 0, Output: 0},
+		TokenUsage: providers.TokenUsage{Input: 0, Output: 0},
 	}
 
 	for v := range *chan_res {

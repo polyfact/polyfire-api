@@ -6,9 +6,10 @@ require (
 	github.com/gin-gonic/gin v1.9.1
 	github.com/golang-jwt/jwt/v5 v5.0.0
 	github.com/google/uuid v1.3.0
+	github.com/julienschmidt/httprouter v1.3.0
 	github.com/rakyll/openai-go v1.0.9
 	github.com/supabase/postgrest-go v0.0.7
-	github.com/tmc/langchaingo v0.0.0-20230723211647-311c3ee65e1e
+	github.com/tmc/langchaingo v0.0.0-20230802030916-271e9bd7e7c5
 )
 
 require (
@@ -37,7 +38,6 @@ require (
 	github.com/googleapis/gax-go/v2 v2.8.0 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/julienschmidt/httprouter v1.3.0 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.4 // indirect
 	github.com/leodido/go-urn v1.2.4 // indirect
 	github.com/mattn/go-isatty v0.0.19 // indirect

@@ -8,6 +8,7 @@ import (
 	router "github.com/julienschmidt/httprouter"
 	db "github.com/polyfact/api/db"
 	llm "github.com/polyfact/api/llm"
+	providers "github.com/polyfact/api/llm/providers"
 	memory "github.com/polyfact/api/memory"
 	utils "github.com/polyfact/api/utils"
 )
@@ -28,8 +29,8 @@ var (
 	NotFound             error = errors.New("404 Not Found")
 )
 
-func GenerationStart(user_id string, input GenerateRequestBody) (*chan llm.Result, error) {
-	result := make(chan llm.Result)
+func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers.Result, error) {
+	result := make(chan providers.Result)
 	context_completion := ""
 
 	ressources := []db.MatchResult{}
@@ -98,7 +99,7 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan llm.Resul
 			return nil, InternalServerError
 		}
 
-		pre_result := provider.Generate(prompt, &callback, &llm.ProviderOptions{StopWords: &[]string{"AI:", "Human:"}})
+		pre_result := provider.Generate(prompt, &callback, &providers.ProviderOptions{StopWords: &[]string{"AI:", "Human:"}})
 
 		go func() {
 			defer close(result)
@@ -118,7 +119,7 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan llm.Resul
 		prompt := context_completion + input.Task
 
 		if input.Stop != nil {
-			result = provider.Generate(prompt, &callback, &llm.ProviderOptions{StopWords: input.Stop})
+			result = provider.Generate(prompt, &callback, &providers.ProviderOptions{StopWords: input.Stop})
 		} else {
 			result = provider.Generate(prompt, &callback, nil)
 		}
@@ -157,9 +158,9 @@ func Generate(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		return
 	}
 
-	result := llm.Result{
+	result := providers.Result{
 		Result:     "",
-		TokenUsage: llm.TokenUsage{Input: 0, Output: 0},
+		TokenUsage: providers.TokenUsage{Input: 0, Output: 0},
 	}
 
 	for v := range *res_chan {
