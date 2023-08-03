@@ -33,7 +33,7 @@ func main() {
 
 	router.GET("/kv", middlewares.Auth(kv.Get))
 	router.PUT("/kv", middlewares.Auth(kv.Set))
-	router.GET("/stream", middlewares.Auth(completion.Stream))
+	router.GET("/stream", middlewares.AuthStream(completion.Stream))
 
 	handler := cors.AllowAll().Handler(router)
 
