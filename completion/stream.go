@@ -12,11 +12,25 @@ import (
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
+	CheckOrigin:     func(r *http.Request) bool { return true }, // For now, allow all origins
+
+	// CheckOrigin: func(r *http.Request) bool {
+	// 	allowedOrigins := []string{"http://localhost:3000"}
+	// 	origin := r.Header["Origin"][0]
+	// 	for _, allowedOrigin := range allowedOrigins {
+	// 		if origin == allowedOrigin {
+	// 			return true
+	// 		}
+	// 	}
+	// 	return false
+	// },
+
 }
 
 func Stream(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	user_id := r.Context().Value("user_id").(string)
 	conn, err := upgrader.Upgrade(w, r, nil)
+
 	if err != nil {
 		http.Error(w, "400 Communication Error", http.StatusBadRequest)
 		return
