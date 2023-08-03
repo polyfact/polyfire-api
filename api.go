@@ -4,6 +4,8 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/rs/cors"
+
 	httprouter "github.com/julienschmidt/httprouter"
 
 	completion "github.com/polyfact/api/completion"
@@ -31,6 +33,9 @@ func main() {
 
 	router.GET("/kv", middlewares.Auth(kv.Get))
 	router.PUT("/kv", middlewares.Auth(kv.Set))
-	router.GET("/stream", middlewares.Auth(completion.Stream))
-	log.Fatal(http.ListenAndServe(":8080", router))
+	router.GET("/stream", middlewares.AuthStream(completion.Stream))
+
+	handler := cors.AllowAll().Handler(router)
+
+	log.Fatal(http.ListenAndServe(":8080", handler))
 }

@@ -1,5 +1,9 @@
 package providers
 
+import (
+	"github.com/polyfact/api/db"
+)
+
 type ProviderOptions struct {
 	StopWords *[]string
 }
@@ -10,7 +14,8 @@ type TokenUsage struct {
 }
 
 type Result struct {
-	Result     string     `json:"result"`
-	TokenUsage TokenUsage `json:"token_usage"`
+	Result     string           `json:"result"`
+	TokenUsage TokenUsage       `json:"token_usage"`
+	Ressources []db.MatchResult `json:"ressources,omitempty"`
 	Err        error
 }

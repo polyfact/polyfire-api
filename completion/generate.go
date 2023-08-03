@@ -15,11 +15,12 @@ import (
 
 type GenerateRequestBody struct {
 	Task     string    `json:"task"`
+	Provider string    `json:"provider,omitempty"`
 	MemoryId *string   `json:"memory_id,omitempty"`
 	ChatId   *string   `json:"chat_id,omitempty"`
-	Provider string    `json:"provider,omitempty"`
 	Stop     *[]string `json:"stop,omitempty"`
 	Stream   bool      `json:"stream,omitempty"`
+	Infos    bool      `json:"infos,omitempty"`
 }
 
 var (
@@ -32,12 +33,16 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 	result := make(chan providers.Result)
 	context_completion := ""
 
+	ressources := []db.MatchResult{}
+
 	if input.MemoryId != nil && len(*input.MemoryId) > 0 {
 		results, err := memory.Embedder(user_id, *input.MemoryId, input.Task)
 		if err != nil {
 			return nil, InternalServerError
 		}
-
+		if input.Infos {
+			ressources = results
+		}
 		context_completion, err = utils.FillContext(results)
 
 		if err != nil {
@@ -100,6 +105,10 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 			defer close(result)
 			total_result := ""
 			for v := range pre_result {
+				if input.MemoryId != nil && *input.MemoryId != "" && input.Infos && len(ressources) > 0 {
+					v.Ressources = ressources
+				}
+
 				total_result += v.Result
 				result <- v
 			}
@@ -136,6 +145,7 @@ func Generate(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	}
 
 	res_chan, err := GenerationStart(user_id, input)
+
 	if err != nil {
 		switch err {
 		case NotFound:
@@ -152,10 +162,15 @@ func Generate(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		Result:     "",
 		TokenUsage: providers.TokenUsage{Input: 0, Output: 0},
 	}
+
 	for v := range *res_chan {
 		result.Result += v.Result
 		result.TokenUsage.Input += v.TokenUsage.Input
 		result.TokenUsage.Output += v.TokenUsage.Output
+
+		if len(v.Ressources) > 0 {
+			result.Ressources = v.Ressources
+		}
 	}
 
 	w.Header()["Content-Type"] = []string{"application/json"}

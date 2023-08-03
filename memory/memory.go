@@ -84,8 +84,6 @@ func Add(w http.ResponseWriter, r *http.Request, _ router.Params) {
 			http.Error(w, fmt.Sprintf("500 Internal Server Error: %v", err), http.StatusInternalServerError)
 			return
 		}
-
-		fmt.Printf("%v\n", embedding)
 	}
 
 	response := map[string]bool{"success": true}
