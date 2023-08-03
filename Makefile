@@ -32,7 +32,7 @@ app.yaml: app.dev.yaml check-env
 	| sed "s/{{COHERE_API_KEY}}/${COHERE_API_KEY}/" \
 	| sed "s/{{OPENAI_ORGANIZATION}}/${OPENAI_ORGANIZATION}/" \
 	| sed "s/{{OPENAI_MODEL}}/${OPENAI_MODEL}/" \
-	| sed "s/{{LLAMA_URL}}/${LLAMA_URL}/" \
+	| sed "s#{{LLAMA_URL}}#${LLAMA_URL}#" \
 	| sed "s/{{JWT_SECRET}}/${JWT_SECRET}/" > app.yaml
 
 check-env:
