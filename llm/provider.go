@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/polyfact/api/db"
 	goOpenai "github.com/sashabaranov/go-openai"
 	"github.com/tmc/langchaingo/llms"
 	"github.com/tmc/langchaingo/llms/cohere"
@@ -20,8 +21,9 @@ type TokenUsage struct {
 }
 
 type Result struct {
-	Result     string     `json:"result"`
-	TokenUsage TokenUsage `json:"token_usage"`
+	Result     string           `json:"result"`
+	TokenUsage TokenUsage       `json:"token_usage"`
+	Ressources []db.MatchResult `json:"ressources,omitempty"`
 	Err        error
 }
 
