@@ -6,6 +6,8 @@ import (
 
 	"github.com/gorilla/websocket"
 	router "github.com/julienschmidt/httprouter"
+	db "github.com/polyfact/api/db"
+	llm "github.com/polyfact/api/llm"
 )
 
 var upgrader = websocket.Upgrader{
@@ -34,6 +36,7 @@ func Stream(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	}
 
 	var input GenerateRequestBody
+	ressources := &[]db.MatchResult{}
 
 	err = json.Unmarshal(p, &input)
 	if err != nil {
@@ -41,7 +44,8 @@ func Stream(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		return
 	}
 
-	chan_res, err := GenerationStart(user_id, input)
+	chan_res, err := GenerationStart(user_id, input, ressources)
+
 	if err != nil {
 		switch err {
 		case NotFound:
@@ -67,9 +71,39 @@ func Stream(w http.ResponseWriter, r *http.Request, _ router.Params) {
 			}
 		}
 	}
+	if input.MemoryId != nil && *input.MemoryId != "" && input.Infos {
+		if err != nil {
+			http.Error(w, "500 Internal server error", http.StatusInternalServerError)
+			return
+		}
+
+		input := llm.CountTokens(input.Task, "gpt-4")
+		oupout := llm.CountTokens(message, "gpt-4")
+
+		tokenUsage := llm.TokenUsage{Input: input, Output: oupout}
+
+		result := llm.Result{
+			Result:     message,
+			TokenUsage: tokenUsage,
+			Ressources: *ressources,
+		}
+
+		infosJSON, err := json.Marshal(result)
+
+		infos := "[INFOS]:" + string(infosJSON)
+		byteMessage := []byte(infos)
+
+		err = conn.WriteMessage(websocket.TextMessage, byteMessage)
+		if err != nil {
+			http.Error(w, "500 Internal server error", http.StatusInternalServerError)
+			return
+		}
+	}
+
 	err = conn.WriteMessage(websocket.TextMessage, []byte(""))
 	if err != nil {
 		http.Error(w, "500 Internal server error", http.StatusInternalServerError)
 		return
 	}
+
 }

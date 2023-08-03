@@ -14,11 +14,12 @@ import (
 
 type GenerateRequestBody struct {
 	Task     string    `json:"task"`
+	Provider string    `json:"provider,omitempty"`
 	MemoryId *string   `json:"memory_id,omitempty"`
 	ChatId   *string   `json:"chat_id,omitempty"`
-	Provider string    `json:"provider,omitempty"`
 	Stop     *[]string `json:"stop,omitempty"`
 	Stream   bool      `json:"stream,omitempty"`
+	Infos    bool      `json:"infos,omitempty"`
 }
 
 var (
@@ -27,7 +28,7 @@ var (
 	NotFound             error = errors.New("404 Not Found")
 )
 
-func GenerationStart(user_id string, input GenerateRequestBody) (*chan llm.Result, error) {
+func GenerationStart(user_id string, input GenerateRequestBody, ressources *[]db.MatchResult) (*chan llm.Result, error) {
 	result := make(chan llm.Result)
 	context_completion := ""
 
@@ -36,7 +37,9 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan llm.Resul
 		if err != nil {
 			return nil, InternalServerError
 		}
-
+		if input.Infos {
+			*ressources = results
+		}
 		context_completion, err = utils.FillContext(results)
 
 		if err != nil {
@@ -127,6 +130,7 @@ func Generate(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	}
 
 	var input GenerateRequestBody
+	ressources := &[]db.MatchResult{}
 
 	err := json.NewDecoder(r.Body).Decode(&input)
 	if err != nil {
@@ -134,7 +138,8 @@ func Generate(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		return
 	}
 
-	res_chan, err := GenerationStart(user_id, input)
+	res_chan, err := GenerationStart(user_id, input, ressources)
+
 	if err != nil {
 		switch err {
 		case NotFound:
@@ -151,6 +156,11 @@ func Generate(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		Result:     "",
 		TokenUsage: llm.TokenUsage{Input: 0, Output: 0},
 	}
+
+	if input.MemoryId != nil && *input.MemoryId != "" && input.Infos {
+		result.Ressources = *ressources
+	}
+
 	for v := range *res_chan {
 		result.Result += v.Result
 		result.TokenUsage.Input += v.TokenUsage.Input
