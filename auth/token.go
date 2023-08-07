@@ -68,8 +68,8 @@ func GetUserIdFromTokenProject(token string, project string) (*string, error) {
 		Eq("project_id", project).
 		Single().
 		ExecuteTo(&result)
-	if err != nil {
-		return nil, nil
+	if err != nil || result == nil {
+		return nil, err
 	}
 
 	return &result.ID, nil
@@ -89,7 +89,7 @@ func GetProjectByID(id string) (*Project, error) {
 		Single().
 		ExecuteTo(&result)
 	if err != nil {
-		return nil, nil
+		return nil, err
 	}
 
 	return &result, nil
