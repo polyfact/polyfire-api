@@ -124,14 +124,12 @@ func TokenExchangeHandler(w http.ResponseWriter, r *http.Request, ps router.Para
 	project_id := ps.ByName("id")
 
 	if len(r.Header["Authorization"]) == 0 {
-		fmt.Println("ABCDEF1")
 		http.Error(w, "403 forbidden", http.StatusForbidden)
 		return
 	}
 
 	auth_header := strings.Split(r.Header["Authorization"][0], " ")
 	if len(auth_header) != 2 {
-		fmt.Println("ABCDEF2")
 		http.Error(w, "403 forbidden", http.StatusForbidden)
 		return
 	}
@@ -140,7 +138,6 @@ func TokenExchangeHandler(w http.ResponseWriter, r *http.Request, ps router.Para
 
 	user_id, err := GetUserIdFromTokenProject(token, project_id)
 	if err != nil {
-		fmt.Println("ABCDEF3")
 		http.Error(w, "403 forbidden", http.StatusForbidden)
 		return
 	}

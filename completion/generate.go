@@ -8,17 +8,19 @@ import (
 	router "github.com/julienschmidt/httprouter"
 	db "github.com/polyfact/api/db"
 	llm "github.com/polyfact/api/llm"
+	providers "github.com/polyfact/api/llm/providers"
 	memory "github.com/polyfact/api/memory"
 	utils "github.com/polyfact/api/utils"
 )
 
 type GenerateRequestBody struct {
 	Task     string    `json:"task"`
+	Provider string    `json:"provider,omitempty"`
 	MemoryId *string   `json:"memory_id,omitempty"`
 	ChatId   *string   `json:"chat_id,omitempty"`
-	Provider string    `json:"provider,omitempty"`
 	Stop     *[]string `json:"stop,omitempty"`
 	Stream   bool      `json:"stream,omitempty"`
+	Infos    bool      `json:"infos,omitempty"`
 }
 
 var (
@@ -27,16 +29,20 @@ var (
 	NotFound             error = errors.New("404 Not Found")
 )
 
-func GenerationStart(user_id string, input GenerateRequestBody) (*chan llm.Result, error) {
-	result := make(chan llm.Result)
+func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers.Result, error) {
+	result := make(chan providers.Result)
 	context_completion := ""
+
+	ressources := []db.MatchResult{}
 
 	if input.MemoryId != nil && len(*input.MemoryId) > 0 {
 		results, err := memory.Embedder(user_id, *input.MemoryId, input.Task)
 		if err != nil {
 			return nil, InternalServerError
 		}
-
+		if input.Infos {
+			ressources = results
+		}
 		context_completion, err = utils.FillContext(results)
 
 		if err != nil {
@@ -93,12 +99,16 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan llm.Resul
 			return nil, InternalServerError
 		}
 
-		pre_result := provider.Generate(prompt, &callback, &llm.ProviderOptions{StopWords: &[]string{"AI:", "Human:"}})
+		pre_result := provider.Generate(prompt, &callback, &providers.ProviderOptions{StopWords: &[]string{"AI:", "Human:"}})
 
 		go func() {
 			defer close(result)
 			total_result := ""
 			for v := range pre_result {
+				if input.MemoryId != nil && *input.MemoryId != "" && input.Infos && len(ressources) > 0 {
+					v.Ressources = ressources
+				}
+
 				total_result += v.Result
 				result <- v
 			}
@@ -109,7 +119,7 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan llm.Resul
 		prompt := context_completion + input.Task
 
 		if input.Stop != nil {
-			result = provider.Generate(prompt, &callback, &llm.ProviderOptions{StopWords: input.Stop})
+			result = provider.Generate(prompt, &callback, &providers.ProviderOptions{StopWords: input.Stop})
 		} else {
 			result = provider.Generate(prompt, &callback, nil)
 		}
@@ -135,6 +145,7 @@ func Generate(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	}
 
 	res_chan, err := GenerationStart(user_id, input)
+
 	if err != nil {
 		switch err {
 		case NotFound:
@@ -147,14 +158,19 @@ func Generate(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		return
 	}
 
-	result := llm.Result{
+	result := providers.Result{
 		Result:     "",
-		TokenUsage: llm.TokenUsage{Input: 0, Output: 0},
+		TokenUsage: providers.TokenUsage{Input: 0, Output: 0},
 	}
+
 	for v := range *res_chan {
 		result.Result += v.Result
 		result.TokenUsage.Input += v.TokenUsage.Input
 		result.TokenUsage.Output += v.TokenUsage.Output
+
+		if len(v.Ressources) > 0 {
+			result.Ressources = v.Ressources
+		}
 	}
 
 	w.Header()["Content-Type"] = []string{"application/json"}
