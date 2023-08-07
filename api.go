@@ -8,6 +8,7 @@ import (
 
 	httprouter "github.com/julienschmidt/httprouter"
 
+	auth "github.com/polyfact/api/auth"
 	completion "github.com/polyfact/api/completion"
 	kv "github.com/polyfact/api/kv"
 	memory "github.com/polyfact/api/memory"
@@ -30,6 +31,7 @@ func main() {
 	router.GET("/memories", middlewares.Auth(memory.Get))
 	router.POST("/memory", middlewares.Auth(memory.Create))
 	router.PUT("/memory", middlewares.Auth(memory.Add))
+	router.GET("/project/:id/auth/token", auth.TokenExchangeHandler)
 
 	router.GET("/kv", middlewares.Auth(kv.Get))
 	router.PUT("/kv", middlewares.Auth(kv.Set))
