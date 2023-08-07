@@ -60,19 +60,23 @@ func GetUserIdFromTokenProject(token string, project string) (*string, error) {
 		return nil, err
 	}
 
-	var result *ProjectUser
+	var results []ProjectUser
 
 	_, err = client.From("project_users").
 		Select("*", "exact", false).
 		Eq("auth_id", auth_id).
 		Eq("project_id", project).
-		Single().
-		ExecuteTo(&result)
-	if err != nil || result == nil {
+		ExecuteTo(&results)
+
+	if err != nil {
 		return nil, err
 	}
 
-	return &result.ID, nil
+	if len(results) == 0 {
+		return nil, nil
+	}
+
+	return &results[0].ID, nil
 }
 
 func GetProjectByID(id string) (*Project, error) {
