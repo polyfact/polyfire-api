@@ -10,7 +10,7 @@ require (
 	github.com/nedpals/supabase-go v0.3.0
 	github.com/rakyll/openai-go v1.0.9
 	github.com/supabase/postgrest-go v0.0.7
-	github.com/tmc/langchaingo v0.0.0-20230723211647-311c3ee65e1e
+	github.com/tmc/langchaingo v0.0.0-20230802030916-271e9bd7e7c5
 )
 
 require (
@@ -39,7 +39,6 @@ require (
 	github.com/googleapis/gax-go/v2 v2.8.0 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/julienschmidt/httprouter v1.3.0 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.4 // indirect
 	github.com/leodido/go-urn v1.2.4 // indirect
 	github.com/mattn/go-isatty v0.0.19 // indirect
@@ -49,6 +48,7 @@ require (
 	github.com/pelletier/go-toml/v2 v2.0.8 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pkoukk/tiktoken-go v0.1.2 // indirect
+	github.com/rs/cors v1.9.0 // indirect
 	github.com/sashabaranov/go-openai v1.14.1 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.2.11 // indirect
