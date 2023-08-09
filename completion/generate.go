@@ -132,7 +132,7 @@ func Generate(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	user_id := r.Context().Value("user_id").(string)
 
 	if len(r.Header["Content-Type"]) == 0 || r.Header["Content-Type"][0] != "application/json" {
-		http.Error(w, "400 bad request", http.StatusBadRequest)
+		utils.RespondError(w, "invalid_content_type")
 		return
 	}
 
@@ -140,7 +140,7 @@ func Generate(w http.ResponseWriter, r *http.Request, _ router.Params) {
 
 	err := json.NewDecoder(r.Body).Decode(&input)
 	if err != nil {
-		http.Error(w, "400 bad request", http.StatusBadRequest)
+		utils.RespondError(w, "invalid_json")
 		return
 	}
 
@@ -149,11 +149,11 @@ func Generate(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	if err != nil {
 		switch err {
 		case NotFound:
-			http.Error(w, "404 NotFound", http.StatusNotFound)
+			utils.RespondError(w, "not_found")
 		case UnknownModelProvider:
-			http.Error(w, "400 Bad Request", http.StatusBadRequest)
+			utils.RespondError(w, "invalid_model_provider")
 		default:
-			http.Error(w, "500 Internal server error", http.StatusInternalServerError)
+			utils.RespondError(w, "internal_error")
 		}
 		return
 	}
@@ -174,11 +174,6 @@ func Generate(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	}
 
 	w.Header()["Content-Type"] = []string{"application/json"}
-
-	if err != nil {
-		http.Error(w, "500 Internal server error", http.StatusInternalServerError)
-		return
-	}
 
 	json.NewEncoder(w).Encode(result)
 }

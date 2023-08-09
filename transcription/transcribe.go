@@ -4,13 +4,13 @@ import (
 	"bufio"
 	"encoding/json"
 	"io"
-	"log"
 	"mime"
 	"mime/multipart"
 	"net/http"
 
 	router "github.com/julienschmidt/httprouter"
 	stt "github.com/polyfact/api/stt"
+	"github.com/polyfact/api/utils"
 )
 
 func Transcribe(w http.ResponseWriter, r *http.Request, _ router.Params) {
@@ -19,11 +19,11 @@ func Transcribe(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	reader := multipart.NewReader(r.Body, boundary)
 	part, err := reader.NextPart()
 	if err == io.EOF {
-		http.Error(w, "400 Bad Request", http.StatusBadRequest)
+		utils.RespondError(w, "missing_content")
 		return
 	}
 	if err != nil {
-		http.Error(w, "500 Internal server error", http.StatusInternalServerError)
+		utils.RespondError(w, "read_error")
 		return
 	}
 	file_buf_reader := bufio.NewReader(part)
@@ -31,8 +31,7 @@ func Transcribe(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	// The format doesn't seem to really matter
 	res, err := stt.Transcribe(file_buf_reader, "mp3")
 	if err != nil {
-		log.Printf("%w", err)
-		http.Error(w, "500 Internal server error", http.StatusInternalServerError)
+		utils.RespondError(w, "transcription_error")
 		return
 	}
 
