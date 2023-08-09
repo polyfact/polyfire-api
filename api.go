@@ -13,6 +13,7 @@ import (
 	kv "github.com/polyfact/api/kv"
 	memory "github.com/polyfact/api/memory"
 	middlewares "github.com/polyfact/api/middlewares"
+	"github.com/polyfact/api/prompt"
 	transcription "github.com/polyfact/api/transcription"
 )
 
@@ -36,6 +37,14 @@ func main() {
 	router.GET("/kv", middlewares.Auth(kv.Get))
 	router.PUT("/kv", middlewares.Auth(kv.Set))
 	router.GET("/stream", middlewares.AuthStream(completion.Stream))
+
+	// Prompt Routes
+	router.GET("/prompt/name/:name", middlewares.Auth(prompt.GetPromptByName))
+	router.GET("/prompt/id/:id", middlewares.Auth(prompt.GetPromptById))
+	router.GET("/prompts", middlewares.Auth(prompt.GetAllPrompts))
+	router.POST("/prompt", middlewares.Auth(prompt.CreatePrompt))
+	router.PUT("/prompt/:id", middlewares.Auth(prompt.UpdatePrompt))
+	router.DELETE("/prompt/:id", middlewares.Auth(prompt.DeletePrompt))
 
 	handler := cors.AllowAll().Handler(router)
 
