@@ -2,7 +2,6 @@ package memory
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -12,6 +11,7 @@ import (
 
 	db "github.com/polyfact/api/db"
 	"github.com/polyfact/api/llm"
+	"github.com/polyfact/api/utils"
 )
 
 const BatchSize int = 512
@@ -22,7 +22,7 @@ func Create(w http.ResponseWriter, r *http.Request, _ router.Params) {
 
 	err := db.CreateMemory(memoryId, userId)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("500 Internal Server Error: %v", err), http.StatusInternalServerError)
+		utils.RespondError(w, "db_creation_error")
 		return
 	}
 
@@ -44,12 +44,7 @@ func Add(w http.ResponseWriter, r *http.Request, _ router.Params) {
 
 	err := decoder.Decode(&requestBody)
 	if err != nil {
-		http.Error(w, "400 Bad Request", http.StatusBadRequest)
-		return
-	}
-
-	if err != nil {
-		http.Error(w, fmt.Sprintf("500 Internal Server Error: %v", err), http.StatusInternalServerError)
+		utils.RespondError(w, "decode_error")
 		return
 	}
 
@@ -63,7 +58,7 @@ func Add(w http.ResponseWriter, r *http.Request, _ router.Params) {
 
 	chunks, err := splitter.SplitText(requestBody.Input)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("500 Internal Server Error: %v", err), http.StatusInternalServerError)
+		utils.RespondError(w, "splitting_error")
 		return
 	}
 
@@ -74,14 +69,14 @@ func Add(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	for _, chunk := range chunks {
 		embedding, err := llm.Embed(chunk, &callback)
 		if err != nil {
-			http.Error(w, fmt.Sprintf("500 Internal Server Error: %v", err), http.StatusInternalServerError)
+			utils.RespondError(w, "embedding_error")
 			return
 		}
 
 		err = db.AddMemory(userId, requestBody.ID, chunk, embedding[0])
 
 		if err != nil {
-			http.Error(w, fmt.Sprintf("500 Internal Server Error: %v", err), http.StatusInternalServerError)
+			utils.RespondError(w, "db_insert_error")
 			return
 		}
 	}
@@ -99,13 +94,13 @@ type memoryRecord struct {
 func Get(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	userId, ok := r.Context().Value("user_id").(string)
 	if !ok {
-		http.Error(w, "User ID not found in context", http.StatusBadRequest)
+		utils.RespondError(w, "user_id_error")
 		return
 	}
 
 	results, err := db.GetMemoryIds(userId)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("500 Internal Server Error: %v", err), http.StatusInternalServerError)
+		utils.RespondError(w, "retrieval_error")
 		return
 	}
 

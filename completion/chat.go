@@ -2,10 +2,12 @@ package completion
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	router "github.com/julienschmidt/httprouter"
 	db "github.com/polyfact/api/db"
+	utils "github.com/polyfact/api/utils"
 )
 
 func FormatPrompt(systemPrompt string, chatHistory []db.ChatMessage, userPrompt string) string {
@@ -32,17 +34,20 @@ func CreateChat(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	}
 
 	decoder := json.NewDecoder(r.Body)
-
-	decoder.Decode(&requestBody)
+	if err := decoder.Decode(&requestBody); err != nil {
+		utils.RespondError(w, "decode_error")
+		return
+	}
 
 	if r.Method != "POST" {
-		http.Error(w, "405 method not allowed", http.StatusMethodNotAllowed)
+		utils.RespondError(w, "only_post_method_allowed")
 		return
 	}
 
 	chat, err := db.CreateChat(user_id, requestBody.SystemPrompt)
 	if err != nil {
-		http.Error(w, "500 Internal server error", http.StatusInternalServerError)
+		log.Printf("Error creating chat for user %s with system prompt %v: %v", user_id, requestBody.SystemPrompt, err)
+		utils.RespondError(w, "error_create_chat")
 		return
 	}
 
@@ -55,7 +60,7 @@ func GetChatHistory(w http.ResponseWriter, r *http.Request, ps router.Params) {
 
 	messages, err := db.GetChatMessages(user_id, id)
 	if err != nil {
-		http.Error(w, "500 Internal server error", http.StatusInternalServerError)
+		utils.RespondError(w, "error_chat_history")
 		return
 	}
 
