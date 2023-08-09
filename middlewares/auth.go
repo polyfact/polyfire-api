@@ -8,6 +8,7 @@ import (
 
 	jwt "github.com/golang-jwt/jwt/v5"
 	router "github.com/julienschmidt/httprouter"
+	"github.com/polyfact/api/utils"
 )
 
 func parseJWT(token string) (jwt.MapClaims, error) {
@@ -19,12 +20,12 @@ func parseJWT(token string) (jwt.MapClaims, error) {
 	})
 
 	if err != nil {
-		return nil, fmt.Errorf("403 forbidden: Invalid token")
+		return nil, fmt.Errorf("Invalid token")
 	}
 
 	claims, ok := parsedToken.Claims.(jwt.MapClaims)
 	if !ok || !parsedToken.Valid {
-		return nil, fmt.Errorf("403 forbidden: Invalid token claims")
+		return nil, fmt.Errorf("Invalid token claims")
 	}
 
 	return claims, nil
@@ -36,19 +37,19 @@ func createContextWithUserID(r *http.Request, userID string) context.Context {
 
 func authenticateAndHandle(w http.ResponseWriter, r *http.Request, params router.Params, token string, handler func(http.ResponseWriter, *http.Request, router.Params)) {
 	if token == "" {
-		http.Error(w, "403 forbidden: No token provided", http.StatusForbidden)
+		utils.RespondError(w, "no_token")
 		return
 	}
 
 	claims, err := parseJWT(token)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusForbidden)
+		utils.RespondError(w, "invalid_token")
 		return
 	}
 
 	userID, ok := claims["user_id"].(string)
 	if !ok {
-		http.Error(w, "403 forbidden: User ID not found in token claims", http.StatusForbidden)
+		utils.RespondError(w, "missing_user_id")
 		return
 	}
 

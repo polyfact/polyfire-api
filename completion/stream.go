@@ -7,6 +7,7 @@ import (
 	"github.com/gorilla/websocket"
 	router "github.com/julienschmidt/httprouter"
 	providers "github.com/polyfact/api/llm/providers"
+	utils "github.com/polyfact/api/utils"
 )
 
 var upgrader = websocket.Upgrader{
@@ -32,19 +33,19 @@ func Stream(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 
 	if err != nil {
-		http.Error(w, "400 Communication Error", http.StatusBadRequest)
+		utils.RespondError(w, "communication_error")
 		return
 	}
 	defer conn.Close()
 
 	messageType, p, err := conn.ReadMessage()
 	if err != nil {
-		http.Error(w, "400 Bad Request", http.StatusBadRequest)
+		utils.RespondError(w, "read_message_error")
 		return
 	}
 
 	if messageType != websocket.TextMessage {
-		http.Error(w, "400 Bad Request", http.StatusBadRequest)
+		utils.RespondError(w, "invalid_message_type")
 		return
 	}
 
@@ -52,7 +53,7 @@ func Stream(w http.ResponseWriter, r *http.Request, _ router.Params) {
 
 	err = json.Unmarshal(p, &input)
 	if err != nil {
-		http.Error(w, "400 Bad Request", http.StatusBadRequest)
+		utils.RespondError(w, "invalid_json")
 		return
 	}
 
@@ -61,11 +62,11 @@ func Stream(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	if err != nil {
 		switch err {
 		case NotFound:
-			http.Error(w, "404 NotFound", http.StatusNotFound)
+			utils.RespondError(w, "not_found_error")
 		case UnknownModelProvider:
-			http.Error(w, "400 Bad Request", http.StatusBadRequest)
+			utils.RespondError(w, "unknown_model_provider")
 		default:
-			http.Error(w, "500 Internal server error", http.StatusInternalServerError)
+			utils.RespondError(w, "generation_error")
 		}
 		return
 	}
@@ -87,7 +88,7 @@ func Stream(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		if v.Result != "" {
 			err = conn.WriteMessage(websocket.TextMessage, []byte(v.Result))
 			if err != nil {
-				http.Error(w, "500 Internal server error", http.StatusInternalServerError)
+				utils.RespondError(w, "write_message_error")
 				return
 			}
 		}
@@ -101,14 +102,14 @@ func Stream(w http.ResponseWriter, r *http.Request, _ router.Params) {
 
 		err = conn.WriteMessage(websocket.TextMessage, byteMessage)
 		if err != nil {
-			http.Error(w, "500 Internal server error", http.StatusInternalServerError)
+			utils.RespondError(w, "write_info_error")
 			return
 		}
 	}
 
 	err = conn.WriteMessage(websocket.TextMessage, []byte(""))
 	if err != nil {
-		http.Error(w, "500 Internal server error", http.StatusInternalServerError)
+		utils.RespondError(w, "write_end_message_error")
 		return
 	}
 }
