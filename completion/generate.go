@@ -14,13 +14,15 @@ import (
 )
 
 type GenerateRequestBody struct {
-	Task     string    `json:"task"`
-	Provider string    `json:"provider,omitempty"`
-	MemoryId *string   `json:"memory_id,omitempty"`
-	ChatId   *string   `json:"chat_id,omitempty"`
-	Stop     *[]string `json:"stop,omitempty"`
-	Stream   bool      `json:"stream,omitempty"`
-	Infos    bool      `json:"infos,omitempty"`
+	Task         string    `json:"task"`
+	Provider     string    `json:"provider,omitempty"`
+	MemoryId     *string   `json:"memory_id,omitempty"`
+	ChatId       *string   `json:"chat_id,omitempty"`
+	Stop         *[]string `json:"stop,omitempty"`
+	Stream       bool      `json:"stream,omitempty"`
+	Infos        bool      `json:"infos,omitempty"`
+	PromptId     *string   `json:"prompt_id,omitempty"`
+	SystemPrompt *string   `json:"system_prompt,omitempty"`
 }
 
 var (
@@ -67,6 +69,16 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 	if err != nil {
 		return nil, InternalServerError
 	}
+	var system_prompt string = ""
+
+	if input.PromptId != nil {
+		p, err := db.GetPromptById(*input.PromptId)
+		db.UpdatePrompt(*input.PromptId, db.PromptUpdate{Use: p.Use + 1})
+		if err != nil {
+			return nil, NotFound
+		}
+		system_prompt = p.Prompt
+	}
 
 	if input.ChatId != nil && len(*input.ChatId) > 0 {
 		chat, err := db.GetChatById(*input.ChatId)
@@ -85,10 +97,7 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 
 		chatHistory := utils.CutChatHistory(allHistory, 1000)
 
-		var system_prompt string
-		if chat.SystemPrompt == nil {
-			system_prompt = ""
-		} else {
+		if chat.SystemPrompt != nil {
 			system_prompt = *(chat.SystemPrompt)
 		}
 
@@ -116,7 +125,13 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 		}()
 
 	} else {
-		prompt := context_completion + input.Task
+
+		// Warning: Check if there is a better way to do this to avoid useless parameter:
+		if input.PromptId == nil && input.SystemPrompt != nil {
+			system_prompt = *(input.SystemPrompt)
+		}
+
+		prompt := context_completion + "\n" + system_prompt + "\n" + input.Task
 
 		if input.Stop != nil {
 			result = provider.Generate(prompt, &callback, &providers.ProviderOptions{StopWords: input.Stop})
@@ -171,11 +186,11 @@ func Generate(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		if len(v.Ressources) > 0 {
 			result.Ressources = v.Ressources
 		}
-
-		
 	}
 
 	w.Header()["Content-Type"] = []string{"application/json"}
 
 	json.NewEncoder(w).Encode(result)
 }
+
+

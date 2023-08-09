@@ -42,6 +42,13 @@ var ErrorMessages = map[string]APIError{
 	"db_insert_error":   {Code: "db_addition_error", Message: "Failed to add memory to the database.", StatusCode: http.StatusInternalServerError},
 	"retrieval_error":   {Code: "retrieval_error", Message: "Failed to retrieve memory IDs from the database.", StatusCode: http.StatusInternalServerError},
 
+	// Prompt Errors
+	"decode_prompt_error":    {Code: "decode_prompt_error", Message: "Failed to decode the prompt data.", StatusCode: http.StatusInternalServerError},
+	"db_fetch_prompt_error":  {Code: "db_fetch_prompt_error", Message: "Failed to fetch prompt from the database.", StatusCode: http.StatusNotFound},
+	"db_insert_prompt_error": {Code: "db_insert_prompt_error", Message: "Failed to insert prompt into the database.", StatusCode: http.StatusBadRequest},
+	"db_update_prompt_error": {Code: "db_update_prompt_error", Message: "Failed to update the prompt in the database.", StatusCode: http.StatusBadRequest},
+	"db_delete_prompt_error": {Code: "db_delete_prompt_error", Message: "Failed to delete the prompt from the database.", StatusCode: http.StatusBadRequest},
+
 	// Embedding Errors
 	"embedding_error": {Code: "embedding_error", Message: "Failed to process the embedding.", StatusCode: http.StatusInternalServerError},
 
