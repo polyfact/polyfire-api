@@ -6,6 +6,7 @@ import (
 
 	router "github.com/julienschmidt/httprouter"
 	db "github.com/polyfact/api/db"
+	"github.com/polyfact/api/utils"
 )
 
 func Get(w http.ResponseWriter, r *http.Request, _ router.Params) {
@@ -14,14 +15,14 @@ func Get(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	id := r.URL.Query().Get("key")
 
 	if id == "" {
-		http.Error(w, "Missing id", http.StatusBadRequest)
+		utils.RespondError(w, "missing_id")
 		return
 	}
 
 	store, _ := db.GetKV(user_id, id)
 
 	if store == nil || store.Value == "" {
-		http.Error(w, "", http.StatusNotFound)
+		utils.RespondError(w, "data_not_found")
 		return
 	}
 
@@ -38,13 +39,13 @@ func Set(w http.ResponseWriter, r *http.Request, _ router.Params) {
 
 	err := json.NewDecoder(r.Body).Decode(&data)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		utils.RespondError(w, "decode_error")
 		return
 	}
 
 	err = db.SetKV(user_id, data.Key, data.Value)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.RespondError(w, "database_error")
 		return
 	}
 

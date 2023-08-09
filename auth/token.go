@@ -11,6 +11,7 @@ import (
 	router "github.com/julienschmidt/httprouter"
 	supa "github.com/nedpals/supabase-go"
 	db "github.com/polyfact/api/db"
+	"github.com/polyfact/api/utils"
 )
 
 type ProjectUser struct {
@@ -128,13 +129,13 @@ func TokenExchangeHandler(w http.ResponseWriter, r *http.Request, ps router.Para
 	project_id := ps.ByName("id")
 
 	if len(r.Header["Authorization"]) == 0 {
-		http.Error(w, "403 forbidden", http.StatusForbidden)
+		utils.RespondError(w, "missing_authorization")
 		return
 	}
 
 	auth_header := strings.Split(r.Header["Authorization"][0], " ")
 	if len(auth_header) != 2 {
-		http.Error(w, "403 forbidden", http.StatusForbidden)
+		utils.RespondError(w, "invalid_authorization_format")
 		return
 	}
 
@@ -142,23 +143,23 @@ func TokenExchangeHandler(w http.ResponseWriter, r *http.Request, ps router.Para
 
 	user_id, err := GetUserIdFromTokenProject(token, project_id)
 	if err != nil {
-		http.Error(w, "403 forbidden", http.StatusForbidden)
+		utils.RespondError(w, "token_exchange_failed")
 		return
 	}
 
 	if user_id == nil {
 		project, err := GetProjectByID(project_id)
 		if err != nil {
-			http.Error(w, "500 Internal Server Error", http.StatusInternalServerError)
+			utils.RespondError(w, "project_retrieval_error")
 			return
 		}
 		if project.FreeUserInit == false {
-			http.Error(w, "403 forbidden", http.StatusForbidden)
+			utils.RespondError(w, "free_user_init_disabled")
 			return
 		}
 		user_id, err = CreateProjectUser(token, project_id)
 		if err != nil {
-			http.Error(w, "500 Internal Server Error", http.StatusInternalServerError)
+			utils.RespondError(w, "project_user_creation_failed")
 			return
 		}
 	}
@@ -168,9 +169,10 @@ func TokenExchangeHandler(w http.ResponseWriter, r *http.Request, ps router.Para
 	})
 
 	user_token, err := unsigned_user_token.SignedString([]byte(os.Getenv("JWT_SECRET")))
+
 	if err != nil {
 		fmt.Println(err)
-		http.Error(w, "500 Internal Server Error", http.StatusInternalServerError)
+		utils.RespondError(w, "token_signature_error")
 		return
 	}
 
