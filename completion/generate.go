@@ -171,6 +171,8 @@ func Generate(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		if len(v.Ressources) > 0 {
 			result.Ressources = v.Ressources
 		}
+
+		
 	}
 
 	w.Header()["Content-Type"] = []string{"application/json"}
