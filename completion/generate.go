@@ -166,7 +166,7 @@ func Generate(w http.ResponseWriter, r *http.Request, _ router.Params) {
 
 	for v := range *res_chan {
 		result.Result += v.Result
-		result.TokenUsage.Input += v.TokenUsage.Input
+		result.TokenUsage.Input = v.TokenUsage.Input
 		result.TokenUsage.Output += v.TokenUsage.Output
 
 		if len(v.Ressources) > 0 {
