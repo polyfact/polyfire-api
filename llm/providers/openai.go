@@ -53,6 +53,8 @@ func (m OpenAIStreamProvider) Generate(task string, c *func(string, int, int), o
 
 			tokenUsage.Input += llms.CountTokens("gpt-3.5-turbo", task)
 
+			totalOutput := 0
+
 			for {
 				completion, err := stream.Recv()
 
@@ -61,6 +63,7 @@ func (m OpenAIStreamProvider) Generate(task string, c *func(string, int, int), o
 				}
 
 				tokenUsage.Output = llms.CountTokens("gpt-3.5-turbo", completion.Choices[0].Delta.Content)
+				totalOutput += tokenUsage.Output
 
 				result := Result{Result: completion.Choices[0].Delta.Content, TokenUsage: tokenUsage}
 
@@ -68,7 +71,7 @@ func (m OpenAIStreamProvider) Generate(task string, c *func(string, int, int), o
 			}
 
 			if c != nil {
-				(*c)(os.Getenv("OPENAI_MODEL"), tokenUsage.Input, tokenUsage.Output)
+				(*c)("openai_gpt-3.5-turbo", tokenUsage.Input, totalOutput)
 			}
 			return
 		}
