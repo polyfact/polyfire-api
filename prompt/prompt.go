@@ -3,6 +3,7 @@ package prompt
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/polyfact/api/db"
@@ -30,7 +31,39 @@ func GetPromptByName(w http.ResponseWriter, r *http.Request, ps httprouter.Param
 }
 
 func GetAllPrompts(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	result, err := db.GetAllPrompts()
+	queryParams := r.URL.Query()
+
+	var filters db.SupabaseFilters
+
+	for key, values := range queryParams {
+		splitted := strings.Split(key, "_")
+		if len(splitted) != 2 {
+			errorMessage := key + " is not a valid filter format"
+			utils.RespondError(w, "invalid_filter_format", errorMessage)
+			return
+		}
+
+		column := splitted[0]
+		operationStr := splitted[1]
+
+		operation, err := db.StringToFilterOperation(operationStr)
+		if err != nil {
+			errorMessage := operationStr + " is not a valid filter operation"
+			utils.RespondError(w, "invalid_filter_operation", errorMessage)
+			return
+		}
+
+		filter := db.SupabaseFilter{
+			Column:    column,
+			Value:     values[0],
+			Operation: operation,
+		}
+
+		filters = append(filters, filter)
+	}
+
+
+	result, err := db.GetAllPrompts(filters)
 	if err != nil {
 		utils.RespondError(w, "db_fetch_prompt_error")
 		return

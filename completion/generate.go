@@ -192,5 +192,3 @@ func Generate(w http.ResponseWriter, r *http.Request, _ router.Params) {
 
 	json.NewEncoder(w).Encode(result)
 }
-
-

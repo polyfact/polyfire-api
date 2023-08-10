@@ -43,12 +43,12 @@ var ErrorMessages = map[string]APIError{
 	"retrieval_error":   {Code: "retrieval_error", Message: "Failed to retrieve memory IDs from the database.", StatusCode: http.StatusInternalServerError},
 
 	// Prompt Errors
-	"decode_prompt_error":    {Code: "decode_prompt_error", Message: "Failed to decode the prompt data.", StatusCode: http.StatusInternalServerError},
-	"db_fetch_prompt_error":  {Code: "db_fetch_prompt_error", Message: "Failed to fetch prompt from the database.", StatusCode: http.StatusNotFound},
-	"db_insert_prompt_error": {Code: "db_insert_prompt_error", Message: "Failed to insert prompt into the database.", StatusCode: http.StatusBadRequest},
-	"db_update_prompt_error": {Code: "db_update_prompt_error", Message: "Failed to update the prompt in the database.", StatusCode: http.StatusBadRequest},
-	"db_delete_prompt_error": {Code: "db_delete_prompt_error", Message: "Failed to delete the prompt from the database.", StatusCode: http.StatusBadRequest},
-
+	"decode_prompt_error":      {Code: "decode_prompt_error", Message: "Failed to decode the prompt data.", StatusCode: http.StatusInternalServerError},
+	"db_fetch_prompt_error":    {Code: "db_fetch_prompt_error", Message: "Failed to fetch prompt from the database.", StatusCode: http.StatusNotFound},
+	"db_insert_prompt_error":   {Code: "db_insert_prompt_error", Message: "Failed to insert prompt into the database.", StatusCode: http.StatusBadRequest},
+	"db_update_prompt_error":   {Code: "db_update_prompt_error", Message: "Failed to update the prompt in the database.", StatusCode: http.StatusBadRequest},
+	"db_delete_prompt_error":   {Code: "db_delete_prompt_error", Message: "Failed to delete the prompt from the database.", StatusCode: http.StatusBadRequest},
+	"invalid_filter_operation": {Code: "invalid_filter_operation", Message: "Invalid filter operation.", StatusCode: http.StatusBadRequest},
 	// Embedding Errors
 	"embedding_error": {Code: "embedding_error", Message: "Failed to process the embedding.", StatusCode: http.StatusInternalServerError},
 
@@ -78,11 +78,15 @@ var ErrorMessages = map[string]APIError{
 	"unknown_error": {Code: "unknown_error", Message: "An unknown error occurred.", StatusCode: http.StatusInternalServerError},
 }
 
-func RespondError(w http.ResponseWriter, errorCode string) {
+func RespondError(w http.ResponseWriter, errorCode string, message ...string) {
 	apiError, exists := ErrorMessages[errorCode]
 
 	if !exists {
 		apiError = ErrorMessages["unknown_error"]
+	}
+
+	if len(message) > 0 {
+		apiError.Message = message[0]
 	}
 
 	w.Header().Set("Content-Type", "application/json")
