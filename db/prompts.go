@@ -3,6 +3,8 @@ package db
 import (
 	"fmt"
 	"time"
+
+	"github.com/lib/pq"
 )
 
 type Prompt struct {
@@ -106,7 +108,8 @@ func GetAllPrompts(filters SupabaseFilters) ([]Prompt, error) {
 	query := client.From("prompts").Select("*", "exact", false)
 
 	for _, filter := range filters {
-		value := filter.Value
+		 value := pq.QuoteLiteral(filter.Value)
+		 
 		if filter.Operation == Cs {
 			value = "{" + value + "}"
 		}

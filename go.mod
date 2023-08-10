@@ -19,6 +19,7 @@ require (
 	github.com/cohere-ai/tokenizer v1.1.2 // indirect
 	github.com/dlclark/regexp2 v1.8.1 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
+	github.com/lib/pq v1.10.9 // indirect
 	github.com/nedpals/postgrest-go v0.1.3 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pkoukk/tiktoken-go v0.1.2 // indirect
