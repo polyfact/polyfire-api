@@ -11,6 +11,7 @@ import (
 	router "github.com/julienschmidt/httprouter"
 	supa "github.com/nedpals/supabase-go"
 	db "github.com/polyfact/api/db"
+	posthog "github.com/polyfact/api/posthog"
 	"github.com/polyfact/api/utils"
 )
 
@@ -32,7 +33,7 @@ type Project struct {
 	FreeUserInit bool   `json:"free_user_init"`
 }
 
-func GetAuthIdFromToken(token string) (string, error) {
+func GetAuthIdFromToken(token string) (string, string, error) {
 	supabaseUrl := os.Getenv("SUPABASE_URL")
 	supabaseKey := os.Getenv("SUPABASE_KEY")
 
@@ -44,14 +45,14 @@ func GetAuthIdFromToken(token string) (string, error) {
 		token,
 	)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
-	return user.ID, nil
+	return user.ID, user.Email, nil
 }
 
 func GetUserIdFromTokenProject(token string, project string) (*string, error) {
-	auth_id, err := GetAuthIdFromToken(token)
+	auth_id, email, err := GetAuthIdFromToken(token)
 	if err != nil {
 		return nil, err
 	}
@@ -77,6 +78,8 @@ func GetUserIdFromTokenProject(token string, project string) (*string, error) {
 		return nil, nil
 	}
 
+	posthog.IdentifyUser(auth_id, results[0].ID, email)
+
 	return &results[0].ID, nil
 }
 
@@ -101,7 +104,7 @@ func GetProjectByID(id string) (*Project, error) {
 }
 
 func CreateProjectUser(token string, project_id string) (*string, error) {
-	auth_id, err := GetAuthIdFromToken(token)
+	auth_id, email, err := GetAuthIdFromToken(token)
 	if err != nil {
 		return nil, err
 	}
@@ -121,6 +124,8 @@ func CreateProjectUser(token string, project_id string) (*string, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	posthog.IdentifyUser(auth_id, result.ID, email)
 
 	return &result.ID, nil
 }
@@ -169,7 +174,6 @@ func TokenExchangeHandler(w http.ResponseWriter, r *http.Request, ps router.Para
 	})
 
 	user_token, err := unsigned_user_token.SignedString([]byte(os.Getenv("JWT_SECRET")))
-
 	if err != nil {
 		fmt.Println(err)
 		utils.RespondError(w, "token_signature_error")

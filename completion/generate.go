@@ -10,6 +10,7 @@ import (
 	llm "github.com/polyfact/api/llm"
 	providers "github.com/polyfact/api/llm/providers"
 	memory "github.com/polyfact/api/memory"
+	posthog "github.com/polyfact/api/posthog"
 	utils "github.com/polyfact/api/utils"
 )
 
@@ -53,6 +54,7 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 
 	callback := func(model_name string, input_count int, output_count int) {
 		db.LogRequests(user_id, model_name, input_count, output_count, "completion")
+		posthog.GenerateEvent(user_id, model_name, input_count, output_count)
 	}
 
 	if input.Provider == "" {
@@ -145,7 +147,6 @@ func Generate(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	}
 
 	res_chan, err := GenerationStart(user_id, input)
-
 	if err != nil {
 		switch err {
 		case NotFound:
