@@ -2,21 +2,12 @@ package prompt
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/polyfact/api/db"
 	"github.com/polyfact/api/utils"
 )
-
-func respondWithJSONOrEmptyObject(w http.ResponseWriter, data interface{}) {
-	if data == nil {
-		json.NewEncoder(w).Encode(map[string]interface{}{})
-		return
-	}
-	json.NewEncoder(w).Encode(data)
-}
 
 func GetPromptById(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	id := ps.ByName("id")
@@ -25,18 +16,17 @@ func GetPromptById(w http.ResponseWriter, r *http.Request, ps httprouter.Params)
 		utils.RespondError(w, "db_fetch_prompt_error")
 		return
 	}
-	respondWithJSONOrEmptyObject(w, result)
+	json.NewEncoder(w).Encode(result)
 }
 
 func GetPromptByName(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	name := ps.ByName("name")
 	result, err := db.GetPromptByName(name)
-	log.Println(result, err)
 	if err != nil {
 		utils.RespondError(w, "db_fetch_prompt_error")
 		return
 	}
-	respondWithJSONOrEmptyObject(w, result)
+	json.NewEncoder(w).Encode(result)
 }
 
 func GetAllPrompts(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -45,7 +35,7 @@ func GetAllPrompts(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 		utils.RespondError(w, "db_fetch_prompt_error")
 		return
 	}
-	respondWithJSONOrEmptyObject(w, result)
+	json.NewEncoder(w).Encode(result)
 }
 
 func CreatePrompt(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -60,7 +50,7 @@ func CreatePrompt(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		utils.RespondError(w, "db_insert_prompt_error")
 		return
 	}
-	respondWithJSONOrEmptyObject(w, result)
+	json.NewEncoder(w).Encode(result)
 }
 
 func UpdatePrompt(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -76,7 +66,7 @@ func UpdatePrompt(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 		utils.RespondError(w, "db_update_prompt_error")
 		return
 	}
-	respondWithJSONOrEmptyObject(w, result)
+	json.NewEncoder(w).Encode(result)
 }
 
 func DeletePrompt(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
