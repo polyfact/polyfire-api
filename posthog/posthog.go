@@ -41,8 +41,6 @@ func getProjectForUserId(user_id string) (*string, error) {
 }
 
 func IdentifyUser(auth_id string, user_id string, email string) {
-	fmt.Printf("[Event] Identify { \"distinctId\": \"%v\", \"email\": \"%v\" }\n", auth_id, email)
-	fmt.Printf("[Event] Alias { \"distinctId\": \"%v\", \"alias\": \"%v\" }\n", auth_id, user_id)
 	if POSTHOG_API_KEY == "" {
 		return
 	}
@@ -55,7 +53,6 @@ func IdentifyUser(auth_id string, user_id string, email string) {
 		Properties: posthog.NewProperties().Set("email", email),
 	})
 
-	fmt.Printf("%v\n", err)
 
 	client.Enqueue(posthog.Alias{
 		DistinctId: auth_id,
@@ -71,14 +68,6 @@ func GenerateEvent(distinctId string, model string, tokenUsageInput int, tokenUs
 		projectId = *pId
 	}
 
-	fmt.Printf(
-		"[Event] Event Generation { \"distinctId\": \"%v\", \"projectId\": \"%v\", \"model\": \"%v\", \"tokenUsageInput\": %v, \"tokenUsageOutput\": %v }\n",
-		distinctId,
-		projectId,
-		model,
-		tokenUsageInput,
-		tokenUsageOutput,
-	)
 	if POSTHOG_API_KEY == "" {
 		return
 	}
