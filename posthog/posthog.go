@@ -86,7 +86,7 @@ func GenerateEvent(distinctId string, model string, tokenUsageInput int, tokenUs
 	client := posthog.New(POSTHOG_API_KEY)
 	defer client.Close()
 
-	err := client.Enqueue(posthog.Capture{
+	client.Enqueue(posthog.Capture{
 		DistinctId: distinctId,
 		Event:      "Generation",
 		Properties: posthog.NewProperties().
