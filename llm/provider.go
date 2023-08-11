@@ -26,7 +26,7 @@ func NewProvider(model string) (Provider, error) {
 		if err != nil {
 			return nil, err
 		}
-		return providers.LangchainProvider{Model: llm}, nil
+		return providers.LangchainProvider{Model: llm, ModelName: "cohere_command"}, nil
 	case "llama":
 		fmt.Println("Using LLama")
 		return providers.LLaMaProvider{}, nil

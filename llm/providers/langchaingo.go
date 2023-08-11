@@ -5,14 +5,14 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"os"
 
 	"github.com/tmc/langchaingo/llms"
 	"github.com/tmc/langchaingo/schema"
 )
 
 type LangchainProvider struct {
-	Model interface{ GetNumTokens(string) int }
+	Model     interface{ GetNumTokens(string) int }
+	ModelName string
 }
 
 func (m LangchainProvider) Call(prompt string, opts *ProviderOptions) (string, error) {
@@ -70,7 +70,7 @@ func (m LangchainProvider) Generate(
 			}
 
 			if c != nil {
-				(*c)(os.Getenv("OPENAI_MODEL"), m.Model.GetNumTokens(input_prompt), m.Model.GetNumTokens(completion))
+				(*c)(m.ModelName, m.Model.GetNumTokens(input_prompt), m.Model.GetNumTokens(completion))
 			}
 
 			tokenUsage.Input += m.Model.GetNumTokens(input_prompt)
