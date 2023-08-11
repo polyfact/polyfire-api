@@ -3,8 +3,6 @@ package db
 import (
 	"fmt"
 	"time"
-
-	"github.com/lib/pq"
 )
 
 type Prompt struct {
@@ -107,6 +105,7 @@ var AllowedColumns = map[string]bool{
 
 func GetAllPrompts(filters SupabaseFilters) ([]Prompt, error) {
 	client, err := CreateClient()
+
 	if err != nil {
 		return nil, err
 	}
@@ -114,7 +113,7 @@ func GetAllPrompts(filters SupabaseFilters) ([]Prompt, error) {
 	query := client.From("prompts").Select("*", "exact", false)
 
 	for _, filter := range filters {
-		columnFilter := pq.QuoteLiteral(filter.Column)
+		columnFilter := filter.Column
 		if !AllowedColumns[columnFilter] {
 			return nil, fmt.Errorf("invalid_column")
 		}

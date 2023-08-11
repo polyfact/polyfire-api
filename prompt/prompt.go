@@ -14,7 +14,7 @@ func GetPromptById(w http.ResponseWriter, r *http.Request, ps httprouter.Params)
 	id := ps.ByName("id")
 	result, err := db.GetPromptById(id)
 	if err != nil {
-		utils.RespondError(w, "db_fetch_prompt_error")
+		utils.RespondError(w, "db_fetch_prompt_error", err.Error())
 		return
 	}
 	json.NewEncoder(w).Encode(result)
@@ -24,7 +24,7 @@ func GetPromptByName(w http.ResponseWriter, r *http.Request, ps httprouter.Param
 	name := ps.ByName("name")
 	result, err := db.GetPromptByName(name)
 	if err != nil {
-		utils.RespondError(w, "db_fetch_prompt_error")
+		utils.RespondError(w, "db_fetch_prompt_error", err.Error())
 		return
 	}
 	json.NewEncoder(w).Encode(result)
@@ -48,8 +48,7 @@ func GetAllPrompts(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 
 		operation, err := db.StringToFilterOperation(operationStr)
 		if err != nil {
-			errorMessage := operationStr + " is not a valid filter operation"
-			utils.RespondError(w, "invalid_filter_operation", errorMessage)
+			utils.RespondError(w, "invalid_filter_operation", err.Error())
 			return
 		}
 
@@ -63,16 +62,17 @@ func GetAllPrompts(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 	}
 
 	result, err := db.GetAllPrompts(filters)
+
 	if err != nil {
 		switch err.Error() {
 		case "invalid_column":
-			utils.RespondError(w, "invalid_column")
+			utils.RespondError(w, "invalid_column", err.Error())
 			return
 		case "invalid_operation":
-			utils.RespondError(w, "invalid_length_value")
+			utils.RespondError(w, "invalid_length_value", err.Error())
 			return
 		default:
-			utils.RespondError(w, "db_fetch_prompt_error")
+			utils.RespondError(w, "db_fetch_prompt_error", err.Error())
 			return
 		}
 	}
@@ -82,13 +82,14 @@ func GetAllPrompts(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 func CreatePrompt(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	var input db.PromptInsert
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		utils.RespondError(w, "decode_prompt_error")
+		utils.RespondError(w, "decode_prompt_error", err.Error())
 		return
 	}
 
 	result, err := db.CreatePrompt(input)
+
 	if err != nil {
-		utils.RespondError(w, "db_insert_prompt_error")
+		utils.RespondError(w, "db_insert_prompt_error", err.Error())
 		return
 	}
 	json.NewEncoder(w).Encode(result)
@@ -104,7 +105,7 @@ func UpdatePrompt(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 
 	result, err := db.UpdatePrompt(id, input)
 	if err != nil {
-		utils.RespondError(w, "db_update_prompt_error")
+		utils.RespondError(w, "db_update_prompt_error", err.Error())
 		return
 	}
 	json.NewEncoder(w).Encode(result)
@@ -113,7 +114,7 @@ func UpdatePrompt(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 func DeletePrompt(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	id := ps.ByName("id")
 	if err := db.DeletePrompt(id); err != nil {
-		utils.RespondError(w, "db_delete_prompt_error")
+		utils.RespondError(w, "db_delete_prompt_error", err.Error())
 		return
 	}
 	w.WriteHeader(http.StatusOK)

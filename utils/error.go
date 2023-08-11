@@ -2,6 +2,7 @@ package utils
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 )
 
@@ -91,6 +92,8 @@ func RespondError(w http.ResponseWriter, errorCode string, message ...string) {
 	if len(message) > 0 {
 		apiError.Message = message[0]
 	}
+
+	log.Println(apiError)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(apiError.StatusCode)
