@@ -1,7 +1,6 @@
 package posthog
 
 import (
-	"fmt"
 	"os"
 
 	db "github.com/polyfact/api/db"
@@ -48,7 +47,7 @@ func IdentifyUser(auth_id string, user_id string, email string) {
 	client := posthog.New(POSTHOG_API_KEY)
 	defer client.Close()
 
-	err := client.Enqueue(posthog.Identify{
+	client.Enqueue(posthog.Identify{
 		DistinctId: auth_id,
 		Properties: posthog.NewProperties().Set("email", email),
 	})
