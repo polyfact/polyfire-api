@@ -53,7 +53,6 @@ func IdentifyUser(auth_id string, user_id string, email string) {
 		Properties: posthog.NewProperties().Set("email", email),
 	})
 
-
 	client.Enqueue(posthog.Alias{
 		DistinctId: auth_id,
 		Alias:      user_id,
