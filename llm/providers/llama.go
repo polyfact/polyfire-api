@@ -41,13 +41,18 @@ func (m LLaMaProvider) Generate(task string, c *func(string, int, int), opts *Pr
 		}
 		defer resp.Body.Close()
 		var p []byte = make([]byte, 128)
+		totalOutput := 0
 		for {
 			nb, err := resp.Body.Read(p)
 			if errors.Is(err, io.EOF) || err != nil {
 				break
 			}
 			tokenUsage.Output = llms.CountTokens("gpt-2", string(p[:nb]))
+			totalOutput += tokenUsage.Output
 			chan_res <- Result{Result: string(p[:nb]), TokenUsage: tokenUsage}
+		}
+		if c != nil {
+			(*c)("llama", tokenUsage.Input, totalOutput)
 		}
 	}()
 
