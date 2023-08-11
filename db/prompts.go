@@ -99,6 +99,12 @@ func StringToFilterOperation(op string) (FilterOperation, error) {
 	}
 }
 
+var AllowedColumns = map[string]bool{
+	"name":        true,
+	"description": true,
+	"tags":        true,
+}
+
 func GetAllPrompts(filters SupabaseFilters) ([]Prompt, error) {
 	client, err := CreateClient()
 	if err != nil {
@@ -108,12 +114,23 @@ func GetAllPrompts(filters SupabaseFilters) ([]Prompt, error) {
 	query := client.From("prompts").Select("*", "exact", false)
 
 	for _, filter := range filters {
-		 value := pq.QuoteLiteral(filter.Value)
-		 
+		columnFilter := pq.QuoteLiteral(filter.Column)
+		if !AllowedColumns[columnFilter] {
+			return nil, fmt.Errorf("invalid_column")
+		}
+
+		value := filter.Value
+
+		if len(value) > 32 {
+			return nil, fmt.Errorf("invalid_length_value")
+		}
+
 		if filter.Operation == Cs {
 			value = "{" + value + "}"
 		}
+
 		query.Filter(filter.Column, string(filter.Operation), value)
+
 	}
 
 	var results []Prompt

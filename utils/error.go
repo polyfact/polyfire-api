@@ -49,6 +49,9 @@ var ErrorMessages = map[string]APIError{
 	"db_update_prompt_error":   {Code: "db_update_prompt_error", Message: "Failed to update the prompt in the database.", StatusCode: http.StatusBadRequest},
 	"db_delete_prompt_error":   {Code: "db_delete_prompt_error", Message: "Failed to delete the prompt from the database.", StatusCode: http.StatusBadRequest},
 	"invalid_filter_operation": {Code: "invalid_filter_operation", Message: "Invalid filter operation.", StatusCode: http.StatusBadRequest},
+	"invalid_column":           {Code: "invalid_column", Message: "Filter column name not allowed", StatusCode: http.StatusForbidden},
+	"invalid_length_value":     {Code: "invalid_length_value", Message: "Invalid length value.", StatusCode: http.StatusBadRequest},
+
 	// Embedding Errors
 	"embedding_error": {Code: "embedding_error", Message: "Failed to process the embedding.", StatusCode: http.StatusInternalServerError},
 

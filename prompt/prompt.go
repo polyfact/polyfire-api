@@ -62,11 +62,19 @@ func GetAllPrompts(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 		filters = append(filters, filter)
 	}
 
-
 	result, err := db.GetAllPrompts(filters)
 	if err != nil {
-		utils.RespondError(w, "db_fetch_prompt_error")
-		return
+		switch err.Error() {
+		case "invalid_column":
+			utils.RespondError(w, "invalid_column")
+			return
+		case "invalid_operation":
+			utils.RespondError(w, "invalid_length_value")
+			return
+		default:
+			utils.RespondError(w, "db_fetch_prompt_error")
+			return
+		}
 	}
 	json.NewEncoder(w).Encode(result)
 }
