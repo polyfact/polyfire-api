@@ -31,7 +31,6 @@ var upgrader = websocket.Upgrader{
 func Stream(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	user_id := r.Context().Value("user_id").(string)
 	conn, err := upgrader.Upgrade(w, r, nil)
-
 	if err != nil {
 		utils.RespondError(w, "communication_error")
 		return
@@ -58,13 +57,14 @@ func Stream(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	}
 
 	chan_res, err := GenerationStart(user_id, input)
-
 	if err != nil {
 		switch err {
 		case NotFound:
 			utils.RespondError(w, "not_found_error")
 		case UnknownModelProvider:
 			utils.RespondError(w, "unknown_model_provider")
+		case RateLimitReached:
+			utils.RespondError(w, "rate_limit_reached")
 		default:
 			utils.RespondError(w, "generation_error")
 		}
