@@ -15,24 +15,6 @@ import (
 	"github.com/polyfact/api/utils"
 )
 
-type ProjectUser struct {
-	ID        string `json:"id"`
-	AuthID    string `json:"auth_id"`
-	ProjectID string `json:"project_id"`
-}
-
-type ProjectUserInsert struct {
-	AuthID    string `json:"auth_id"`
-	ProjectID string `json:"project_id"`
-}
-
-type Project struct {
-	ID           string `json:"id"`
-	Name         string `json:"name"`
-	AuthID       string `json:"auth_id"`
-	FreeUserInit bool   `json:"free_user_init"`
-}
-
 func GetAuthIdFromToken(token string) (string, string, error) {
 	supabaseUrl := os.Getenv("SUPABASE_URL")
 	supabaseKey := os.Getenv("SUPABASE_KEY")
@@ -62,7 +44,7 @@ func GetUserIdFromTokenProject(token string, project string) (*string, error) {
 		return nil, err
 	}
 
-	var results []ProjectUser
+	var results []db.ProjectUser
 
 	_, err = client.From("project_users").
 		Select("*", "exact", false).
@@ -83,26 +65,6 @@ func GetUserIdFromTokenProject(token string, project string) (*string, error) {
 	return &results[0].ID, nil
 }
 
-func GetProjectByID(id string) (*Project, error) {
-	client, err := db.CreateClient()
-	if err != nil {
-		return nil, err
-	}
-
-	var result Project
-
-	_, err = client.From("projects").
-		Select("*", "exact", false).
-		Eq("id", id).
-		Single().
-		ExecuteTo(&result)
-	if err != nil {
-		return nil, err
-	}
-
-	return &result, nil
-}
-
 func CreateProjectUser(token string, project_id string) (*string, error) {
 	auth_id, email, err := GetAuthIdFromToken(token)
 	if err != nil {
@@ -114,9 +76,9 @@ func CreateProjectUser(token string, project_id string) (*string, error) {
 		return nil, err
 	}
 
-	var result *ProjectUser
+	var result *db.ProjectUser
 
-	_, err = client.From("project_users").Insert(ProjectUserInsert{
+	_, err = client.From("project_users").Insert(db.ProjectUserInsert{
 		AuthID:    auth_id,
 		ProjectID: project_id,
 	}, false, "", "", "exact").Single().ExecuteTo(&result)
@@ -153,7 +115,7 @@ func TokenExchangeHandler(w http.ResponseWriter, r *http.Request, ps router.Para
 	}
 
 	if user_id == nil {
-		project, err := GetProjectByID(project_id)
+		project, err := db.GetProjectByID(project_id)
 		if err != nil {
 			utils.RespondError(w, "project_retrieval_error")
 			return

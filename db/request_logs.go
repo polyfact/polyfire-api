@@ -1,5 +1,9 @@
 package db
 
+import (
+	"strconv"
+)
+
 type Kind string
 
 const (
@@ -47,4 +51,32 @@ func LogRequests(
 	if err != nil {
 		panic(err)
 	}
+}
+
+type UsageParams struct {
+	UserID string `json:"userid"`
+}
+
+func GetUserIdMonthlyTokenUsage(user_id string) int {
+	params := UsageParams{
+		UserID: user_id,
+	}
+
+	client, err := CreateClient()
+	if err != nil {
+		panic(err)
+	}
+
+	response := client.Rpc("get_monthly_token_usage", "", params)
+
+	if response == "null" {
+		return 0
+	}
+
+	usage, err := strconv.Atoi(response)
+	if err != nil {
+		panic(err)
+	}
+
+	return usage
 }
