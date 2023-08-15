@@ -18,7 +18,16 @@ func NewProvider(provider string, model *string) (Provider, error) {
 	switch provider {
 	case "openai":
 		fmt.Println("Using OpenAI")
-		llm := providers.NewOpenAIStreamProvider()
+		var m string
+		if model == nil {
+			m = "gpt-3.5-turbo"
+		} else {
+			m = *model
+		}
+		if m != "gpt-3.5-turbo" && m != "gpt-3.5-turbo-16k" && m != "gpt-4" {
+			return nil, ErrUnknownModel
+		}
+		llm := providers.NewOpenAIStreamProvider(m)
 		return llm, nil
 	case "cohere":
 		fmt.Println("Using Cohere")
