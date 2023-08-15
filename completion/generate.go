@@ -17,6 +17,7 @@ import (
 type GenerateRequestBody struct {
 	Task         string    `json:"task"`
 	Provider     string    `json:"provider,omitempty"`
+	Model        *string   `json:"model,omitempty"`
 	MemoryId     *string   `json:"memory_id,omitempty"`
 	ChatId       *string   `json:"chat_id,omitempty"`
 	Stop         *[]string `json:"stop,omitempty"`
@@ -63,7 +64,7 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 		input.Provider = "openai"
 	}
 
-	provider, err := llm.NewProvider(input.Provider)
+	provider, err := llm.NewProvider(input.Provider, input.Model)
 	if err == llm.ErrUnknownModel {
 		return nil, UnknownModelProvider
 	}
