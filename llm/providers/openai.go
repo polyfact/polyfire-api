@@ -12,17 +12,17 @@ import (
 	"github.com/tmc/langchaingo/llms"
 )
 
-const OPENAI_MODEL = "gpt-3.5-turbo-16k"
-
 type OpenAIStreamProvider struct {
 	client goOpenai.Client
+	Model  string
 }
 
-func NewOpenAIStreamProvider() OpenAIStreamProvider {
+func NewOpenAIStreamProvider(model string) OpenAIStreamProvider {
 	config := goOpenai.DefaultConfig(os.Getenv("OPENAI_API_KEY"))
 	config.OrgID = os.Getenv("OPENAI_ORGANIZATION")
 	return OpenAIStreamProvider{
 		client: *goOpenai.NewClientWithConfig(config),
+		Model:  model,
 	}
 }
 
@@ -38,7 +38,7 @@ func (m OpenAIStreamProvider) Generate(task string, c *func(string, int, int), o
 			ctx := context.Background()
 
 			req := goOpenai.ChatCompletionRequest{
-				Model: goOpenai.GPT3Dot5Turbo16K,
+				Model: m.Model,
 				Messages: []goOpenai.ChatCompletionMessage{
 					{
 						Role:    goOpenai.ChatMessageRoleUser,
@@ -53,7 +53,7 @@ func (m OpenAIStreamProvider) Generate(task string, c *func(string, int, int), o
 				continue
 			}
 
-			tokenUsage.Input += llms.CountTokens(OPENAI_MODEL, task)
+			tokenUsage.Input += llms.CountTokens(m.Model, task)
 
 			totalOutput := 0
 
@@ -64,7 +64,7 @@ func (m OpenAIStreamProvider) Generate(task string, c *func(string, int, int), o
 					break
 				}
 
-				tokenUsage.Output = llms.CountTokens(OPENAI_MODEL, completion.Choices[0].Delta.Content)
+				tokenUsage.Output = llms.CountTokens(m.Model, completion.Choices[0].Delta.Content)
 				totalOutput += tokenUsage.Output
 
 				result := Result{Result: completion.Choices[0].Delta.Content, TokenUsage: tokenUsage}
@@ -73,7 +73,7 @@ func (m OpenAIStreamProvider) Generate(task string, c *func(string, int, int), o
 			}
 
 			if c != nil {
-				(*c)(OPENAI_MODEL, tokenUsage.Input, totalOutput)
+				(*c)(m.Model, tokenUsage.Input, totalOutput)
 			}
 			return
 		}
