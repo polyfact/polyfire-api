@@ -5,15 +5,17 @@ import (
 )
 
 type Chat struct {
-	ID           string        `json:"id,omitempty"`
-	UserID       string        `json:"user_id"`
-	SystemPrompt *string       `json:"system_prompt"`
-	ChatMessages []ChatMessage `json:"chat_messages"`
+	ID             string        `json:"id,omitempty"`
+	UserID         string        `json:"user_id"`
+	SystemPrompt   *string       `json:"system_prompt"`
+	SystemPromptId *string       `json:"system_prompt_id"`
+	ChatMessages   []ChatMessage `json:"chat_messages"`
 }
 
 type ChatInsert struct {
-	UserID       string  `json:"user_id"`
-	SystemPrompt *string `json:"system_prompt"`
+	UserID         string  `json:"user_id"`
+	SystemPrompt   *string `json:"system_prompt"`
+	SystemPromptId *string `json:"system_prompt_id"`
 }
 
 func GetChatForUser(userId string) ([]Chat, error) {
@@ -48,7 +50,7 @@ func GetChatById(id string) (*Chat, error) {
 	return result, nil
 }
 
-func CreateChat(userId string, systemPrompt *string) (*Chat, error) {
+func CreateChat(userId string, systemPrompt *string, SystemPromptId *string) (*Chat, error) {
 	client, err := CreateClient()
 	if err != nil {
 		return nil, err
@@ -57,8 +59,9 @@ func CreateChat(userId string, systemPrompt *string) (*Chat, error) {
 	var result *Chat
 
 	_, err = client.From("chats").Insert(ChatInsert{
-		UserID:       userId,
-		SystemPrompt: systemPrompt,
+		UserID:         userId,
+		SystemPrompt:   systemPrompt,
+		SystemPromptId: SystemPromptId,
 	}, false, "", "", "exact").Single().ExecuteTo(&result)
 
 	if err != nil {

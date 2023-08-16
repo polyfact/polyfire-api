@@ -30,7 +30,8 @@ func CreateChat(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	user_id := r.Context().Value("user_id").(string)
 
 	var requestBody struct {
-		SystemPrompt *string `json:"system_prompt"`
+		SystemPrompt   *string `json:"system_prompt"`
+		SystemPromptId *string `json:"system_prompt_id"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -44,10 +45,10 @@ func CreateChat(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		return
 	}
 
-	chat, err := db.CreateChat(user_id, requestBody.SystemPrompt)
+	chat, err := db.CreateChat(user_id, requestBody.SystemPrompt, requestBody.SystemPromptId)
 	if err != nil {
-		log.Printf("Error creating chat for user %s with system prompt %v: %v", user_id, requestBody.SystemPrompt, err)
-		utils.RespondError(w, "error_create_chat")
+		log.Printf("Error creating chat for user %s : %v", user_id, err)
+		utils.RespondError(w, "error_create_chat", err.Error())
 		return
 	}
 
