@@ -15,16 +15,16 @@ import (
 )
 
 type GenerateRequestBody struct {
-	Task         string    `json:"task"`
-	Provider     string    `json:"provider,omitempty"`
-	Model        *string   `json:"model,omitempty"`
-	MemoryId     *string   `json:"memory_id,omitempty"`
-	ChatId       *string   `json:"chat_id,omitempty"`
-	Stop         *[]string `json:"stop,omitempty"`
-	Stream       bool      `json:"stream,omitempty"`
-	Infos        bool      `json:"infos,omitempty"`
-	PromptId     *string   `json:"prompt_id,omitempty"`
-	SystemPrompt *string   `json:"system_prompt,omitempty"`
+	Task           string    `json:"task"`
+	Provider       string    `json:"provider,omitempty"`
+	Model          *string   `json:"model,omitempty"`
+	MemoryId       *string   `json:"memory_id,omitempty"`
+	ChatId         *string   `json:"chat_id,omitempty"`
+	Stop           *[]string `json:"stop,omitempty"`
+	Stream         bool      `json:"stream,omitempty"`
+	Infos          bool      `json:"infos,omitempty"`
+	SystemPromptId *string   `json:"system_prompt_id,omitempty"`
+	SystemPrompt   *string   `json:"system_prompt,omitempty"`
 }
 
 var (
@@ -74,10 +74,11 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 	}
 	var system_prompt string = ""
 
-	if input.PromptId != nil {
-		p, err := db.GetPromptById(*input.PromptId)
-		db.UpdatePrompt(*input.PromptId, db.PromptUpdate{Use: p.Use + 1})
-		if err != nil {
+	if input.SystemPromptId != nil && len(*input.SystemPromptId) > 0 {
+		p, err := db.GetPromptById(*input.SystemPromptId)
+
+		db.UpdatePrompt(*input.SystemPromptId, db.PromptUpdate{Use: p.Use + 1})
+		if err != nil || p == nil {
 			return nil, NotFound
 		}
 		system_prompt = p.Prompt
@@ -85,6 +86,7 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 
 	if input.ChatId != nil && len(*input.ChatId) > 0 {
 		chat, err := db.GetChatById(*input.ChatId)
+
 		if err != nil {
 			return nil, InternalServerError
 		}
@@ -100,7 +102,7 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 
 		chatHistory := utils.CutChatHistory(allHistory, 1000)
 
-		if chat.SystemPrompt != nil {
+		if input.SystemPromptId == nil && chat.SystemPrompt != nil {
 			system_prompt = *(chat.SystemPrompt)
 		}
 
@@ -130,7 +132,7 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 	} else {
 
 		// Warning: Check if there is a better way to do this to avoid useless parameter:
-		if input.PromptId == nil && input.SystemPrompt != nil {
+		if input.SystemPromptId == nil && input.SystemPrompt != nil {
 			system_prompt = *(input.SystemPrompt)
 		}
 

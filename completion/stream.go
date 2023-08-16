@@ -56,7 +56,7 @@ func Stream(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		utils.RespondError(w, "invalid_json")
 		return
 	}
-
+	
 	chan_res, err := GenerationStart(user_id, input)
 
 	if err != nil {
