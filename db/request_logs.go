@@ -57,26 +57,26 @@ type UsageParams struct {
 	UserID string `json:"userid"`
 }
 
-func GetUserIdMonthlyTokenUsage(user_id string) int {
+func GetUserIdMonthlyTokenUsage(user_id string) (int, error) {
 	params := UsageParams{
 		UserID: user_id,
 	}
 
 	client, err := CreateClient()
 	if err != nil {
-		panic(err)
+		return 0, err
 	}
 
 	response := client.Rpc("get_monthly_token_usage", "", params)
 
 	if response == "null" {
-		return 0
+		return 0, nil
 	}
 
 	usage, err := strconv.Atoi(response)
 	if err != nil {
-		panic(err)
+		return 0, err
 	}
 
-	return usage
+	return usage, nil
 }

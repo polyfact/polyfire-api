@@ -155,7 +155,11 @@ type UserRateLimitResponse struct {
 func UserRateLimit(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	user_id := r.Context().Value("user_id").(string)
 
-	tokenUsage := db.GetUserIdMonthlyTokenUsage(user_id)
+	tokenUsage, err := db.GetUserIdMonthlyTokenUsage(user_id)
+	if err != nil {
+		utils.RespondError(w, "internal_error")
+		return
+	}
 
 	projectUser, err := db.GetProjectUserByID(user_id)
 	var rateLimit *int = nil
