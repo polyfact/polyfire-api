@@ -33,6 +33,7 @@ func main() {
 	router.POST("/memory", middlewares.Auth(memory.Create))
 	router.PUT("/memory", middlewares.Auth(memory.Add))
 	router.GET("/project/:id/auth/token", auth.TokenExchangeHandler)
+	router.GET("/usage", middlewares.Auth(auth.UserRateLimit))
 
 	router.GET("/kv", middlewares.Auth(kv.Get))
 	router.PUT("/kv", middlewares.Auth(kv.Set))
