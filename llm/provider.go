@@ -14,11 +14,20 @@ type Provider interface {
 	Generate(prompt string, c *func(string, int, int), opts *providers.ProviderOptions) chan providers.Result
 }
 
-func NewProvider(model string) (Provider, error) {
-	switch model {
+func NewProvider(provider string, model *string) (Provider, error) {
+	switch provider {
 	case "openai":
 		fmt.Println("Using OpenAI")
-		llm := providers.NewOpenAIStreamProvider()
+		var m string
+		if model == nil {
+			m = "gpt-3.5-turbo"
+		} else {
+			m = *model
+		}
+		if m != "gpt-3.5-turbo" && m != "gpt-3.5-turbo-16k" && m != "gpt-4" {
+			return nil, ErrUnknownModel
+		}
+		llm := providers.NewOpenAIStreamProvider(m)
 		return llm, nil
 	case "cohere":
 		fmt.Println("Using Cohere")
@@ -29,7 +38,18 @@ func NewProvider(model string) (Provider, error) {
 		return providers.LangchainProvider{Model: llm, ModelName: "cohere_command"}, nil
 	case "llama":
 		fmt.Println("Using LLama")
-		return providers.LLaMaProvider{}, nil
+		var m string
+		if model == nil {
+			m = "llama"
+		} else {
+			m = *model
+		}
+		if m != "llama" && m != "llama2" {
+			return nil, ErrUnknownModel
+		}
+		return providers.LLaMaProvider{
+			Model: m,
+		}, nil
 	default:
 		return nil, ErrUnknownModel
 	}

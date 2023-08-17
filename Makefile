@@ -66,7 +66,7 @@ ifndef LLAMA_URL
 endif
 
 deploy: app.yaml
-	gcloud app deploy --quiet
+	gcloud app deploy --quiet --version v1
 
 clean:
 	rm -f ./build/* app.yaml
