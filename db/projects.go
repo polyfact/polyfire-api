@@ -75,7 +75,10 @@ func UserReachedRateLimit(id string) (bool, error) {
 		return false, nil
 	}
 
-	tokenUsage := GetUserIdMonthlyTokenUsage(id)
+	tokenUsage, err := GetUserIdMonthlyTokenUsage(id)
+	if err != nil {
+		return false, err
+	}
 
 	return tokenUsage >= *projectUser.MonthlyTokenRateLimit, nil
 }
