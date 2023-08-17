@@ -31,6 +31,7 @@ var (
 	InternalServerError  error = errors.New("500 InternalServerError")
 	UnknownModelProvider error = errors.New("400 Unknown model provider")
 	NotFound             error = errors.New("404 Not Found")
+	RateLimitReached     error = errors.New("429 Monthly Rate Limit Reached")
 )
 
 func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers.Result, error) {
@@ -53,6 +54,14 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 			return nil, InternalServerError
 		}
 
+	}
+
+	reached, err := db.UserReachedRateLimit(user_id)
+	if err != nil {
+		return nil, InternalServerError
+	}
+	if reached {
+		return nil, RateLimitReached
 	}
 
 	callback := func(model_name string, input_count int, output_count int) {
@@ -171,6 +180,8 @@ func Generate(w http.ResponseWriter, r *http.Request, _ router.Params) {
 			utils.RespondError(w, "not_found")
 		case UnknownModelProvider:
 			utils.RespondError(w, "invalid_model_provider")
+		case RateLimitReached:
+			utils.RespondError(w, "rate_limit_reached")
 		default:
 			utils.RespondError(w, "internal_error")
 		}
