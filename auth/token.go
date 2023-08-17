@@ -65,7 +65,7 @@ func GetUserIdFromTokenProject(token string, project string) (*string, error) {
 	return &results[0].ID, nil
 }
 
-func CreateProjectUser(token string, project_id string) (*string, error) {
+func CreateProjectUser(token string, project_id string, monthly_token_rate_limit *int) (*string, error) {
 	auth_id, email, err := GetAuthIdFromToken(token)
 	if err != nil {
 		return nil, err
@@ -79,8 +79,9 @@ func CreateProjectUser(token string, project_id string) (*string, error) {
 	var result *db.ProjectUser
 
 	_, err = client.From("project_users").Insert(db.ProjectUserInsert{
-		AuthID:    auth_id,
-		ProjectID: project_id,
+		AuthID:                auth_id,
+		ProjectID:             project_id,
+		MonthlyTokenRateLimit: monthly_token_rate_limit,
 	}, false, "", "", "exact").Single().ExecuteTo(&result)
 
 	if err != nil {
@@ -124,7 +125,7 @@ func TokenExchangeHandler(w http.ResponseWriter, r *http.Request, ps router.Para
 			utils.RespondError(w, "free_user_init_disabled")
 			return
 		}
-		user_id, err = CreateProjectUser(token, project_id)
+		user_id, err = CreateProjectUser(token, project_id, project.DefaultMonthlyTokenRateLimit)
 		if err != nil {
 			utils.RespondError(w, "project_user_creation_failed")
 			return
