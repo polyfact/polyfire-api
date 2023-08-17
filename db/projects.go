@@ -1,12 +1,5 @@
 package db
 
-type Project struct {
-	ID           string `json:"id"`
-	Name         string `json:"name"`
-	AuthID       string `json:"auth_id"`
-	FreeUserInit bool   `json:"free_user_init"`
-}
-
 type ProjectUser struct {
 	ID                    string `json:"id"`
 	AuthID                string `json:"auth_id"`
@@ -15,8 +8,17 @@ type ProjectUser struct {
 }
 
 type ProjectUserInsert struct {
-	AuthID    string `json:"auth_id"`
-	ProjectID string `json:"project_id"`
+	AuthID                string `json:"auth_id"`
+	ProjectID             string `json:"project_id"`
+	MonthlyTokenRateLimit *int   `json:"monthly_token_rate_limit"`
+}
+
+type Project struct {
+	ID                           string `json:"id"`
+	Name                         string `json:"name"`
+	AuthID                       string `json:"auth_id"`
+	FreeUserInit                 bool   `json:"free_user_init"`
+	DefaultMonthlyTokenRateLimit *int   `json:"default_monthly_token_rate_limit"`
 }
 
 func GetProjectByID(id string) (*Project, error) {
