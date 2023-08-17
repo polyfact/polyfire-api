@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -144,4 +145,28 @@ func TokenExchangeHandler(w http.ResponseWriter, r *http.Request, ps router.Para
 	}
 
 	w.Write([]byte(user_token))
+}
+
+type UserRateLimitResponse struct {
+	Usage     int  `json:"usage"`
+	RateLimit *int `json:"rate_limit"`
+}
+
+func UserRateLimit(w http.ResponseWriter, r *http.Request, _ router.Params) {
+	user_id := r.Context().Value("user_id").(string)
+
+	tokenUsage := db.GetUserIdMonthlyTokenUsage(user_id)
+
+	projectUser, err := db.GetProjectUserByID(user_id)
+	var rateLimit *int = nil
+	if projectUser != nil && err == nil {
+		rateLimit = projectUser.MonthlyTokenRateLimit
+	}
+
+	result := UserRateLimitResponse{
+		Usage:     tokenUsage,
+		RateLimit: rateLimit,
+	}
+
+	json.NewEncoder(w).Encode(result)
 }
