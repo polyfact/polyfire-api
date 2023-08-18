@@ -238,6 +238,11 @@ var ErrorMessages = map[string]APIError{
 		Message:    "Failed to transcribe the audio.",
 		StatusCode: http.StatusInternalServerError,
 	},
+	"image_generation_error": {
+		Code:       "image_generation_error",
+		Message:    "Failed to generate this image.",
+		StatusCode: http.StatusInternalServerError,
+	},
 	"write_end_message_error": {
 		Code:       "write_end_message_error",
 		Message:    "Failed to write the end message to connection.",
