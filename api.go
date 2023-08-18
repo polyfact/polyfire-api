@@ -10,6 +10,7 @@ import (
 
 	auth "github.com/polyfact/api/auth"
 	completion "github.com/polyfact/api/completion"
+	imageGeneration "github.com/polyfact/api/image_generation"
 	kv "github.com/polyfact/api/kv"
 	memory "github.com/polyfact/api/memory"
 	middlewares "github.com/polyfact/api/middlewares"
@@ -28,6 +29,8 @@ func main() {
 	router.POST("/chats", middlewares.Auth(completion.CreateChat))
 
 	router.POST("/transcribe", middlewares.Auth(transcription.Transcribe))
+
+	router.GET("/image/generate", middlewares.Auth(imageGeneration.ImageGeneration))
 
 	router.GET("/memories", middlewares.Auth(memory.Get))
 	router.POST("/memory", middlewares.Auth(memory.Create))
