@@ -135,6 +135,11 @@ var ErrorMessages = map[string]APIError{
 		Message:    "Failed to retrieve memory IDs from the database.",
 		StatusCode: http.StatusInternalServerError,
 	},
+	"storage_error": {
+		Code:       "storage_error",
+		Message:    "Failed to store a fail in the bucket",
+		StatusCode: http.StatusInternalServerError,
+	},
 
 	// Prompt Errors
 	"decode_prompt_error": {
@@ -236,6 +241,11 @@ var ErrorMessages = map[string]APIError{
 	"transcription_error": {
 		Code:       "transcription_error",
 		Message:    "Failed to transcribe the audio.",
+		StatusCode: http.StatusInternalServerError,
+	},
+	"image_generation_error": {
+		Code:       "image_generation_error",
+		Message:    "Failed to generate this image.",
 		StatusCode: http.StatusInternalServerError,
 	},
 	"write_end_message_error": {
