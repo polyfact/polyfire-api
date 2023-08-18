@@ -135,6 +135,11 @@ var ErrorMessages = map[string]APIError{
 		Message:    "Failed to retrieve memory IDs from the database.",
 		StatusCode: http.StatusInternalServerError,
 	},
+	"storage_error": {
+		Code:       "storage_error",
+		Message:    "Failed to store a fail in the bucket",
+		StatusCode: http.StatusInternalServerError,
+	},
 
 	// Prompt Errors
 	"decode_prompt_error": {
