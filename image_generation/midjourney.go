@@ -1,7 +1,12 @@
 package image_generation
 
 import (
+	"bufio"
+	"bytes"
 	"encoding/json"
+	"fmt"
+	"image"
+	"image/png"
 	"io"
 	"net/http"
 	"os"
@@ -100,6 +105,10 @@ func MJResult(input MJResultRequest) (*MJResultResponse, error) {
 	return &result_response, nil
 }
 
+type SubImager interface {
+	SubImage(r image.Rectangle) image.Image
+}
+
 func MJGenerate(prompt string) (io.Reader, error) {
 	taskId, err := MJImagine(prompt)
 	if err != nil {
@@ -107,26 +116,46 @@ func MJGenerate(prompt string) (io.Reader, error) {
 	}
 	fmt.Printf("TaskID: %v\n", taskId)
 
+	var imageURL string
 	for {
 		result, err := MJResult(MJResultRequest{TaskID: taskId})
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
 		if result.ImageURL != nil {
+			imageURL = *result.ImageURL
 			break
 		}
 		time.Sleep(3 * time.Second)
 	}
 
-	result, err := MJResult(MJResultRequest{TaskID: taskId, Position: 1})
-	if err != nil || result.ImageURL == nil {
-		panic(err)
-	}
-
-	resp, err := http.Get(*result.ImageURL)
+	resp, err := http.Get(imageURL)
 	if err != nil {
 		return nil, err
 	}
 
-	return resp.Body, nil
+	originalImageBody := resp.Body
+	defer originalImageBody.Close()
+
+	originalImage, err := png.Decode(originalImageBody)
+	if err != nil {
+		return nil, err
+	}
+
+	bounds := originalImage.Bounds()
+	width := bounds.Dx()
+	height := bounds.Dy()
+	cropSize := image.Rect(0, 0, width/2, height/2)
+	croppedImage := originalImage.(SubImager).SubImage(cropSize)
+
+	var b bytes.Buffer
+	w := bufio.NewWriter(&b)
+
+	if err := png.Encode(w, croppedImage); err != nil {
+		return nil, err
+	}
+
+	res := bytes.NewReader(b.Bytes())
+
+	return res, nil
 }
