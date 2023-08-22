@@ -1,7 +1,6 @@
 package image_generation
 
 import (
-	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -133,11 +132,9 @@ func MJGenerate(prompt string) (io.Reader, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 
-	originalImageBody := resp.Body
-	defer originalImageBody.Close()
-
-	originalImage, err := png.Decode(originalImageBody)
+	originalImage, _, err := image.Decode(resp.Body)
 	if err != nil {
 		return nil, err
 	}
@@ -146,16 +143,16 @@ func MJGenerate(prompt string) (io.Reader, error) {
 	width := bounds.Dx()
 	height := bounds.Dy()
 	cropSize := image.Rect(0, 0, width/2, height/2)
-	croppedImage := originalImage.(SubImager).SubImage(cropSize)
+	croppedImage, ok := originalImage.(SubImager)
+	if !ok {
+		return nil, fmt.Errorf("image does not support sub-imaging")
+	}
 
 	var b bytes.Buffer
-	w := bufio.NewWriter(&b)
-
-	if err := png.Encode(w, croppedImage); err != nil {
+	if err := png.Encode(&b, croppedImage.SubImage(cropSize)); err != nil {
 		return nil, err
 	}
 
-	res := bytes.NewReader(b.Bytes())
-
-	return res, nil
+	return bytes.NewReader(b.Bytes()), nil
 }
+
