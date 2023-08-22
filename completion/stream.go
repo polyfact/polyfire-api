@@ -55,7 +55,7 @@ func Stream(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		utils.RespondError(w, "invalid_json")
 		return
 	}
-	
+
 	chan_res, err := GenerationStart(user_id, input)
 	if err != nil {
 		switch err {
@@ -76,6 +76,20 @@ func Stream(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		TokenUsage: providers.TokenUsage{Input: 0, Output: 0},
 	}
 
+	chan_stop := make(chan bool)
+	go func() {
+		for {
+			size, message, _ := conn.ReadMessage()
+			if string(message) == "STOP" {
+				chan_stop <- true
+			}
+			if size == -1 {
+				break
+			}
+		}
+	}()
+
+generation_loop:
 	for v := range *chan_res {
 		result.Result += v.Result
 		result.TokenUsage.Input += v.TokenUsage.Input
@@ -83,6 +97,11 @@ func Stream(w http.ResponseWriter, r *http.Request, _ router.Params) {
 
 		if len(v.Ressources) > 0 {
 			result.Ressources = v.Ressources
+		}
+		select {
+		case <-chan_stop:
+			break generation_loop
+		default:
 		}
 
 		if v.Result != "" {
