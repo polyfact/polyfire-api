@@ -1,9 +1,13 @@
 package completion
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"log"
 	"net/http"
+	"text/template"
 
 	router "github.com/julienschmidt/httprouter"
 	db "github.com/polyfact/api/db"
@@ -25,6 +29,7 @@ type GenerateRequestBody struct {
 	Infos          bool      `json:"infos,omitempty"`
 	SystemPromptId *string   `json:"system_prompt_id,omitempty"`
 	SystemPrompt   *string   `json:"system_prompt,omitempty"`
+	WebRequest     bool      `json:"web,omitempty"`
 }
 
 var (
@@ -138,6 +143,43 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 			err = db.AddChatMessage(chat.ID, false, total_result)
 		}()
 
+	} else if input.WebRequest && input.Provider != "llama" {
+
+		res, err := utils.WebRequest(input.Task, *input.Model)
+
+		if err != nil {
+			return nil, err
+		}
+
+		tmpl := `
+		Answer at this request: {{.Task}}
+		from this website: {{.Content}}
+		Always answer with the same language as the request. 
+		Give a complete answer and don't include appendix information other than the initial request.
+		Don't be creative, just be factual.
+
+		`
+		data := struct {
+			Task    string
+			Content string
+		}{
+			Task:    input.Task,
+			Content: res,
+		}
+
+		var tpl bytes.Buffer
+		t := template.Must(template.New("prompt").Parse(tmpl))
+
+		if err := t.Execute(&tpl, data); err != nil {
+			fmt.Println("Error executing template:", err)
+			return nil, err
+		}
+
+		prompt := tpl.String()
+
+		log.Println(prompt)
+		result = provider.Generate(prompt, &callback, &providers.ProviderOptions{StopWords: input.Stop})
+
 	} else {
 
 		// Warning: Check if there is a better way to do this to avoid useless parameter:
@@ -172,8 +214,8 @@ func Generate(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		utils.RespondError(w, "invalid_json")
 		return
 	}
-
 	res_chan, err := GenerationStart(user_id, input)
+
 	if err != nil {
 		switch err {
 		case NotFound:
