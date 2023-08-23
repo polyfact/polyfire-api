@@ -1,4 +1,4 @@
-package utils
+package webrequest
 
 import (
 	"errors"
@@ -23,6 +23,15 @@ const (
 	urlPattern           = `read:(https?://[^\s]+)` // Extract URL with "read:" prefix.
 )
 
+var (
+	WebsiteExceedsLimit    error = errors.New("error_website_exceeds_limit")
+	WebsitesContentExceeds error = errors.New("error_websites_content_exceeds")
+	NoContentFound         error = errors.New("error_no_content_found")
+	FetchWebpageError      error = errors.New("error_fetch_webpage")
+	ParseContentError      error = errors.New("error_parse_content")
+	VisitBaseURLError      error = errors.New("error_visit_base_url")
+)
+
 func prepareURL(u string) (string, error) {
 	if strings.HasPrefix(u, duckDuckGoPrefix) {
 		rawURL := strings.TrimPrefix(u, duckDuckGoPrefix)
@@ -43,14 +52,14 @@ func removeUselessWhitespaces(s string) string {
 func fetchContent(link string) (string, error) {
 	res, err := http.Get(link)
 	if err != nil {
-		return "", fmt.Errorf("failed to fetch the webpage: %v", err)
+		return "", FetchWebpageError
 	}
 	defer res.Body.Close()
 
 	r := readability.New()
 	parsed, err := r.Parse(res.Body, link)
 	if err != nil {
-		return "", fmt.Errorf("failed to parse the content with readability: %v", err)
+		return "", ParseContentError
 	}
 
 	return removeUselessWhitespaces(parsed.TextContent), nil
@@ -83,25 +92,25 @@ func WebRequest(query string, model string) (string, error) {
 		for _, urlFound := range urlsFound {
 			content, err := fetchContent(urlFound)
 			if err != nil {
-				fmt.Println("Error fetching content:", err)
+				fmt.Println()
 				continue
 			}
 
 			contentTokenCount := llms.CountTokens(model, content)
 			if contentTokenCount > contextSize {
-				return "", errors.New("A website exceeds the token limit")
+				return "", WebsiteExceedsLimit
 			}
 
 			totalTokens := llms.CountTokens(model, accumulatedText.String()+content)
 			if totalTokens > contextSize {
-				return "", errors.New("Websites content exceeds the token limit")
+				return "", WebsitesContentExceeds
 			}
 
 			accumulatedText.WriteString(content + "\n==========\n")
 		}
 
 		if accumulatedText.Len() == 0 {
-			return "", errors.New("no visible text accumulated from results")
+			return "", NoContentFound
 		}
 		return accumulatedText.String(), nil
 	}
@@ -134,7 +143,6 @@ func WebRequest(query string, model string) (string, error) {
 		formattedContent := fmt.Sprintf("Site %d (%s): %s\n==========\n", sitesVisited+1, link, content)
 
 		totalTokens := llms.CountTokens(model, accumulatedText.String()+formattedContent)
-		
 
 		if totalTokens <= contextSize && totalTokens+additionalTokenSpace <= contextSize {
 			accumulatedText.WriteString(formattedContent)
@@ -144,13 +152,13 @@ func WebRequest(query string, model string) (string, error) {
 
 	err := c.Visit(fmt.Sprintf(baseUrl, url.QueryEscape(query)))
 	if err != nil {
-		return "", fmt.Errorf("error visiting base URL: %v", err)
+		return "", VisitBaseURLError
 	}
 
 	wg.Wait()
 
 	if accumulatedText.Len() == 0 {
-		return "", errors.New("No content found")
+		return "", NoContentFound
 	}
 
 	return accumulatedText.String(), nil

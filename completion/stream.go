@@ -8,6 +8,7 @@ import (
 	router "github.com/julienschmidt/httprouter"
 	providers "github.com/polyfact/api/llm/providers"
 	utils "github.com/polyfact/api/utils"
+	webrequest "github.com/polyfact/api/web_request"
 )
 
 var upgrader = websocket.Upgrader{
@@ -58,17 +59,31 @@ func Stream(w http.ResponseWriter, r *http.Request, _ router.Params) {
 
 	chan_res, err := GenerationStart(user_id, input)
 	if err != nil {
-		switch err {
-		case NotFound:
-			utils.RespondError(w, "not_found_error")
-		case UnknownModelProvider:
-			utils.RespondError(w, "unknown_model_provider")
-		case RateLimitReached:
-			utils.RespondError(w, "rate_limit_reached")
-		default:
-			utils.RespondError(w, "generation_error")
+		if err != nil {
+			switch err {
+			case webrequest.WebsiteExceedsLimit:
+				utils.RespondError(w, "error_website_exceeds_limit")
+			case webrequest.WebsitesContentExceeds:
+				utils.RespondError(w, "error_websites_content_exceeds")
+			case webrequest.NoContentFound:
+				utils.RespondError(w, "error_no_content_found")
+			case webrequest.FetchWebpageError:
+				utils.RespondError(w, "error_fetch_webpage")
+			case webrequest.ParseContentError:
+				utils.RespondError(w, "error_parse_content")
+			case webrequest.VisitBaseURLError:
+				utils.RespondError(w, "error_visit_base_url")
+			case NotFound:
+				utils.RespondError(w, "not_found")
+			case UnknownModelProvider:
+				utils.RespondError(w, "invalid_model_provider")
+			case RateLimitReached:
+				utils.RespondError(w, "rate_limit_reached")
+			default:
+				utils.RespondError(w, "internal_error")
+			}
+			return
 		}
-		return
 	}
 
 	result := providers.Result{

@@ -264,6 +264,39 @@ var ErrorMessages = map[string]APIError{
 		StatusCode: http.StatusInternalServerError,
 	},
 
+	// Web request
+
+	"error_website_exceeds_limit": {
+		Code:       "error_website_exceeds_limit",
+		Message:    "Error: The token count for a website exceeds the allowed limit.",
+		StatusCode: http.StatusBadRequest,
+	},
+	"error_websites_content_exceeds": {
+		Code:       "error_websites_content_exceeds",
+		Message:    "Error: The accumulated content from the websites exceeds the token limit.",
+		StatusCode: http.StatusBadRequest,
+	},
+	"error_no_content_found": {
+		Code:       "error_no_content_found",
+		Message:    "Error: No content accumulated from the results.",
+		StatusCode: http.StatusBadRequest,
+	},
+	"error_fetch_webpage": {
+		Code:       "error_fetch_webpage",
+		Message:    "Error fetching the webpage:",
+		StatusCode: http.StatusInternalServerError,
+	},
+	"error_parse_content": {
+		Code:       "error_parse_content",
+		Message:    "Error parsing the webpage content with readability lib.",
+		StatusCode: http.StatusInternalServerError,
+	},
+	"error_visit_base_url": {
+		Code:       "error_visit_base_url",
+		Message:    "Error visiting the search engine URL",
+		StatusCode: http.StatusInternalServerError,
+	},
+
 	// Fallback error
 
 	"unknown_error": {Code: "unknown_error", Message: "An unknown error occurred.", StatusCode: http.StatusInternalServerError},
