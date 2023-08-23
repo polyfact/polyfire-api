@@ -1,9 +1,13 @@
 package completion
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"log"
 	"net/http"
+	"text/template"
 
 	router "github.com/julienschmidt/httprouter"
 	db "github.com/polyfact/api/db"
@@ -12,6 +16,7 @@ import (
 	memory "github.com/polyfact/api/memory"
 	posthog "github.com/polyfact/api/posthog"
 	utils "github.com/polyfact/api/utils"
+	webrequest "github.com/polyfact/api/web_request"
 )
 
 type GenerateRequestBody struct {
@@ -25,6 +30,7 @@ type GenerateRequestBody struct {
 	Infos          bool      `json:"infos,omitempty"`
 	SystemPromptId *string   `json:"system_prompt_id,omitempty"`
 	SystemPrompt   *string   `json:"system_prompt,omitempty"`
+	WebRequest     bool      `json:"web,omitempty"`
 }
 
 var (
@@ -138,6 +144,45 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 			err = db.AddChatMessage(chat.ID, false, total_result)
 		}()
 
+	} else if input.WebRequest && input.Provider != "llama" {
+
+		res, err := webrequest.WebRequest(input.Task, *input.Model)
+
+		if err != nil {
+			return nil, err
+		}
+
+		tmpl := `
+		From this request: {{.Task}}
+		and using this website content: {{.Content}}
+		answer at the above request and don't include appendix information other than the initial request.
+		Don't be creative, just be factual.
+		Always answer with the same language as the request.
+		If you don't know the answer, just say so.
+		If website content is not enough, you can use your own knowledge.
+		If the websites are not accessible don't use them and don't tell to me.
+		`
+		data := struct {
+			Task    string
+			Content string
+		}{
+			Task:    input.Task,
+			Content: res,
+		}
+
+		var tpl bytes.Buffer
+		t := template.Must(template.New("prompt").Parse(tmpl))
+
+		if err := t.Execute(&tpl, data); err != nil {
+			fmt.Println("Error executing template:", err)
+			return nil, err
+		}
+
+		prompt := tpl.String()
+
+		log.Println(prompt)
+		result = provider.Generate(prompt, &callback, &providers.ProviderOptions{StopWords: input.Stop})
+
 	} else {
 
 		// Warning: Check if there is a better way to do this to avoid useless parameter:
@@ -172,10 +217,22 @@ func Generate(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		utils.RespondError(w, "invalid_json")
 		return
 	}
-
 	res_chan, err := GenerationStart(user_id, input)
+
 	if err != nil {
 		switch err {
+		case webrequest.WebsiteExceedsLimit:
+			utils.RespondError(w, "error_website_exceeds_limit")
+		case webrequest.WebsitesContentExceeds:
+			utils.RespondError(w, "error_websites_content_exceeds")
+		case webrequest.NoContentFound:
+			utils.RespondError(w, "error_no_content_found")
+		case webrequest.FetchWebpageError:
+			utils.RespondError(w, "error_fetch_webpage")
+		case webrequest.ParseContentError:
+			utils.RespondError(w, "error_parse_content")
+		case webrequest.VisitBaseURLError:
+			utils.RespondError(w, "error_visit_base_url")
 		case NotFound:
 			utils.RespondError(w, "not_found")
 		case UnknownModelProvider:
