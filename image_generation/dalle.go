@@ -2,6 +2,7 @@ package image_generation
 
 import (
 	"context"
+	"io"
 	"os"
 	"time"
 
@@ -9,7 +10,7 @@ import (
 	image "github.com/rakyll/openai-go/image"
 )
 
-func Generate(prompt string) (*image.CreateResponse, error) {
+func DALLEGenerate(prompt string) (io.Reader, error) {
 	session := openai.NewSession(os.Getenv("OPENAI_API_KEY"))
 
 	(*((*session).HTTPClient)).Timeout = 600 * time.Second
@@ -28,5 +29,5 @@ func Generate(prompt string) (*image.CreateResponse, error) {
 		return nil, err
 	}
 
-	return response, nil
+	return (response.Data[0]).Reader()
 }
