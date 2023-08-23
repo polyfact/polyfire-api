@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"text/template"
+	"time"
 
 	router "github.com/julienschmidt/httprouter"
 	db "github.com/polyfact/api/db"
@@ -63,6 +63,7 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 	}
 
 	reached, err := db.UserReachedRateLimit(user_id)
+
 	if err != nil {
 		return nil, InternalServerError
 	}
@@ -153,6 +154,7 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 		}
 
 		tmpl := `
+		Date: {{.Date}}
 		From this request: {{.Task}}
 		and using this website content: {{.Content}}
 		answer at the above request and don't include appendix information other than the initial request.
@@ -160,14 +162,16 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 		Always answer with the same language as the request.
 		If you don't know the answer, just say so.
 		If website content is not enough, you can use your own knowledge.
-		If the websites are not accessible don't use them and don't tell to me.
+		Use All websites content to make your relevant answer.
 		`
 		data := struct {
 			Task    string
 			Content string
+			Date    string
 		}{
 			Task:    input.Task,
 			Content: res,
+			Date:    time.Now().Format("2006-01-02"),
 		}
 
 		var tpl bytes.Buffer
@@ -179,8 +183,6 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 		}
 
 		prompt := tpl.String()
-
-		log.Println(prompt)
 		result = provider.Generate(prompt, &callback, &providers.ProviderOptions{StopWords: input.Stop})
 
 	} else {
@@ -217,6 +219,7 @@ func Generate(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		utils.RespondError(w, "invalid_json")
 		return
 	}
+
 	res_chan, err := GenerationStart(user_id, input)
 
 	if err != nil {
