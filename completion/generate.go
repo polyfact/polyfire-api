@@ -152,12 +152,14 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 		}
 
 		tmpl := `
-		Answer at this request: {{.Task}}
-		from this website: {{.Content}}
-		Always answer with the same language as the request. 
-		Give a complete answer and don't include appendix information other than the initial request.
+		From this request: {{.Task}}
+		and using this website content: {{.Content}}
+		answer at the above request and don't include appendix information other than the initial request.
 		Don't be creative, just be factual.
-
+		Always answer with the same language as the request.
+		If you don't know the answer, just say so.
+		If website content is not enough, you can use your own knowledge.
+		If the websites are not accessible don't use them and don't tell to me.
 		`
 		data := struct {
 			Task    string
