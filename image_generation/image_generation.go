@@ -38,8 +38,23 @@ func storeImageBucket(reader io.Reader, path string) (string, error) {
 
 func ImageGeneration(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	prompt := r.URL.Query().Get("p")
+	provider := r.URL.Query().Get("provider")
 
-	gen, err := Generate(prompt)
+	if provider == "" {
+		provider = "openai"
+	}
+
+	var reader io.Reader
+	var err error
+	switch provider {
+	case "openai":
+		reader, err = DALLEGenerate(prompt)
+	case "midjourney":
+		reader, err = MJGenerate(prompt)
+	default:
+		utils.RespondError(w, "unknown_model_provider")
+		return
+	}
 	if err != nil {
 		utils.RespondError(w, "image_generation_error")
 		return
@@ -48,12 +63,6 @@ func ImageGeneration(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	format := r.URL.Query().Get("format")
 
 	if format == "json" {
-		reader, err := (gen.Data[0]).Reader()
-		if err != nil {
-			utils.RespondError(w, "read_error")
-			return
-		}
-
 		id := uuid.New().String()
 
 		url, err := storeImageBucket(reader, id+".png")
@@ -66,12 +75,6 @@ func ImageGeneration(w http.ResponseWriter, r *http.Request, _ router.Params) {
 			URL: url,
 		})
 	} else {
-		reader, err := (gen.Data[0]).Reader()
-		if err != nil {
-			utils.RespondError(w, "read_error")
-			return
-		}
-
 		io.Copy(w, reader)
 	}
 }
