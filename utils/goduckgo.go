@@ -18,7 +18,7 @@ const (
 	baseUrl              = "https://html.duckduckgo.com/html/?q=%s&no_redirect=1"
 	duckDuckGoPrefix     = "//duckduckgo.com/l/?uddg="
 	maxSitesToVisit      = 7
-	answerTokenLength    = 500
+	answerTokenLength    = 300
 	additionalTokenSpace = 300
 	urlPattern           = `read:(https?://[^\s]+)` // Extract URL with "read:" prefix.
 )
@@ -76,6 +76,8 @@ func containsURL(content string) ([]string, bool) {
 func WebRequest(query string, model string) (string, error) {
 	var accumulatedText strings.Builder
 
+	contextSize := llms.GetModelContextSize(model) - answerTokenLength
+
 	urlsFound, ok := containsURL(query)
 	if ok {
 		for _, urlFound := range urlsFound {
@@ -84,6 +86,17 @@ func WebRequest(query string, model string) (string, error) {
 				fmt.Println("Error fetching content:", err)
 				continue
 			}
+
+			contentTokenCount := llms.CountTokens(model, content)
+			if contentTokenCount > contextSize {
+				return "", errors.New("A website exceeds the token limit")
+			}
+
+			totalTokens := llms.CountTokens(model, accumulatedText.String()+content)
+			if totalTokens > contextSize {
+				return "", errors.New("Websites content exceeds the token limit")
+			}
+
 			accumulatedText.WriteString(content + "\n==========\n")
 		}
 
@@ -121,7 +134,7 @@ func WebRequest(query string, model string) (string, error) {
 		formattedContent := fmt.Sprintf("Site %d (%s): %s\n==========\n", sitesVisited+1, link, content)
 
 		totalTokens := llms.CountTokens(model, accumulatedText.String()+formattedContent)
-		contextSize := llms.GetModelContextSize(model) - answerTokenLength
+		
 
 		if totalTokens <= contextSize && totalTokens+additionalTokenSpace <= contextSize {
 			accumulatedText.WriteString(formattedContent)
