@@ -148,7 +148,7 @@ func WebRequest(query string, model string) (string, error) {
 	})
 
 	c.OnScraped(func(r *colly.Response) {
-		allDone <- true
+		close(allDone)
 	})
 
 	err := c.Visit(fmt.Sprintf(baseUrl, url.QueryEscape(query)))
