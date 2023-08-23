@@ -7,7 +7,6 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
-	"sync"
 
 	"github.com/cixtor/readability"
 	"github.com/gocolly/colly/v2"
@@ -117,12 +116,10 @@ func WebRequest(query string, model string) (string, error) {
 
 	c := colly.NewCollector()
 	var sitesVisited int
-	var wg sync.WaitGroup
+
+	allDone := make(chan bool)
 
 	c.OnHTML(".result", func(e *colly.HTMLElement) {
-		wg.Add(1)
-		defer wg.Done()
-
 		if sitesVisited >= maxSitesToVisit {
 			return
 		}
@@ -150,12 +147,16 @@ func WebRequest(query string, model string) (string, error) {
 		}
 	})
 
+	c.OnScraped(func(r *colly.Response) {
+		allDone <- true
+	})
+
 	err := c.Visit(fmt.Sprintf(baseUrl, url.QueryEscape(query)))
 	if err != nil {
 		return "", VisitBaseURLError
 	}
 
-	wg.Wait()
+	<-allDone
 
 	if accumulatedText.Len() == 0 {
 		return "", NoContentFound
