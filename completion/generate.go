@@ -16,6 +16,7 @@ import (
 	memory "github.com/polyfact/api/memory"
 	posthog "github.com/polyfact/api/posthog"
 	utils "github.com/polyfact/api/utils"
+	webrequest "github.com/polyfact/api/web_request"
 )
 
 type GenerateRequestBody struct {
@@ -145,7 +146,7 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 
 	} else if input.WebRequest && input.Provider != "llama" {
 
-		res, err := utils.WebRequest(input.Task, *input.Model)
+		res, err := webrequest.WebRequest(input.Task, *input.Model)
 
 		if err != nil {
 			return nil, err
@@ -220,6 +221,18 @@ func Generate(w http.ResponseWriter, r *http.Request, _ router.Params) {
 
 	if err != nil {
 		switch err {
+		case webrequest.WebsiteExceedsLimit:
+			utils.RespondError(w, "error_website_exceeds_limit")
+		case webrequest.WebsitesContentExceeds:
+			utils.RespondError(w, "error_websites_content_exceeds")
+		case webrequest.NoContentFound:
+			utils.RespondError(w, "error_no_content_found")
+		case webrequest.FetchWebpageError:
+			utils.RespondError(w, "error_fetch_webpage")
+		case webrequest.ParseContentError:
+			utils.RespondError(w, "error_parse_content")
+		case webrequest.VisitBaseURLError:
+			utils.RespondError(w, "error_visit_base_url")
 		case NotFound:
 			utils.RespondError(w, "not_found")
 		case UnknownModelProvider:
