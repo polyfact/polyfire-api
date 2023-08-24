@@ -18,7 +18,6 @@ func parseJWT(token string) (jwt.MapClaims, error) {
 		}
 		return []byte(os.Getenv("JWT_SECRET")), nil
 	})
-
 	if err != nil {
 		return nil, fmt.Errorf("Invalid token")
 	}
@@ -35,7 +34,13 @@ func createContextWithUserID(r *http.Request, userID string) context.Context {
 	return context.WithValue(r.Context(), "user_id", userID)
 }
 
-func authenticateAndHandle(w http.ResponseWriter, r *http.Request, params router.Params, token string, handler func(http.ResponseWriter, *http.Request, router.Params)) {
+func authenticateAndHandle(
+	w http.ResponseWriter,
+	r *http.Request,
+	params router.Params,
+	token string,
+	handler func(http.ResponseWriter, *http.Request, router.Params),
+) {
 	if token == "" {
 		utils.RespondError(w, "no_token")
 		return
