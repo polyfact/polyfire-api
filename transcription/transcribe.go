@@ -34,7 +34,7 @@ func SplitFile(file io.Reader) ([]io.Reader, func()) {
 	io.Copy(f, file)
 	exec.Command("ffmpeg", "-i", "/tmp/"+id+"/audio-file", "/tmp/"+id+"/audio-file.ts").Run()
 	os.Remove("/tmp/" + id + "/audio-file")
-	split_cmd := exec.Command("split", "--bytes=20971400", "/tmp/"+id+"/audio-file.ts")
+	split_cmd := exec.Command("split", "-b", "20971400", "/tmp/"+id+"/audio-file.ts")
 	split_cmd.Dir = "/tmp/" + id
 	split_cmd.Run()
 	os.Remove("/tmp/" + id + "/audio-file.ts")
