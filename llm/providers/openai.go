@@ -37,6 +37,10 @@ func (m OpenAIStreamProvider) Generate(task string, c *func(string, int, int), o
 
 			ctx := context.Background()
 
+			if opts == nil {
+				opts = &ProviderOptions{}
+			}
+
 			req := goOpenai.ChatCompletionRequest{
 				Model: m.Model,
 				Messages: []goOpenai.ChatCompletionMessage{
@@ -47,6 +51,16 @@ func (m OpenAIStreamProvider) Generate(task string, c *func(string, int, int), o
 				},
 				Stream: true,
 			}
+
+			if opts.StopWords != nil {
+				req.Stop = *opts.StopWords
+			}
+			if opts.Temperature != nil {
+				req.Temperature = *opts.Temperature
+			}
+
+			fmt.Printf("%v\n", req.Temperature)
+
 			stream, err := m.client.CreateChatCompletionStream(ctx, req)
 			if err != nil {
 				fmt.Printf("%v\n", err)
