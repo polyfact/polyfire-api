@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math"
 	"net/http"
 	"text/template"
 	"time"
@@ -65,7 +64,6 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 	}
 
 	reached, err := db.UserReachedRateLimit(user_id)
-
 	if err != nil {
 		return nil, InternalServerError
 	}
@@ -149,7 +147,6 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 	} else if input.WebRequest && input.Provider != "llama" {
 
 		res, err := webrequest.WebRequest(input.Task, *input.Model)
-
 		if err != nil {
 			return nil, err
 		}
@@ -200,12 +197,7 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 			opts.StopWords = input.Stop
 		}
 		if input.Temperature != nil {
-			if *input.Temperature == 0.0 {
-				var nearly_zero float32 = math.SmallestNonzeroFloat32
-				opts.Temperature = &nearly_zero // We need to do that bc openai-go omitempty on 0.0
-			} else {
-				opts.Temperature = input.Temperature
-			}
+			opts.Temperature = input.Temperature
 		}
 		result = provider.Generate(prompt, &callback, opts)
 	}
@@ -230,7 +222,6 @@ func Generate(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	}
 
 	res_chan, err := GenerationStart(user_id, input)
-
 	if err != nil {
 		switch err {
 		case webrequest.WebsiteExceedsLimit:
