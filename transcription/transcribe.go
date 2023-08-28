@@ -22,7 +22,7 @@ import (
 	"github.com/polyfact/api/utils"
 )
 
-func SplitFile(file io.Reader) ([]io.Reader, func()) {
+func SplitFile(file io.Reader) ([]io.Reader, func(), error) {
 	id := "split_transcribe-" + uuid.New().String()
 	os.Mkdir("/tmp/"+id, 0700)
 	close_func := func() {
@@ -31,7 +31,7 @@ func SplitFile(file io.Reader) ([]io.Reader, func()) {
 	fmt.Println(id)
 	f, err := os.Create("/tmp/" + id + "/audio-file")
 	if err != nil {
-		panic(err)
+		return nil, nil, err
 	}
 	io.Copy(f, file)
 	exec.Command("ffmpeg", "-i", "/tmp/"+id+"/audio-file", "/tmp/"+id+"/audio-file.ts").Run()
@@ -42,7 +42,7 @@ func SplitFile(file io.Reader) ([]io.Reader, func()) {
 	os.Remove("/tmp/" + id + "/audio-file.ts")
 	files, err := ioutil.ReadDir("/tmp/" + id)
 	if err != nil {
-		panic(err)
+		return nil, nil, err
 	}
 
 	var res []io.Reader = make([]io.Reader, 0)
@@ -52,14 +52,14 @@ func SplitFile(file io.Reader) ([]io.Reader, func()) {
 			os.Remove("/tmp/" + id + "/" + file.Name())
 			audio_part_r, err := os.Open("/tmp/" + id + "/" + file.Name() + ".mp3")
 			if err != nil {
-				panic(err)
+				return nil, nil, err
 			}
 			res = append(res, audio_part_r)
 			fmt.Println("adding:", file.Name())
 		}
 	}
 
-	return res, close_func
+	return res, close_func, nil
 }
 
 func DownloadFromBucket(bucket string, path string) ([]byte, error) {
@@ -127,7 +127,10 @@ func Transcribe(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	total_str := ""
 	if file_size > 25000000 {
 		// The format doesn't seem to really matter
-		files, close_func := SplitFile(file_buf_reader)
+		files, close_func, err := SplitFile(file_buf_reader)
+		if err != nil {
+			utils.RespondError(w, "splitting_error")
+		}
 		defer close_func()
 		for i, r := range files {
 			res, err := stt.Transcribe(r, "mpeg")
