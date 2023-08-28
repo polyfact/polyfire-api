@@ -2,6 +2,7 @@ package transcription
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -15,6 +16,7 @@ import (
 
 	"github.com/google/uuid"
 	router "github.com/julienschmidt/httprouter"
+	supa "github.com/nedpals/supabase-go"
 
 	stt "github.com/polyfact/api/stt"
 	"github.com/polyfact/api/utils"
@@ -60,34 +62,70 @@ func SplitFile(file io.Reader) ([]io.Reader, func()) {
 	return res, close_func
 }
 
+func DownloadFromBucket(bucket string, path string) ([]byte, error) {
+	supabaseUrl := os.Getenv("SUPABASE_URL")
+	supabaseKey := os.Getenv("SUPABASE_KEY")
+
+	supabase := supa.CreateClient(supabaseUrl, supabaseKey)
+
+	return supabase.Storage.From(bucket).Download(path)
+}
+
+type TranscribeRequestBody struct {
+	FilePath string `json:"file_path"`
+}
+
 type Result struct {
 	Text string `json:"text"`
 }
 
 func Transcribe(w http.ResponseWriter, r *http.Request, _ router.Params) {
-	_, p, _ := mime.ParseMediaType(r.Header.Get("Content-Type"))
-	boundary := p["boundary"]
-	reader := multipart.NewReader(r.Body, boundary)
-	part, err := reader.NextPart()
-	if err == io.EOF {
-		utils.RespondError(w, "missing_content")
-		return
+	content_type := r.Header.Get("Content-Type")
+	var file_size int
+	var file_buf_reader io.Reader
+
+	if content_type == "application/json" {
+		var input TranscribeRequestBody
+
+		err := json.NewDecoder(r.Body).Decode(&input)
+		if err != nil {
+			utils.RespondError(w, "invalid_json")
+			return
+		}
+
+		b, err := DownloadFromBucket("audio_transcribes", input.FilePath)
+		if err != nil {
+			fmt.Println(err)
+			utils.RespondError(w, "read_error")
+			return
+		}
+
+		file_size = len(b)
+		file_buf_reader = bytes.NewReader(b)
+	} else {
+		_, p, _ := mime.ParseMediaType(content_type)
+		boundary := p["boundary"]
+		reader := multipart.NewReader(r.Body, boundary)
+		part, err := reader.NextPart()
+		if err == io.EOF {
+			utils.RespondError(w, "missing_content")
+			return
+		}
+		if err != nil {
+			utils.RespondError(w, "read_error")
+			return
+		}
+		file_buf_reader = bufio.NewReader(part)
+
+		file_size, err = strconv.Atoi(r.Header.Get("Content-Length"))
+		if err != nil {
+			utils.RespondError(w, "read_error")
+			return
+		}
 	}
-	if err != nil {
-		utils.RespondError(w, "read_error")
-		return
-	}
-	file_buf_reader := bufio.NewReader(part)
 
 	total_str := ""
-
-	content_length, err := strconv.Atoi(r.Header.Get("Content-Length"))
-	if err != nil {
-		utils.RespondError(w, "read_error")
-		return
-	}
-
-	if content_length > 25000000 {
+	if file_size > 25000000 {
 		// The format doesn't seem to really matter
 		files, close_func := SplitFile(file_buf_reader)
 		defer close_func()
