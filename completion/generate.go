@@ -63,7 +63,6 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 	}
 
 	reached, err := db.UserReachedRateLimit(user_id)
-
 	if err != nil {
 		return nil, InternalServerError
 	}
@@ -74,10 +73,6 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 	callback := func(model_name string, input_count int, output_count int) {
 		db.LogRequests(user_id, model_name, input_count, output_count, "completion")
 		posthog.GenerateEvent(user_id, model_name, input_count, output_count)
-	}
-
-	if input.Provider == "" {
-		input.Provider = "openai"
 	}
 
 	provider, err := llm.NewProvider(input.Provider, input.Model)
@@ -102,7 +97,6 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 
 	if input.ChatId != nil && len(*input.ChatId) > 0 {
 		chat, err := db.GetChatById(*input.ChatId)
-
 		if err != nil {
 			return nil, InternalServerError
 		}
@@ -148,7 +142,6 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 	} else if input.WebRequest && input.Provider != "llama" {
 
 		res, err := webrequest.WebRequest(input.Task, *input.Model)
-
 		if err != nil {
 			return nil, err
 		}
@@ -221,7 +214,6 @@ func Generate(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	}
 
 	res_chan, err := GenerationStart(user_id, input)
-
 	if err != nil {
 		switch err {
 		case webrequest.WebsiteExceedsLimit:
