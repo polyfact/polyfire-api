@@ -74,7 +74,7 @@ func Transcribe(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		return
 	}
 	if err != nil {
-		utils.RespondError(w, "read_error")
+		utils.RespondError(w, "read_error", err.Error())
 		return
 	}
 	file_buf_reader := bufio.NewReader(part)
@@ -83,7 +83,7 @@ func Transcribe(w http.ResponseWriter, r *http.Request, _ router.Params) {
 
 	content_length, err := strconv.Atoi(r.Header.Get("Content-Length"))
 	if err != nil {
-		utils.RespondError(w, "read_error")
+		utils.RespondError(w, "read_error", err.Error())
 		return
 	}
 
