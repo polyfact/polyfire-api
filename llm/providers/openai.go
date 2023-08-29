@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"io"
 	"log"
 	"os"
@@ -37,6 +38,10 @@ func (m OpenAIStreamProvider) Generate(task string, c *func(string, int, int), o
 
 			ctx := context.Background()
 
+			if opts == nil {
+				opts = &ProviderOptions{}
+			}
+
 			req := goOpenai.ChatCompletionRequest{
 				Model: m.Model,
 				Messages: []goOpenai.ChatCompletionMessage{
@@ -47,6 +52,21 @@ func (m OpenAIStreamProvider) Generate(task string, c *func(string, int, int), o
 				},
 				Stream: true,
 			}
+
+			if opts.StopWords != nil {
+				req.Stop = *opts.StopWords
+			}
+			if opts.Temperature != nil {
+				if *opts.Temperature == 0.0 {
+					var nearly_zero float32 = math.SmallestNonzeroFloat32
+					req.Temperature = nearly_zero // We need to do that bc openai-go omitempty on 0.0
+				} else {
+					req.Temperature = *opts.Temperature
+				}
+			}
+
+			fmt.Printf("%v\n", req.Temperature)
+
 			stream, err := m.client.CreateChatCompletionStream(ctx, req)
 			if err != nil {
 				fmt.Printf("%v\n", err)

@@ -26,6 +26,7 @@ type GenerateRequestBody struct {
 	MemoryId       *string   `json:"memory_id,omitempty"`
 	ChatId         *string   `json:"chat_id,omitempty"`
 	Stop           *[]string `json:"stop,omitempty"`
+	Temperature    *float32  `json:"temperature,omitempty"`
 	Stream         bool      `json:"stream,omitempty"`
 	Infos          bool      `json:"infos,omitempty"`
 	SystemPromptId *string   `json:"system_prompt_id,omitempty"`
@@ -34,6 +35,7 @@ type GenerateRequestBody struct {
 }
 
 var (
+	UnknownUserId        error = errors.New("400 Unknown user Id")
 	InternalServerError  error = errors.New("500 InternalServerError")
 	UnknownModelProvider error = errors.New("400 Unknown model provider")
 	NotFound             error = errors.New("404 Not Found")
@@ -63,9 +65,8 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 	}
 
 	reached, err := db.UserReachedRateLimit(user_id)
-
 	if err != nil {
-		return nil, InternalServerError
+		return nil, UnknownUserId
 	}
 	if reached {
 		return nil, RateLimitReached
@@ -102,7 +103,6 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 
 	if input.ChatId != nil && len(*input.ChatId) > 0 {
 		chat, err := db.GetChatById(*input.ChatId)
-
 		if err != nil {
 			return nil, InternalServerError
 		}
@@ -148,7 +148,6 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 	} else if input.WebRequest && input.Provider != "llama" {
 
 		res, err := webrequest.WebRequest(input.Task, *input.Model)
-
 		if err != nil {
 			return nil, err
 		}
@@ -194,11 +193,14 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 
 		prompt := context_completion + "\n" + system_prompt + "\n" + input.Task
 
+		opts := &providers.ProviderOptions{}
 		if input.Stop != nil {
-			result = provider.Generate(prompt, &callback, &providers.ProviderOptions{StopWords: input.Stop})
-		} else {
-			result = provider.Generate(prompt, &callback, nil)
+			opts.StopWords = input.Stop
 		}
+		if input.Temperature != nil {
+			opts.Temperature = input.Temperature
+		}
+		result = provider.Generate(prompt, &callback, opts)
 	}
 
 	return &result, nil
@@ -221,7 +223,6 @@ func Generate(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	}
 
 	res_chan, err := GenerationStart(user_id, input)
-
 	if err != nil {
 		switch err {
 		case webrequest.WebsiteExceedsLimit:
@@ -243,7 +244,7 @@ func Generate(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		case RateLimitReached:
 			utils.RespondError(w, "rate_limit_reached")
 		default:
-			utils.RespondError(w, "internal_error")
+			utils.RespondError(w, "internal_error", err.Error())
 		}
 		return
 	}
