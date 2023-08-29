@@ -84,6 +84,7 @@ func Transcribe(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	var file_size int
 	var file_buf_reader io.Reader
 
+
 	if content_type == "application/json" {
 		var input TranscribeRequestBody
 
@@ -112,16 +113,17 @@ func Transcribe(w http.ResponseWriter, r *http.Request, _ router.Params) {
 			return
 		}
 		if err != nil {
-			utils.RespondError(w, "read_error")
+		utils.RespondError(w, "read_error", err.Error())
 			return
 		}
 		file_buf_reader = bufio.NewReader(part)
 
 		file_size, err = strconv.Atoi(r.Header.Get("Content-Length"))
 		if err != nil {
-			utils.RespondError(w, "read_error")
+		utils.RespondError(w, "read_error", err.Error())
 			return
 		}
+
 	}
 
 	total_str := ""

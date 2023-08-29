@@ -5,7 +5,8 @@ import (
 )
 
 type ProviderOptions struct {
-	StopWords *[]string
+	StopWords   *[]string
+	Temperature *float32
 }
 
 type TokenUsage struct {
