@@ -2,6 +2,7 @@ package transcription
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -15,12 +16,13 @@ import (
 
 	"github.com/google/uuid"
 	router "github.com/julienschmidt/httprouter"
+	supa "github.com/nedpals/supabase-go"
 
 	stt "github.com/polyfact/api/stt"
 	"github.com/polyfact/api/utils"
 )
 
-func SplitFile(file io.Reader) ([]io.Reader, func()) {
+func SplitFile(file io.Reader) ([]io.Reader, func(), error) {
 	id := "split_transcribe-" + uuid.New().String()
 	os.Mkdir("/tmp/"+id, 0700)
 	close_func := func() {
@@ -29,7 +31,7 @@ func SplitFile(file io.Reader) ([]io.Reader, func()) {
 	fmt.Println(id)
 	f, err := os.Create("/tmp/" + id + "/audio-file")
 	if err != nil {
-		panic(err)
+		return nil, nil, err
 	}
 	io.Copy(f, file)
 	exec.Command("ffmpeg", "-i", "/tmp/"+id+"/audio-file", "/tmp/"+id+"/audio-file.ts").Run()
@@ -40,7 +42,7 @@ func SplitFile(file io.Reader) ([]io.Reader, func()) {
 	os.Remove("/tmp/" + id + "/audio-file.ts")
 	files, err := ioutil.ReadDir("/tmp/" + id)
 	if err != nil {
-		panic(err)
+		return nil, nil, err
 	}
 
 	var res []io.Reader = make([]io.Reader, 0)
@@ -50,14 +52,27 @@ func SplitFile(file io.Reader) ([]io.Reader, func()) {
 			os.Remove("/tmp/" + id + "/" + file.Name())
 			audio_part_r, err := os.Open("/tmp/" + id + "/" + file.Name() + ".mp3")
 			if err != nil {
-				panic(err)
+				return nil, nil, err
 			}
 			res = append(res, audio_part_r)
 			fmt.Println("adding:", file.Name())
 		}
 	}
 
-	return res, close_func
+	return res, close_func, nil
+}
+
+func DownloadFromBucket(bucket string, path string) ([]byte, error) {
+	supabaseUrl := os.Getenv("SUPABASE_URL")
+	supabaseKey := os.Getenv("SUPABASE_KEY")
+
+	supabase := supa.CreateClient(supabaseUrl, supabaseKey)
+
+	return supabase.Storage.From(bucket).Download(path)
+}
+
+type TranscribeRequestBody struct {
+	FilePath string `json:"file_path"`
 }
 
 type Result struct {
@@ -65,31 +80,59 @@ type Result struct {
 }
 
 func Transcribe(w http.ResponseWriter, r *http.Request, _ router.Params) {
-	_, p, _ := mime.ParseMediaType(r.Header.Get("Content-Type"))
-	boundary := p["boundary"]
-	reader := multipart.NewReader(r.Body, boundary)
-	part, err := reader.NextPart()
-	if err == io.EOF {
-		utils.RespondError(w, "missing_content")
-		return
-	}
-	if err != nil {
+	content_type := r.Header.Get("Content-Type")
+	var file_size int
+	var file_buf_reader io.Reader
+
+
+	if content_type == "application/json" {
+		var input TranscribeRequestBody
+
+		err := json.NewDecoder(r.Body).Decode(&input)
+		if err != nil {
+			utils.RespondError(w, "invalid_json")
+			return
+		}
+
+		b, err := DownloadFromBucket("audio_transcribes", input.FilePath)
+		if err != nil {
+			fmt.Println(err)
+			utils.RespondError(w, "read_error")
+			return
+		}
+
+		file_size = len(b)
+		file_buf_reader = bytes.NewReader(b)
+	} else {
+		_, p, _ := mime.ParseMediaType(content_type)
+		boundary := p["boundary"]
+		reader := multipart.NewReader(r.Body, boundary)
+		part, err := reader.NextPart()
+		if err == io.EOF {
+			utils.RespondError(w, "missing_content")
+			return
+		}
+		if err != nil {
 		utils.RespondError(w, "read_error", err.Error())
-		return
+			return
+		}
+		file_buf_reader = bufio.NewReader(part)
+
+		file_size, err = strconv.Atoi(r.Header.Get("Content-Length"))
+		if err != nil {
+		utils.RespondError(w, "read_error", err.Error())
+			return
+		}
+
 	}
-	file_buf_reader := bufio.NewReader(part)
 
 	total_str := ""
-
-	content_length, err := strconv.Atoi(r.Header.Get("Content-Length"))
-	if err != nil {
-		utils.RespondError(w, "read_error", err.Error())
-		return
-	}
-
-	if content_length > 25000000 {
+	if file_size > 25000000 {
 		// The format doesn't seem to really matter
-		files, close_func := SplitFile(file_buf_reader)
+		files, close_func, err := SplitFile(file_buf_reader)
+		if err != nil {
+			utils.RespondError(w, "splitting_error")
+		}
 		defer close_func()
 		for i, r := range files {
 			res, err := stt.Transcribe(r, "mpeg")
