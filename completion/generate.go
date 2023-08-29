@@ -34,6 +34,7 @@ type GenerateRequestBody struct {
 }
 
 var (
+	UnknownUserId        error = errors.New("400 Unknown user Id")
 	InternalServerError  error = errors.New("500 InternalServerError")
 	UnknownModelProvider error = errors.New("400 Unknown model provider")
 	NotFound             error = errors.New("404 Not Found")
@@ -65,7 +66,7 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 	reached, err := db.UserReachedRateLimit(user_id)
 
 	if err != nil {
-		return nil, InternalServerError
+		return nil, UnknownUserId
 	}
 	if reached {
 		return nil, RateLimitReached
@@ -243,7 +244,7 @@ func Generate(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		case RateLimitReached:
 			utils.RespondError(w, "rate_limit_reached")
 		default:
-			utils.RespondError(w, "internal_error")
+			utils.RespondError(w, "internal_error", err.Error())
 		}
 		return
 	}
