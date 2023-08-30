@@ -45,14 +45,11 @@ func Create(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		return
 	}
 
-
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(db.Memory{ID: memoryId, UserId: userId}); err != nil {
 		utils.RespondError(w, "encode_error")
 	}
 }
-
-
 
 func Add(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	decoder := json.NewDecoder(r.Body)
