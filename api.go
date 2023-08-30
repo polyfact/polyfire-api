@@ -16,22 +16,21 @@ import (
 	transcription "github.com/polyfact/api/transcription"
 )
 
-type CORSHandler struct {
-	Handler http.Handler
+type CORSRouter struct {
+	Router *httprouter.Router
 }
 
-func (h CORSHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h CORSRouter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Headers", "*")
-	h.Handler.ServeHTTP(w, r)
+
+	defer middlewares.RecoverFromPanic(w)
+
+	h.Router.ServeHTTP(w, r)
 }
 
-func CORS(
-	handler http.Handler,
-) http.Handler {
-	return CORSHandler{
-		Handler: handler,
-	}
+func GlobalMiddleware(router *httprouter.Router) http.Handler {
+	return &CORSRouter{Router: router}
 }
 
 func main() {
@@ -39,24 +38,30 @@ func main() {
 
 	router := httprouter.New()
 
+	// Completion Routes
 	router.POST("/generate", middlewares.Auth(completion.Generate))
-
 	router.GET("/chat/:id/history", middlewares.Auth(completion.GetChatHistory))
 	router.POST("/chats", middlewares.Auth(completion.CreateChat))
+	router.GET("/stream", middlewares.AuthStream(completion.Stream))
 
+	// Transcription Routes
 	router.POST("/transcribe", middlewares.Auth(transcription.Transcribe))
 
+	// Image Generation Routes
 	router.GET("/image/generate", middlewares.Auth(imageGeneration.ImageGeneration))
 
+	// Memory Routes
 	router.GET("/memories", middlewares.Auth(memory.Get))
 	router.POST("/memory", middlewares.Auth(memory.Create))
 	router.PUT("/memory", middlewares.Auth(memory.Add))
+
+	// Auth Routes
 	router.GET("/project/:id/auth/token", auth.TokenExchangeHandler)
 	router.GET("/usage", middlewares.Auth(auth.UserRateLimit))
 
+	// KV Routes
 	router.GET("/kv", middlewares.Auth(kv.Get))
 	router.PUT("/kv", middlewares.Auth(kv.Set))
-	router.GET("/stream", middlewares.AuthStream(completion.Stream))
 
 	// Prompt Routes
 	router.GET("/prompt/name/:name", middlewares.Auth(prompt.GetPromptByName))
@@ -66,5 +71,5 @@ func main() {
 	router.PUT("/prompt/:id", middlewares.Auth(prompt.UpdatePrompt))
 	router.DELETE("/prompt/:id", middlewares.Auth(prompt.DeletePrompt))
 
-	log.Fatal(http.ListenAndServe(":8080", CORS(router)))
+	log.Fatal(http.ListenAndServe(":8080", GlobalMiddleware(router)))
 }
