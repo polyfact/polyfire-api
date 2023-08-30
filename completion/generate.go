@@ -44,11 +44,10 @@ var (
 )
 
 func getLanguageCompletion(language *string) string {
-	var lang string = "english"
 	if language != nil && *language != "" {
-		lang = *language
+		return "Answer in " + *language + "."
 	}
-	return "You have to answer in " + lang + ". If not exist answer in english."
+	return ""
 }
 
 type MemoryProcessResult struct {
@@ -158,7 +157,7 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 			system_prompt = *(chat.SystemPrompt)
 		}
 
-		prompt := FormatPrompt(context_completion+"\n"+system_prompt+"\n"+language_completion, chatHistory, input.Task)
+		prompt := FormatPrompt(language_completion+"\n"+context_completion+"\n"+system_prompt, chatHistory, input.Task)
 
 		err = db.AddChatMessage(chat.ID, true, input.Task)
 		if err != nil {
