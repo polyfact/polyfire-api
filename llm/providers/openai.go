@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"math"
 	"io"
 	"log"
+	"math"
 	"os"
 
 	goOpenai "github.com/sashabaranov/go-openai"
