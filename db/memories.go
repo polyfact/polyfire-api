@@ -5,8 +5,9 @@ import (
 )
 
 type Memory struct {
-	ID      string `json:"id"`
-	USER_ID string `json:"user_id"`
+	ID     string `json:"id"`
+	UserId string `json:"user_id"`
+	Public bool   `json:"public"`
 }
 type MatchParams struct {
 	QueryEmbedding []float64 `json:"query_embedding"`
@@ -23,19 +24,19 @@ type MatchResult struct {
 }
 
 type Embedding struct {
-	MEMORY_ID string    `json:"memory_id"`
-	USER_ID   string    `json:"user_id"`
-	CONTENT   string    `json:"content"`
-	EMBEDDING []float64 `json:"embedding"`
+	MemoryId  string    `json:"memory_id"`
+	UserId    string    `json:"user_id"`
+	Content   string    `json:"content"`
+	Embedding []float64 `json:"embedding"`
 }
 
-func CreateMemory(memoryId string, userId string) error {
+func CreateMemory(memoryId string, userId string, public bool) error {
 	client, err := CreateClient()
 	if err != nil {
 		return err
 	}
 
-	_, _, err = client.From("memories").Insert(Memory{ID: memoryId, USER_ID: userId}, false, "", "", "exact").Execute()
+	_, _, err = client.From("memories").Insert(Memory{ID: memoryId, UserId: userId, Public: public}, false, "", "", "exact").Execute()
 
 	return err
 }
@@ -47,10 +48,10 @@ func AddMemory(userId string, memoryId string, content string, embedding []float
 	}
 
 	_, _, err = client.From("embeddings").Insert(Embedding{
-		USER_ID:   userId,
-		MEMORY_ID: memoryId,
-		CONTENT:   content,
-		EMBEDDING: embedding,
+		UserId:    userId,
+		MemoryId:  memoryId,
+		Content:   content,
+		Embedding: embedding,
 	}, false, "", "", "exact").Execute()
 
 	return err
