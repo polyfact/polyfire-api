@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	router "github.com/julienschmidt/httprouter"
+	posthog "github.com/polyfact/api/posthog"
 	"github.com/polyfact/api/utils"
 )
 
@@ -37,6 +38,8 @@ func storeImageBucket(reader io.Reader, path string) (string, error) {
 }
 
 func ImageGeneration(w http.ResponseWriter, r *http.Request, _ router.Params) {
+	user_id := r.Context().Value("user_id").(string)
+	posthog.ImageGenerationEvent(user_id)
 	prompt := r.URL.Query().Get("p")
 	provider := r.URL.Query().Get("provider")
 

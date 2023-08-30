@@ -7,10 +7,14 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/polyfact/api/db"
+	posthog "github.com/polyfact/api/posthog"
 	"github.com/polyfact/api/utils"
 )
 
 func GetPromptById(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	user_id := r.Context().Value("user_id").(string)
+	posthog.GetPromptByIdEvent(user_id)
+
 	id := ps.ByName("id")
 	result, err := db.GetPromptById(id)
 	if err != nil {
@@ -21,6 +25,9 @@ func GetPromptById(w http.ResponseWriter, r *http.Request, ps httprouter.Params)
 }
 
 func GetPromptByName(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	user_id := r.Context().Value("user_id").(string)
+	posthog.GetPromptByNameEvent(user_id)
+
 	name := ps.ByName("name")
 	result, err := db.GetPromptByName(name)
 	if err != nil {
@@ -31,6 +38,9 @@ func GetPromptByName(w http.ResponseWriter, r *http.Request, ps httprouter.Param
 }
 
 func GetAllPrompts(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	user_id := r.Context().Value("user_id").(string)
+	posthog.GetAllPromptsEvent(user_id)
+
 	queryParams := r.URL.Query()
 
 	var filters db.SupabaseFilters
@@ -62,7 +72,6 @@ func GetAllPrompts(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 	}
 
 	result, err := db.GetAllPrompts(filters)
-
 	if err != nil {
 		switch err.Error() {
 		case "invalid_column":
@@ -80,6 +89,9 @@ func GetAllPrompts(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 }
 
 func CreatePrompt(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	user_id := r.Context().Value("user_id").(string)
+	posthog.CreatePromptEvent(user_id)
+
 	var input db.PromptInsert
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		utils.RespondError(w, "decode_prompt_error", err.Error())
@@ -87,7 +99,6 @@ func CreatePrompt(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	}
 
 	result, err := db.CreatePrompt(input)
-
 	if err != nil {
 		utils.RespondError(w, "db_insert_prompt_error", err.Error())
 		return
@@ -96,6 +107,9 @@ func CreatePrompt(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 }
 
 func UpdatePrompt(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	user_id := r.Context().Value("user_id").(string)
+	posthog.UpdatePromptEvent(user_id)
+
 	id := ps.ByName("id")
 	var input db.PromptUpdate
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
@@ -112,6 +126,9 @@ func UpdatePrompt(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 }
 
 func DeletePrompt(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	user_id := r.Context().Value("user_id").(string)
+	posthog.DeletePromptEvent(user_id)
+
 	id := ps.ByName("id")
 	if err := db.DeletePrompt(id); err != nil {
 		utils.RespondError(w, "db_delete_prompt_error", err.Error())

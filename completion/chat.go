@@ -7,6 +7,7 @@ import (
 
 	router "github.com/julienschmidt/httprouter"
 	db "github.com/polyfact/api/db"
+	posthog "github.com/polyfact/api/posthog"
 	utils "github.com/polyfact/api/utils"
 )
 
@@ -29,6 +30,7 @@ func FormatPrompt(systemPrompt string, chatHistory []db.ChatMessage, userPrompt 
 func CreateChat(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	user_id := r.Context().Value("user_id").(string)
 
+	posthog.CreateChatEvent(user_id)
 	var requestBody struct {
 		SystemPrompt   *string `json:"system_prompt"`
 		SystemPromptId *string `json:"system_prompt_id"`
@@ -58,6 +60,8 @@ func CreateChat(w http.ResponseWriter, r *http.Request, _ router.Params) {
 func GetChatHistory(w http.ResponseWriter, r *http.Request, ps router.Params) {
 	id := ps.ByName("id")
 	user_id := r.Context().Value("user_id").(string)
+
+	posthog.GetChatHistoryEvent(user_id)
 
 	messages, err := db.GetChatMessages(user_id, id)
 	if err != nil {
