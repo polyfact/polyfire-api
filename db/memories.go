@@ -103,5 +103,3 @@ func MatchEmbeddings(memoryId string, userId string, embedding []float64) ([]Mat
 
 	return results, nil
 }
-
-
