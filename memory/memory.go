@@ -10,6 +10,7 @@ import (
 	textsplitter "github.com/tmc/langchaingo/textsplitter"
 
 	db "github.com/polyfact/api/db"
+	posthog "github.com/polyfact/api/posthog"
 	"github.com/polyfact/api/llm"
 	"github.com/polyfact/api/utils"
 )
@@ -19,6 +20,7 @@ const BatchSize int = 512
 func Create(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	memoryId := uuid.New().String()
 	userId := r.Context().Value("user_id").(string)
+	posthog.CreateMemoryEvent(userId)
 
 	err := db.CreateMemory(memoryId, userId)
 	if err != nil {
@@ -35,6 +37,7 @@ func Create(w http.ResponseWriter, r *http.Request, _ router.Params) {
 func Add(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	decoder := json.NewDecoder(r.Body)
 	userId := r.Context().Value("user_id").(string)
+	posthog.AddToMemoryEvent(userId)
 
 	var requestBody struct {
 		ID       string `json:"id"`
@@ -97,6 +100,7 @@ func Get(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		utils.RespondError(w, "user_id_error")
 		return
 	}
+	posthog.GetMemoryEvent(userId)
 
 	results, err := db.GetMemoryIds(userId)
 	if err != nil {

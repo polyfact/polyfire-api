@@ -6,11 +6,13 @@ import (
 
 	router "github.com/julienschmidt/httprouter"
 	db "github.com/polyfact/api/db"
+	posthog "github.com/polyfact/api/posthog"
 	"github.com/polyfact/api/utils"
 )
 
 func Get(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	user_id := r.Context().Value("user_id").(string)
+	posthog.GetKVEvent(user_id)
 
 	id := r.URL.Query().Get("key")
 
@@ -31,6 +33,7 @@ func Get(w http.ResponseWriter, r *http.Request, _ router.Params) {
 
 func Set(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	user_id := r.Context().Value("user_id").(string)
+	posthog.SetKVEvent(user_id)
 
 	var data struct {
 		Key   string `json:"key"`

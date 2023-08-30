@@ -18,6 +18,7 @@ import (
 	router "github.com/julienschmidt/httprouter"
 	supa "github.com/nedpals/supabase-go"
 
+	posthog "github.com/polyfact/api/posthog"
 	stt "github.com/polyfact/api/stt"
 	"github.com/polyfact/api/utils"
 )
@@ -80,6 +81,8 @@ type Result struct {
 }
 
 func Transcribe(w http.ResponseWriter, r *http.Request, _ router.Params) {
+	user_id := r.Context().Value("user_id").(string)
+	posthog.TranscribeEvent(user_id)
 	content_type := r.Header.Get("Content-Type")
 	var file_size int
 	var file_buf_reader io.Reader
