@@ -7,7 +7,7 @@ import (
 type Memory struct {
 	ID     string `json:"id"`
 	UserId string `json:"user_id"`
-	Public bool   `json:"public,omitempty"`
+	Public bool   `json:"public"`
 }
 type MatchParams struct {
 	QueryEmbedding []float64 `json:"query_embedding"`

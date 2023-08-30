@@ -46,7 +46,7 @@ func Create(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(db.Memory{ID: memoryId, UserId: userId}); err != nil {
+	if err := json.NewEncoder(w).Encode(db.Memory{ID: memoryId, UserId: userId, Public: *requestBody.Public}); err != nil {
 		utils.RespondError(w, "encode_error")
 	}
 }
