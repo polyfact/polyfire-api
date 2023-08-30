@@ -62,16 +62,20 @@ func authenticateAndHandle(
 	handler(w, r.WithContext(ctx), params)
 }
 
-func Auth(handler func(http.ResponseWriter, *http.Request, router.Params)) func(http.ResponseWriter, *http.Request, router.Params) {
-	return HandlePanic(func(w http.ResponseWriter, r *http.Request, params router.Params) {
+func Auth(
+	handler func(http.ResponseWriter, *http.Request, router.Params),
+) func(http.ResponseWriter, *http.Request, router.Params) {
+	return func(w http.ResponseWriter, r *http.Request, params router.Params) {
 		token := r.Header.Get("X-Access-Token")
 		authenticateAndHandle(w, r, params, token, handler)
-	})
+	}
 }
 
-func AuthStream(handler func(http.ResponseWriter, *http.Request, router.Params)) func(http.ResponseWriter, *http.Request, router.Params) {
-	return HandlePanic(func(w http.ResponseWriter, r *http.Request, params router.Params) {
+func AuthStream(
+	handler func(http.ResponseWriter, *http.Request, router.Params),
+) func(http.ResponseWriter, *http.Request, router.Params) {
+	return func(w http.ResponseWriter, r *http.Request, params router.Params) {
 		token := r.URL.Query().Get("token")
 		authenticateAndHandle(w, r, params, token, handler)
-	})
+	}
 }
