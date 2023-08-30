@@ -79,7 +79,7 @@ func GetMemoryIds(userId string) ([]MemoryRecord, error) {
 func MatchEmbeddings(memoryId string, userId string, embedding []float64) ([]MatchResult, error) {
 	params := MatchParams{
 		QueryEmbedding: embedding,
-		MatchTreshold:  0.80,
+		MatchTreshold:  0.70,
 		MatchCount:     10,
 		MemoryID:       memoryId,
 		UserID:         userId,
