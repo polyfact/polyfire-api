@@ -32,6 +32,7 @@ type GenerateRequestBody struct {
 	SystemPromptId *string   `json:"system_prompt_id,omitempty"`
 	SystemPrompt   *string   `json:"system_prompt,omitempty"`
 	WebRequest     bool      `json:"web,omitempty"`
+	Language       *string   `json:"language,omitempty"`
 }
 
 var (
@@ -42,26 +43,60 @@ var (
 	RateLimitReached     error = errors.New("429 Monthly Rate Limit Reached")
 )
 
+func getLanguageCompletion(language *string) string {
+	if language != nil && *language != "" {
+		return "Answer in " + *language + "."
+	}
+	return ""
+}
+
+type MemoryProcessResult struct {
+	Ressources        []db.MatchResult
+	ContextCompletion string
+}
+
+func getMemory(user_id string, input GenerateRequestBody) (*MemoryProcessResult, error) {
+	if input.MemoryId == nil || len(*input.MemoryId) == 0 {
+		return nil, nil
+	}
+
+	results, err := memory.Embedder(user_id, *input.MemoryId, input.Task)
+	if err != nil {
+		return nil, InternalServerError
+	}
+
+	context_completion, err := utils.FillContext(results)
+	if err != nil {
+		return nil, InternalServerError
+	}
+
+	response := &MemoryProcessResult{
+		ContextCompletion: context_completion,
+	}
+
+	if input.Infos {
+		response.Ressources = results
+	}
+
+	return response, nil
+}
+
 func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers.Result, error) {
 	result := make(chan providers.Result)
 	context_completion := ""
 
 	ressources := []db.MatchResult{}
 
-	if input.MemoryId != nil && len(*input.MemoryId) > 0 {
-		results, err := memory.Embedder(user_id, *input.MemoryId, input.Task)
-		if err != nil {
-			return nil, InternalServerError
-		}
-		if input.Infos {
-			ressources = results
-		}
-		context_completion, err = utils.FillContext(results)
+	language_completion := getLanguageCompletion(input.Language)
 
-		if err != nil {
-			return nil, InternalServerError
-		}
+	memoryResult, err := getMemory(user_id, input)
+	if err != nil {
+		return nil, err
+	}
 
+	if memoryResult != nil {
+		ressources = memoryResult.Ressources
+		context_completion = memoryResult.ContextCompletion
 	}
 
 	reached, err := db.UserReachedRateLimit(user_id)
@@ -122,7 +157,7 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 			system_prompt = *(chat.SystemPrompt)
 		}
 
-		prompt := FormatPrompt(context_completion+"\n"+system_prompt, chatHistory, input.Task)
+		prompt := FormatPrompt(language_completion+"\n"+context_completion+"\n"+system_prompt, chatHistory, input.Task)
 
 		err = db.AddChatMessage(chat.ID, true, input.Task)
 		if err != nil {
@@ -154,6 +189,7 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 
 		tmpl := `
 		Date: {{.Date}}
+		Lang: {{.Language}}
 		From this request: {{.Task}}
 		and using this website content: {{.Content}}
 		answer at the above request and don't include appendix information other than the initial request.
@@ -164,13 +200,15 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 		Use All websites content to make your relevant answer.
 		`
 		data := struct {
-			Task    string
-			Content string
-			Date    string
+			Task     string
+			Content  string
+			Date     string
+			Language string
 		}{
-			Task:    input.Task,
-			Content: res,
-			Date:    time.Now().Format("2006-01-02"),
+			Task:     input.Task,
+			Content:  res,
+			Date:     time.Now().Format("2006-01-02"),
+			Language: language_completion,
 		}
 
 		var tpl bytes.Buffer
@@ -191,7 +229,7 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 			system_prompt = *(input.SystemPrompt)
 		}
 
-		prompt := context_completion + "\n" + system_prompt + "\n" + input.Task
+		prompt := context_completion + "\n" + system_prompt + "\n" + input.Task + "\n" + language_completion
 
 		opts := &providers.ProviderOptions{}
 		if input.Stop != nil {
