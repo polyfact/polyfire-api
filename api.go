@@ -41,6 +41,7 @@ func main() {
 
 	router.GET("/project/:id/auth/token", auth.ManagedSupabaseTokenExchangeHandler)
 	router.GET("/project/:id/auth/firebase", auth.ExternalFirebaseTokenExchangeHandler)
+	router.GET("/auth/id", middlewares.Auth(auth.GetAuthId))
 
 	router.POST("/generate", middlewares.Auth(completion.Generate))
 
