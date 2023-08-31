@@ -18,20 +18,41 @@ import (
 const BatchSize int = 512
 
 func Create(w http.ResponseWriter, r *http.Request, _ router.Params) {
+
+	userId, ok := r.Context().Value("user_id").(string)
+	if !ok {
+		utils.RespondError(w, "user_id_missing")
+		return
+	}
+
+	var requestBody struct {
+		Public *bool `json:"public,omitempty"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
+		utils.RespondError(w, "decode_error")
+		return
+	}
+
+	if requestBody.Public == nil {
+		defaultVal := true
+		requestBody.Public = &defaultVal
+	}
+
 	memoryId := uuid.New().String()
 	userId := r.Context().Value("user_id").(string)
 	posthog.CreateMemoryEvent(userId)
 
-	err := db.CreateMemory(memoryId, userId)
-	if err != nil {
+
+	if err := db.CreateMemory(memoryId, userId, *requestBody.Public); err != nil {
 		utils.RespondError(w, "db_creation_error")
 		return
 	}
 
-	response := db.Memory{ID: memoryId, USER_ID: userId}
-
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(db.Memory{ID: memoryId, UserId: userId, Public: *requestBody.Public}); err != nil {
+		utils.RespondError(w, "encode_error")
+	}
 }
 
 func Add(w http.ResponseWriter, r *http.Request, _ router.Params) {
