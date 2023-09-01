@@ -203,7 +203,7 @@ var ErrorMessages = map[string]APIError{
 	// Project Errors
 	"project_retrieval_error": {
 		Code:       "project_retrieval_error",
-		Message:    "Failed to retrieve the project.",
+		Message:    "There was an error retrieving the project. The projectId is probably invalid.",
 		StatusCode: http.StatusInternalServerError,
 	},
 	"project_user_creation_failed": {

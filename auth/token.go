@@ -109,6 +109,12 @@ func TokenExchangeHandler(w http.ResponseWriter, r *http.Request, ps router.Para
 		return
 	}
 
+	project, err := db.GetProjectByID(project_id)
+	if err != nil {
+		utils.RespondError(w, record, "project_retrieval_error")
+		return
+	}
+
 	token := auth_header[1]
 
 	user_id, err := GetUserIdFromTokenProject(token, project_id)
@@ -118,11 +124,6 @@ func TokenExchangeHandler(w http.ResponseWriter, r *http.Request, ps router.Para
 	}
 
 	if user_id == nil {
-		project, err := db.GetProjectByID(project_id)
-		if err != nil {
-			utils.RespondError(w, record, "project_retrieval_error")
-			return
-		}
 		if project.FreeUserInit == false {
 			utils.RespondError(w, record, "free_user_init_disabled")
 			return
@@ -140,7 +141,6 @@ func TokenExchangeHandler(w http.ResponseWriter, r *http.Request, ps router.Para
 
 	user_token, err := unsigned_user_token.SignedString([]byte(os.Getenv("JWT_SECRET")))
 	if err != nil {
-		fmt.Println(err)
 		utils.RespondError(w, record, "token_signature_error")
 		return
 	}
