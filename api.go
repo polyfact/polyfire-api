@@ -1,9 +1,6 @@
 package main
 
 import (
-	"bytes"
-	"context"
-	"io/ioutil"
 	"log"
 	"net/http"
 
@@ -15,7 +12,6 @@ import (
 	kv "github.com/polyfact/api/kv"
 	memory "github.com/polyfact/api/memory"
 	middlewares "github.com/polyfact/api/middlewares"
-	posthog "github.com/polyfact/api/posthog"
 	"github.com/polyfact/api/prompt"
 	transcription "github.com/polyfact/api/transcription"
 )
@@ -28,34 +24,10 @@ func (h CORSRouter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Headers", "*")
 
-	recordEventRequest := func(request string, response string, userID string) {
-		properties := make(map[string]string)
-		properties["path"] = string(r.URL.Path)
-		properties["requestBody"] = request
-		properties["responseBody"] = response
-		posthog.Event("API Request", userID, properties)
-	}
+	middlewares.AddRecord(r)
+	defer middlewares.RecoverFromPanic(w, r)
 
-	buf, _ := ioutil.ReadAll(r.Body)
-	rdr1 := ioutil.NopCloser(bytes.NewBuffer(buf))
-
-	r.Body = rdr1
-
-	recordEventWithUserID := func(response string, userID string) {
-		recordEventRequest(string(buf), response, userID)
-	}
-
-	recordEvent := func(response string) {
-		recordEventWithUserID(response, "")
-	}
-
-	newCtx := context.WithValue(r.Context(), "recordEvent", recordEvent)
-	newCtx = context.WithValue(newCtx, "recordEventRequest", recordEventRequest)
-	newCtx = context.WithValue(newCtx, "recordEventWithUserID", recordEventWithUserID)
-
-	defer middlewares.RecoverFromPanic(w, recordEvent)
-
-	h.Router.ServeHTTP(w, r.WithContext(newCtx))
+	h.Router.ServeHTTP(w, r)
 }
 
 func GlobalMiddleware(router *httprouter.Router) http.Handler {

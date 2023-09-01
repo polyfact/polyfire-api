@@ -94,7 +94,7 @@ func CreateProjectUser(token string, project_id string, monthly_token_rate_limit
 }
 
 func TokenExchangeHandler(w http.ResponseWriter, r *http.Request, ps router.Params) {
-	record := r.Context().Value("recordEvent").(func(response string))
+	record := r.Context().Value("recordEvent").(utils.RecordFunc)
 	project_id := ps.ByName("id")
 
 	if len(r.Header["Authorization"]) == 0 {
@@ -154,7 +154,7 @@ type UserRateLimitResponse struct {
 
 func UserRateLimit(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	user_id := r.Context().Value("user_id").(string)
-	record := r.Context().Value("recordEvent").(func(response string))
+	record := r.Context().Value("recordEvent").(utils.RecordFunc)
 
 	tokenUsage, err := db.GetUserIdMonthlyTokenUsage(user_id)
 	if err != nil {

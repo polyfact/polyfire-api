@@ -30,7 +30,7 @@ var upgrader = websocket.Upgrader{
 }
 
 func Stream(w http.ResponseWriter, r *http.Request, _ router.Params) {
-	record := r.Context().Value("recordEvent").(func(response string))
+	record := r.Context().Value("recordEvent").(utils.RecordFunc)
 	user_id := r.Context().Value("user_id").(string)
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -50,10 +50,10 @@ func Stream(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		return
 	}
 
-	recordEventRequest := r.Context().Value("recordEventRequest").(func(request string, response string, userId string))
+	recordEventRequest := r.Context().Value("recordEventRequest").(utils.RecordRequestFunc)
 
-	record = func(response string) {
-		recordEventRequest(string(p), response, user_id)
+	record = func(response string, props ...utils.KeyValue) {
+		recordEventRequest(string(p), response, user_id, props...)
 	}
 
 	var input GenerateRequestBody
