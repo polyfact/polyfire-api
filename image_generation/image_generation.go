@@ -39,7 +39,7 @@ func storeImageBucket(reader io.Reader, path string) (string, error) {
 func ImageGeneration(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	prompt := r.URL.Query().Get("p")
 	provider := r.URL.Query().Get("provider")
-	record := r.Context().Value("recordEvent").(func(response string))
+	record := r.Context().Value("recordEvent").(utils.RecordFunc)
 
 	if provider == "" {
 		provider = "openai"

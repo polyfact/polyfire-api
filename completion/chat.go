@@ -28,7 +28,7 @@ func FormatPrompt(systemPrompt string, chatHistory []db.ChatMessage, userPrompt 
 
 func CreateChat(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	user_id := r.Context().Value("user_id").(string)
-	record := r.Context().Value("recordEvent").(func(response string))
+	record := r.Context().Value("recordEvent").(utils.RecordFunc)
 
 	var requestBody struct {
 		SystemPrompt   *string `json:"system_prompt"`
@@ -62,7 +62,7 @@ func CreateChat(w http.ResponseWriter, r *http.Request, _ router.Params) {
 func GetChatHistory(w http.ResponseWriter, r *http.Request, ps router.Params) {
 	id := ps.ByName("id")
 	user_id := r.Context().Value("user_id").(string)
-	record := r.Context().Value("recordEvent").(func(response string))
+	record := r.Context().Value("recordEvent").(utils.RecordFunc)
 
 	messages, err := db.GetChatMessages(user_id, id)
 	if err != nil {
