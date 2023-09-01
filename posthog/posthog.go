@@ -58,7 +58,7 @@ func IdentifyUser(auth_id string, user_id string, email string) {
 	})
 }
 
-func GenerateEvent(distinctId string, model string, tokenUsageInput int, tokenUsageOutput int) {
+func Event(eventName string, distinctId string, props map[string]string) {
 	pId, _ := getProjectForUserId(distinctId)
 	projectId := "00000000-0000-0000-0000-000000000000"
 
@@ -73,57 +73,15 @@ func GenerateEvent(distinctId string, model string, tokenUsageInput int, tokenUs
 	client := posthog.New(POSTHOG_API_KEY)
 	defer client.Close()
 
+	properties := posthog.NewProperties().Set("projectId", projectId)
+
+	for key, value := range props {
+		properties = properties.Set(key, value)
+	}
+
 	client.Enqueue(posthog.Capture{
 		DistinctId: distinctId,
-		Event:      "Generation",
-		Properties: posthog.NewProperties().
-			Set("projectId", projectId).
-			Set("model", model).
-			Set("tokenUsageInput", tokenUsageInput).
-			Set("tokenUsageOutput", tokenUsageOutput),
+		Event:      eventName,
+		Properties: properties,
 	})
 }
-
-func SimpleEvent(eventName string) func(distinctId string) {
-	return func(distinctId string) {
-		pId, _ := getProjectForUserId(distinctId)
-		projectId := "00000000-0000-0000-0000-000000000000"
-
-		if pId != nil {
-			projectId = *pId
-		}
-
-		if POSTHOG_API_KEY == "" {
-			return
-		}
-
-		client := posthog.New(POSTHOG_API_KEY)
-		defer client.Close()
-
-		client.Enqueue(posthog.Capture{
-			DistinctId: distinctId,
-			Event:      eventName,
-			Properties: posthog.NewProperties().
-				Set("projectId", projectId),
-		})
-	}
-}
-
-var (
-	CreateChatEvent      = SimpleEvent("CreateChat")
-	GetChatHistoryEvent  = SimpleEvent("GetChatHistory")
-	TranscribeEvent      = SimpleEvent("Transcribe")
-	ImageGenerationEvent = SimpleEvent("ImageGeneration")
-	GetMemoryEvent       = SimpleEvent("GetMemory")
-	AddToMemoryEvent     = SimpleEvent("AddToMemory")
-	CreateMemoryEvent    = SimpleEvent("CreateMemory")
-
-	GetKVEvent           = SimpleEvent("GetKV")
-	SetKVEvent           = SimpleEvent("SetKV")
-	GetPromptByNameEvent = SimpleEvent("GetPromptByName")
-	GetPromptByIdEvent   = SimpleEvent("GetPromptById")
-	GetAllPromptsEvent   = SimpleEvent("GetAllPrompts")
-	CreatePromptEvent    = SimpleEvent("CreatePrompt")
-	UpdatePromptEvent    = SimpleEvent("UpdatePrompt")
-	DeletePromptEvent    = SimpleEvent("DeletePrompt")
-)

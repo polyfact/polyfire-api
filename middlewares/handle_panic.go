@@ -9,11 +9,11 @@ import (
 
 var isDevelopment = os.Getenv("APP_MODE") == "development"
 
-func RecoverFromPanic(w http.ResponseWriter) {
+func RecoverFromPanic(w http.ResponseWriter, record func(response string)) {
 	if rec := recover(); rec != nil {
 		errorMessage := getErrorMessage(rec)
 
-		utils.RespondError(w, "unknown_error", errorMessage)
+		utils.RespondError(w, record, "unknown_error", errorMessage)
 	}
 }
 
