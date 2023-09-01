@@ -302,7 +302,7 @@ var ErrorMessages = map[string]APIError{
 	"unknown_error": {Code: "unknown_error", Message: "An unknown error occurred.", StatusCode: http.StatusInternalServerError},
 }
 
-func RespondError(w http.ResponseWriter, errorCode string, message ...string) {
+func RespondError(w http.ResponseWriter, record func(response string), errorCode string, message ...string) {
 	apiError, exists := ErrorMessages[errorCode]
 
 	if !exists {
@@ -314,6 +314,8 @@ func RespondError(w http.ResponseWriter, errorCode string, message ...string) {
 	}
 
 	log.Println(apiError)
+	error_bytes, _ := json.Marshal(&apiError)
+	record(string(error_bytes))
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(apiError.StatusCode)

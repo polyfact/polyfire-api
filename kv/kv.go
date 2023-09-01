@@ -6,34 +6,35 @@ import (
 
 	router "github.com/julienschmidt/httprouter"
 	db "github.com/polyfact/api/db"
-	posthog "github.com/polyfact/api/posthog"
 	"github.com/polyfact/api/utils"
 )
 
 func Get(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	user_id := r.Context().Value("user_id").(string)
-	posthog.GetKVEvent(user_id)
+	record := r.Context().Value("recordEvent").(func(response string))
 
 	id := r.URL.Query().Get("key")
 
 	if id == "" {
-		utils.RespondError(w, "missing_id")
+		utils.RespondError(w, record, "missing_id")
 		return
 	}
 
 	store, _ := db.GetKV(user_id, id)
 
 	if store == nil || store.Value == "" {
-		utils.RespondError(w, "data_not_found")
+		utils.RespondError(w, record, "data_not_found")
 		return
 	}
+
+	record(store.Value)
 
 	w.Write([]byte(store.Value))
 }
 
 func Set(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	user_id := r.Context().Value("user_id").(string)
-	posthog.SetKVEvent(user_id)
+	record := r.Context().Value("recordEvent").(func(response string))
 
 	var data struct {
 		Key   string `json:"key"`
@@ -42,15 +43,17 @@ func Set(w http.ResponseWriter, r *http.Request, _ router.Params) {
 
 	err := json.NewDecoder(r.Body).Decode(&data)
 	if err != nil {
-		utils.RespondError(w, "decode_error")
+		utils.RespondError(w, record, "decode_error")
 		return
 	}
 
 	err = db.SetKV(user_id, data.Key, data.Value)
 	if err != nil {
-		utils.RespondError(w, "database_error")
+		utils.RespondError(w, record, "database_error")
 		return
 	}
+
+	record("[Empty Response]")
 
 	w.WriteHeader(http.StatusCreated)
 }
