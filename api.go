@@ -36,13 +36,13 @@ func (h CORSRouter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		posthog.Event("API Request", userID, properties)
 	}
 
-	buf, _ := ioutil.ReadAll(r.Body) // handle the error
+	buf, _ := ioutil.ReadAll(r.Body)
 	rdr1 := ioutil.NopCloser(bytes.NewBuffer(buf))
 
 	r.Body = rdr1
 
 	recordEventWithUserID := func(response string, userID string) {
-		recordEventRequest(string(buf), response, "")
+		recordEventRequest(string(buf), response, userID)
 	}
 
 	recordEvent := func(response string) {
