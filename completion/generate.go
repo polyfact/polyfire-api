@@ -127,7 +127,7 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 	if input.SystemPromptId != nil && len(*input.SystemPromptId) > 0 {
 		p, err := db.GetPromptById(*input.SystemPromptId)
 
-		db.UpdatePrompt(*input.SystemPromptId, db.PromptUpdate{Use: p.Use + 1})
+		db.UpdatePromptUse(*input.SystemPromptId, db.PromptUse{Use: p.Use + 1})
 		if err != nil || p == nil {
 			return nil, NotFound
 		}
