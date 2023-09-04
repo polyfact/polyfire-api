@@ -244,7 +244,7 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 
 func Generate(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	user_id := r.Context().Value("user_id").(string)
-	record := r.Context().Value("recordEvent").(func(response string))
+	record := r.Context().Value("recordEvent").(utils.RecordFunc)
 
 	if len(r.Header["Content-Type"]) == 0 || r.Header["Content-Type"][0] != "application/json" {
 		utils.RespondError(w, record, "invalid_content_type")

@@ -31,11 +31,12 @@ func parseJWT(token string) (jwt.MapClaims, error) {
 }
 
 func createContextWithUserID(r *http.Request, userID string) context.Context {
-	recordEventWithUserID := r.Context().Value("recordEventWithUserID").(func(response string, userID string))
+	recordEventWithUserID := r.Context().Value("recordEventWithUserID").(utils.RecordWithUserIDFunc)
 	newCtx := context.WithValue(r.Context(), "user_id", userID)
 
-	recordEvent := func(response string) {
-		recordEventWithUserID(response, userID)
+	var recordEvent utils.RecordFunc
+	recordEvent = func(response string, props ...utils.KeyValue) {
+		recordEventWithUserID(response, userID, props...)
 	}
 
 	newCtx = context.WithValue(newCtx, "recordEvent", recordEvent)
@@ -50,7 +51,7 @@ func authenticateAndHandle(
 	token string,
 	handler func(http.ResponseWriter, *http.Request, router.Params),
 ) {
-	record := r.Context().Value("recordEvent").(func(response string))
+	record := r.Context().Value("recordEvent").(utils.RecordFunc)
 	if token == "" {
 		utils.RespondError(w, record, "no_token")
 		return

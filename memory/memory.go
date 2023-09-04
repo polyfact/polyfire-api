@@ -17,7 +17,7 @@ import (
 const BatchSize int = 512
 
 func Create(w http.ResponseWriter, r *http.Request, _ router.Params) {
-	record := r.Context().Value("recordEvent").(func(response string))
+	record := r.Context().Value("recordEvent").(utils.RecordFunc)
 	userId, ok := r.Context().Value("user_id").(string)
 	if !ok {
 		utils.RespondError(w, record, "user_id_missing")
@@ -58,7 +58,7 @@ func Create(w http.ResponseWriter, r *http.Request, _ router.Params) {
 
 func Add(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	decoder := json.NewDecoder(r.Body)
-	record := r.Context().Value("recordEvent").(func(response string))
+	record := r.Context().Value("recordEvent").(utils.RecordFunc)
 	userId := r.Context().Value("user_id").(string)
 
 	var requestBody struct {
@@ -121,7 +121,7 @@ type memoryRecord struct {
 }
 
 func Get(w http.ResponseWriter, r *http.Request, _ router.Params) {
-	record := r.Context().Value("recordEvent").(func(response string))
+	record := r.Context().Value("recordEvent").(utils.RecordFunc)
 	userId, ok := r.Context().Value("user_id").(string)
 	if !ok {
 		utils.RespondError(w, record, "user_id_error")

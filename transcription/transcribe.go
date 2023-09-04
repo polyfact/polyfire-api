@@ -80,7 +80,7 @@ type Result struct {
 }
 
 func Transcribe(w http.ResponseWriter, r *http.Request, _ router.Params) {
-	record := r.Context().Value("recordEvent").(func(response string))
+	record := r.Context().Value("recordEvent").(utils.RecordFunc)
 	content_type := r.Header.Get("Content-Type")
 	var file_size int
 	var file_buf_reader io.Reader
