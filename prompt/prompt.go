@@ -11,7 +11,7 @@ import (
 )
 
 func GetPromptById(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	record := r.Context().Value("recordEvent").(func(response string))
+	record := r.Context().Value("recordEvent").(utils.RecordFunc)
 	id := ps.ByName("id")
 	result, err := db.GetPromptById(id)
 	if err != nil {
@@ -26,7 +26,7 @@ func GetPromptById(w http.ResponseWriter, r *http.Request, ps httprouter.Params)
 }
 
 func GetPromptByName(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	record := r.Context().Value("recordEvent").(func(response string))
+	record := r.Context().Value("recordEvent").(utils.RecordFunc)
 	name := ps.ByName("name")
 	result, err := db.GetPromptByName(name)
 	if err != nil {
@@ -41,7 +41,7 @@ func GetPromptByName(w http.ResponseWriter, r *http.Request, ps httprouter.Param
 }
 
 func GetAllPrompts(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	record := r.Context().Value("recordEvent").(func(response string))
+	record := r.Context().Value("recordEvent").(utils.RecordFunc)
 	queryParams := r.URL.Query()
 
 	var filters db.SupabaseFilters
@@ -94,7 +94,7 @@ func GetAllPrompts(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 }
 
 func CreatePrompt(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	record := r.Context().Value("recordEvent").(func(response string))
+	record := r.Context().Value("recordEvent").(utils.RecordFunc)
 	var input db.PromptInsert
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		utils.RespondError(w, record, "decode_prompt_error", err.Error())
@@ -114,7 +114,7 @@ func CreatePrompt(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 }
 
 func UpdatePrompt(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	record := r.Context().Value("recordEvent").(func(response string))
+	record := r.Context().Value("recordEvent").(utils.RecordFunc)
 	id := ps.ByName("id")
 	var input db.PromptUpdate
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
@@ -135,7 +135,7 @@ func UpdatePrompt(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 }
 
 func DeletePrompt(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	record := r.Context().Value("recordEvent").(func(response string))
+	record := r.Context().Value("recordEvent").(utils.RecordFunc)
 	id := ps.ByName("id")
 	if err := db.DeletePrompt(id); err != nil {
 		utils.RespondError(w, record, "db_delete_prompt_error", err.Error())
