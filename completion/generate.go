@@ -115,8 +115,8 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 		return nil, ProjectRateLimitReached
 	}
 
-	callback := func(model_name string, input_count int, output_count int) {
-		db.LogRequests(user_id, model_name, input_count, output_count, "completion")
+	callback := func(provider_name string, model_name string, input_count int, output_count int) {
+		db.LogRequests(user_id, provider_name, model_name, input_count, output_count, "completion")
 	}
 
 	provider, err := llm.NewProvider(input.Provider, input.Model)

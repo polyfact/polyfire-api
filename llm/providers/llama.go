@@ -22,7 +22,7 @@ type LLaMaProvider struct {
 	Model string
 }
 
-func (m LLaMaProvider) Generate(task string, c *func(string, int, int), opts *ProviderOptions) chan Result {
+func (m LLaMaProvider) Generate(task string, c *func(string, string, int, int), opts *ProviderOptions) chan Result {
 	chan_res := make(chan Result)
 
 	go func() {
@@ -59,7 +59,7 @@ func (m LLaMaProvider) Generate(task string, c *func(string, int, int), opts *Pr
 			chan_res <- Result{Result: string(p[:nb]), TokenUsage: tokenUsage}
 		}
 		if c != nil {
-			(*c)("llama", tokenUsage.Input, totalOutput)
+			(*c)("llama", m.Model, tokenUsage.Input, totalOutput)
 		}
 	}()
 

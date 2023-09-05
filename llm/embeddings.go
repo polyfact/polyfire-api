@@ -3,7 +3,6 @@ package llm
 import (
 	"context"
 	"log"
-	"os"
 
 	"github.com/tmc/langchaingo/llms/openai"
 )
@@ -34,7 +33,7 @@ func Embed(content string, c *func(string, int)) ([][]float64, error) {
 	token_usage := CountTokens(content, model)
 
 	if c != nil {
-		(*c)(os.Getenv("OPENAI_MODEL"), token_usage)
+		(*c)(model, token_usage)
 	}
 
 	return embeddings, nil
