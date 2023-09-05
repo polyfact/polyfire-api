@@ -180,7 +180,7 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 
 	} else if input.WebRequest && input.Provider != "llama" {
 
-		res, err := webrequest.WebRequest(input.Task, *input.Model)
+		res, err := webrequest.WebRequest(input.Task, input.Model)
 		if err != nil {
 			return nil, err
 		}
