@@ -11,7 +11,7 @@ import (
 var ErrUnknownModel = errors.New("Unknown model")
 
 type Provider interface {
-	Generate(prompt string, c *func(string, int, int), opts *providers.ProviderOptions) chan providers.Result
+	Generate(prompt string, c *func(string, string, int, int), opts *providers.ProviderOptions) chan providers.Result
 }
 
 func defaultModel(model string) (string, string) {

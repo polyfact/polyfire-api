@@ -51,7 +51,7 @@ func (m LangchainProvider) Call(prompt string, opts *ProviderOptions) (string, e
 
 func (m LangchainProvider) Generate(
 	task string,
-	c *func(string, int, int),
+	c *func(string, string, int, int),
 	opts *ProviderOptions,
 ) chan Result {
 	chan_res := make(chan Result)
@@ -70,7 +70,7 @@ func (m LangchainProvider) Generate(
 			}
 
 			if c != nil {
-				(*c)(m.ModelName, m.Model.GetNumTokens(input_prompt), m.Model.GetNumTokens(completion))
+				(*c)("cohere", m.ModelName, m.Model.GetNumTokens(input_prompt), m.Model.GetNumTokens(completion))
 			}
 
 			tokenUsage.Input += m.Model.GetNumTokens(input_prompt)

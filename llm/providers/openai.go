@@ -27,7 +27,7 @@ func NewOpenAIStreamProvider(model string) OpenAIStreamProvider {
 	}
 }
 
-func (m OpenAIStreamProvider) Generate(task string, c *func(string, int, int), opts *ProviderOptions) chan Result {
+func (m OpenAIStreamProvider) Generate(task string, c *func(string, string, int, int), opts *ProviderOptions) chan Result {
 	chan_res := make(chan Result)
 
 	go func() {
@@ -93,7 +93,7 @@ func (m OpenAIStreamProvider) Generate(task string, c *func(string, int, int), o
 			}
 
 			if c != nil {
-				(*c)(m.Model, tokenUsage.Input, totalOutput)
+				(*c)("openai", m.Model, tokenUsage.Input, totalOutput)
 			}
 			return
 		}
