@@ -82,3 +82,27 @@ func UserReachedRateLimit(id string) (bool, error) {
 
 	return tokenUsage >= *projectUser.MonthlyTokenRateLimit, nil
 }
+
+func GetProjectForUserId(user_id string) (*string, error) {
+	client, err := CreateClient()
+	if err != nil {
+		return nil, err
+	}
+
+	var results []ProjectUser
+
+	_, err = client.From("project_users").
+		Select("*", "exact", false).
+		Eq("id", user_id).
+		ExecuteTo(&results)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if len(results) == 0 {
+		return nil, nil
+	}
+
+	return &results[0].ProjectID, nil
+}
