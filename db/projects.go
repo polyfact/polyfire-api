@@ -1,5 +1,10 @@
 package db
 
+import (
+	"encoding/json"
+	"fmt"
+)
+
 type ProjectUser struct {
 	ID                    string `json:"id"`
 	AuthID                string `json:"auth_id"`
@@ -105,4 +110,44 @@ func GetProjectForUserId(user_id string) (*string, error) {
 	}
 
 	return &results[0].ProjectID, nil
+}
+
+type UsageRateLimit struct {
+	Usage     int `json:"usage"`
+	RateLimit int `json:"rate_limit,omitempty"`
+}
+
+type UsageRateLimitParams struct {
+	UserID string `json:"param_user_id"`
+}
+
+func GetMonthlyProjectDevUsage(user_id string) (UsageRateLimit, error) {
+	client, err := CreateClient()
+	if err != nil {
+		return UsageRateLimit{}, err
+	}
+
+	params := UsageRateLimitParams{
+		UserID: user_id,
+	}
+
+	fmt.Println(params)
+	response := client.Rpc("get_monthly_token_usage_user_id_projects", "", params)
+
+	var result UsageRateLimit
+	err = json.Unmarshal([]byte(response), &result)
+	if err != nil {
+		return UsageRateLimit{}, err
+	}
+
+	return result, nil
+}
+
+func ProjectReachedRateLimit(user_id string) (bool, error) {
+	usage_rate_limit, err := GetMonthlyProjectDevUsage(user_id)
+	if err != nil {
+		return false, err
+	}
+
+	return usage_rate_limit.Usage >= usage_rate_limit.RateLimit, nil
 }

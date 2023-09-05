@@ -35,11 +35,12 @@ type GenerateRequestBody struct {
 }
 
 var (
-	UnknownUserId        error = errors.New("400 Unknown user Id")
-	InternalServerError  error = errors.New("500 InternalServerError")
-	UnknownModelProvider error = errors.New("400 Unknown model provider")
-	NotFound             error = errors.New("404 Not Found")
-	RateLimitReached     error = errors.New("429 Monthly Rate Limit Reached")
+	UnknownUserId           error = errors.New("400 Unknown user Id")
+	InternalServerError     error = errors.New("500 InternalServerError")
+	UnknownModelProvider    error = errors.New("400 Unknown model provider")
+	NotFound                error = errors.New("404 Not Found")
+	RateLimitReached        error = errors.New("429 Monthly Rate Limit Reached")
+	ProjectRateLimitReached error = errors.New("429 Monthly Project Rate Limit Reached")
 )
 
 func getLanguageCompletion(language *string) string {
@@ -104,6 +105,14 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 	}
 	if reached {
 		return nil, RateLimitReached
+	}
+
+	reached, err = db.ProjectReachedRateLimit(user_id)
+	if err != nil {
+		return nil, UnknownUserId
+	}
+	if reached {
+		return nil, ProjectRateLimitReached
 	}
 
 	callback := func(model_name string, input_count int, output_count int) {
@@ -276,6 +285,8 @@ func Generate(w http.ResponseWriter, r *http.Request, _ router.Params) {
 			utils.RespondError(w, record, "invalid_model_provider")
 		case RateLimitReached:
 			utils.RespondError(w, record, "rate_limit_reached")
+		case ProjectRateLimitReached:
+			utils.RespondError(w, record, "project_rate_limit_reached")
 		default:
 			utils.RespondError(w, record, "internal_error", err.Error())
 		}

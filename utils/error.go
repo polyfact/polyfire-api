@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+
+	"github.com/gorilla/websocket"
 )
 
 type KeyValue struct {
@@ -60,6 +62,11 @@ var ErrorMessages = map[string]APIError{
 	"rate_limit_reached": {
 		Code:       "rate_limit_reached",
 		Message:    "You have reached the rate limit for this project",
+		StatusCode: http.StatusTooManyRequests,
+	},
+	"project_rate_limit_reached": {
+		Code:       "project_rate_limit_reached",
+		Message:    "This project has reached its monthly rate limit",
 		StatusCode: http.StatusTooManyRequests,
 	},
 
@@ -331,4 +338,24 @@ func RespondError(w http.ResponseWriter, record RecordFunc, errorCode string, me
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(apiError.StatusCode)
 	json.NewEncoder(w).Encode(apiError)
+}
+
+func RespondErrorStream(conn *websocket.Conn, record RecordFunc, errorCode string, message ...string) {
+	apiError, exists := ErrorMessages[errorCode]
+
+	if !exists {
+		apiError = ErrorMessages["unknown_error"]
+	}
+
+	if len(message) > 0 {
+		apiError.Message = message[0]
+	}
+
+	log.Println(apiError)
+	error_bytes, _ := json.Marshal(&apiError)
+	record(string(error_bytes), KeyValue{Key: "Error", Value: "true"})
+
+	res, _ := json.Marshal(apiError)
+
+	conn.WriteMessage(websocket.TextMessage, []byte("[ERROR]:"+string(res)))
 }
