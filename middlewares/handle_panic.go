@@ -54,7 +54,6 @@ func AddRecord(r *http.Request) {
 		for _, element := range props {
 			properties[element.Key] = element.Value
 		}
-
 		posthog.Event("API Request", userID, properties)
 		db.LogEvents(string(r.URL.Path), userID, projectId, request, response)
 	}
