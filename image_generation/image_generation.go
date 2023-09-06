@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	router "github.com/julienschmidt/httprouter"
 	"github.com/polyfact/api/utils"
+	"github.com/polyfact/api/db"
 )
 
 type Image struct {
@@ -37,12 +38,20 @@ func storeImageBucket(reader io.Reader, path string) (string, error) {
 }
 
 func ImageGeneration(w http.ResponseWriter, r *http.Request, _ router.Params) {
+	user_id := r.Context().Value("user_id").(string)
 	prompt := r.URL.Query().Get("p")
 	provider := r.URL.Query().Get("provider")
 	record := r.Context().Value("recordEvent").(utils.RecordFunc)
 
 	if provider == "" {
 		provider = "openai"
+	}
+
+	premium, _ := db.ProjectIsPremium(user_id)
+
+	if !premium {
+		utils.RespondError(w, record, "project_not_premium_model")
+		return
 	}
 
 	var reader io.Reader

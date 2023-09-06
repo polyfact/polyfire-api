@@ -112,42 +112,56 @@ func GetProjectForUserId(user_id string) (*string, error) {
 	return &results[0].ProjectID, nil
 }
 
-type UsageRateLimit struct {
-	Usage     int `json:"usage"`
-	RateLimit int `json:"rate_limit,omitempty"`
+type AuthUser struct {
+	Usage     int  `json:"usage"`
+	RateLimit int  `json:"rate_limit,omitempty"`
+	Premium   bool `json:"premium"`
 }
 
-type UsageRateLimitParams struct {
+type AuthUserProject struct {
 	UserID string `json:"param_user_id"`
 }
 
-func GetMonthlyProjectDevUsage(user_id string) (UsageRateLimit, error) {
+func GetDevAuthUserForUserIDProject(user_id string) (AuthUser, error) {
 	client, err := CreateClient()
 	if err != nil {
-		return UsageRateLimit{}, err
+		return AuthUser{}, err
 	}
 
-	params := UsageRateLimitParams{
+	params := AuthUserProject{
 		UserID: user_id,
 	}
 
-	fmt.Println(params)
 	response := client.Rpc("get_monthly_token_usage_user_id_projects", "", params)
 
-	var result UsageRateLimit
+	var result AuthUser
 	err = json.Unmarshal([]byte(response), &result)
 	if err != nil {
-		return UsageRateLimit{}, err
+		return AuthUser{}, err
+	}
+
+	if result.RateLimit == 0 {
+		result.RateLimit = 50_000_000
 	}
 
 	return result, nil
 }
 
 func ProjectReachedRateLimit(user_id string) (bool, error) {
-	usage_rate_limit, err := GetMonthlyProjectDevUsage(user_id)
+	usage_rate_limit, err := GetDevAuthUserForUserIDProject(user_id)
 	if err != nil {
 		return false, err
 	}
 
 	return usage_rate_limit.Usage >= usage_rate_limit.RateLimit, nil
+}
+
+func ProjectIsPremium(user_id string) (bool, error) {
+	auth_users, err := GetDevAuthUserForUserIDProject(user_id)
+	fmt.Println(auth_users)
+	if err != nil {
+		return false, err
+	}
+
+	return auth_users.Premium, nil
 }

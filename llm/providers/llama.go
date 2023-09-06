@@ -65,3 +65,7 @@ func (m LLaMaProvider) Generate(task string, c *func(string, string, int, int), 
 
 	return chan_res
 }
+
+func (m LLaMaProvider) UserAllowed(_user_id string) bool {
+	return true
+}
