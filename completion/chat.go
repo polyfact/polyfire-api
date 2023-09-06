@@ -7,7 +7,6 @@ import (
 
 	router "github.com/julienschmidt/httprouter"
 	db "github.com/polyfact/api/db"
-	posthog "github.com/polyfact/api/posthog"
 	utils "github.com/polyfact/api/utils"
 )
 
@@ -29,8 +28,8 @@ func FormatPrompt(systemPrompt string, chatHistory []db.ChatMessage, userPrompt 
 
 func CreateChat(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	user_id := r.Context().Value("user_id").(string)
+	record := r.Context().Value("recordEvent").(utils.RecordFunc)
 
-	posthog.CreateChatEvent(user_id)
 	var requestBody struct {
 		SystemPrompt   *string `json:"system_prompt"`
 		SystemPromptId *string `json:"system_prompt_id"`
@@ -38,21 +37,24 @@ func CreateChat(w http.ResponseWriter, r *http.Request, _ router.Params) {
 
 	decoder := json.NewDecoder(r.Body)
 	if err := decoder.Decode(&requestBody); err != nil {
-		utils.RespondError(w, "decode_error")
+		utils.RespondError(w, record, "decode_error")
 		return
 	}
 
 	if r.Method != "POST" {
-		utils.RespondError(w, "only_post_method_allowed")
+		utils.RespondError(w, record, "only_post_method_allowed")
 		return
 	}
 
 	chat, err := db.CreateChat(user_id, requestBody.SystemPrompt, requestBody.SystemPromptId)
 	if err != nil {
 		log.Printf("Error creating chat for user %s : %v", user_id, err)
-		utils.RespondError(w, "error_create_chat", err.Error())
+		utils.RespondError(w, record, "error_create_chat", err.Error())
 		return
 	}
+
+	response, _ := json.Marshal(&chat)
+	record(string(response))
 
 	json.NewEncoder(w).Encode(chat)
 }
@@ -60,14 +62,16 @@ func CreateChat(w http.ResponseWriter, r *http.Request, _ router.Params) {
 func GetChatHistory(w http.ResponseWriter, r *http.Request, ps router.Params) {
 	id := ps.ByName("id")
 	user_id := r.Context().Value("user_id").(string)
-
-	posthog.GetChatHistoryEvent(user_id)
+	record := r.Context().Value("recordEvent").(utils.RecordFunc)
 
 	messages, err := db.GetChatMessages(user_id, id)
 	if err != nil {
-		utils.RespondError(w, "error_chat_history")
+		utils.RespondError(w, record, "error_chat_history")
 		return
 	}
+
+	response, _ := json.Marshal(&messages)
+	record(string(response))
 
 	json.NewEncoder(w).Encode(messages)
 }

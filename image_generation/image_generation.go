@@ -8,7 +8,6 @@ import (
 
 	"github.com/google/uuid"
 	router "github.com/julienschmidt/httprouter"
-	posthog "github.com/polyfact/api/posthog"
 	"github.com/polyfact/api/utils"
 )
 
@@ -38,10 +37,9 @@ func storeImageBucket(reader io.Reader, path string) (string, error) {
 }
 
 func ImageGeneration(w http.ResponseWriter, r *http.Request, _ router.Params) {
-	user_id := r.Context().Value("user_id").(string)
-	posthog.ImageGenerationEvent(user_id)
 	prompt := r.URL.Query().Get("p")
 	provider := r.URL.Query().Get("provider")
+	record := r.Context().Value("recordEvent").(utils.RecordFunc)
 
 	if provider == "" {
 		provider = "openai"
@@ -55,11 +53,11 @@ func ImageGeneration(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	case "midjourney":
 		reader, err = MJGenerate(prompt)
 	default:
-		utils.RespondError(w, "unknown_model_provider")
+		utils.RespondError(w, record, "unknown_model_provider")
 		return
 	}
 	if err != nil {
-		utils.RespondError(w, "image_generation_error")
+		utils.RespondError(w, record, "image_generation_error")
 		return
 	}
 
@@ -70,14 +68,18 @@ func ImageGeneration(w http.ResponseWriter, r *http.Request, _ router.Params) {
 
 		url, err := storeImageBucket(reader, id+".png")
 		if err != nil {
-			utils.RespondError(w, "storage_error")
+			utils.RespondError(w, record, "storage_error")
 			return
 		}
 
-		json.NewEncoder(w).Encode(Image{
-			URL: url,
-		})
+		image := Image{URL: url}
+
+		response, _ := json.Marshal(&image)
+		record(string(response))
+
+		json.NewEncoder(w).Encode(image)
 	} else {
+		record("[Raw image]")
 		io.Copy(w, reader)
 	}
 }

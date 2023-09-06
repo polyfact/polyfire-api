@@ -30,30 +30,37 @@ var upgrader = websocket.Upgrader{
 }
 
 func Stream(w http.ResponseWriter, r *http.Request, _ router.Params) {
+	record := r.Context().Value("recordEvent").(utils.RecordFunc)
 	user_id := r.Context().Value("user_id").(string)
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		utils.RespondError(w, "communication_error")
+		utils.RespondError(w, record, "communication_error")
 		return
 	}
 	defer conn.Close()
 
 	messageType, p, err := conn.ReadMessage()
 	if err != nil {
-		utils.RespondError(w, "read_message_error")
+		utils.RespondError(w, record, "read_message_error")
 		return
 	}
 
 	if messageType != websocket.TextMessage {
-		utils.RespondError(w, "invalid_message_type")
+		utils.RespondError(w, record, "invalid_message_type")
 		return
+	}
+
+	recordEventRequest := r.Context().Value("recordEventRequest").(utils.RecordRequestFunc)
+
+	record = func(response string, props ...utils.KeyValue) {
+		recordEventRequest(string(p), response, user_id, props...)
 	}
 
 	var input GenerateRequestBody
 
 	err = json.Unmarshal(p, &input)
 	if err != nil {
-		utils.RespondError(w, "invalid_json")
+		utils.RespondError(w, record, "invalid_json")
 		return
 	}
 
@@ -62,25 +69,25 @@ func Stream(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		if err != nil {
 			switch err {
 			case webrequest.WebsiteExceedsLimit:
-				utils.RespondError(w, "error_website_exceeds_limit")
+				utils.RespondError(w, record, "error_website_exceeds_limit")
 			case webrequest.WebsitesContentExceeds:
-				utils.RespondError(w, "error_websites_content_exceeds")
+				utils.RespondError(w, record, "error_websites_content_exceeds")
 			case webrequest.NoContentFound:
-				utils.RespondError(w, "error_no_content_found")
+				utils.RespondError(w, record, "error_no_content_found")
 			case webrequest.FetchWebpageError:
-				utils.RespondError(w, "error_fetch_webpage")
+				utils.RespondError(w, record, "error_fetch_webpage")
 			case webrequest.ParseContentError:
-				utils.RespondError(w, "error_parse_content")
+				utils.RespondError(w, record, "error_parse_content")
 			case webrequest.VisitBaseURLError:
-				utils.RespondError(w, "error_visit_base_url")
+				utils.RespondError(w, record, "error_visit_base_url")
 			case NotFound:
-				utils.RespondError(w, "not_found")
+				utils.RespondError(w, record, "not_found")
 			case UnknownModelProvider:
-				utils.RespondError(w, "invalid_model_provider")
+				utils.RespondError(w, record, "invalid_model_provider")
 			case RateLimitReached:
-				utils.RespondError(w, "rate_limit_reached")
+				utils.RespondError(w, record, "rate_limit_reached")
 			default:
-				utils.RespondError(w, "internal_error")
+				utils.RespondError(w, record, "internal_error")
 			}
 			return
 		}
@@ -104,6 +111,7 @@ func Stream(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		}
 	}()
 
+	total_result := ""
 generation_loop:
 	for v := range *chan_res {
 		result.Result += v.Result
@@ -119,10 +127,11 @@ generation_loop:
 		default:
 		}
 
+		total_result += v.Result
 		if v.Result != "" {
 			err = conn.WriteMessage(websocket.TextMessage, []byte(v.Result))
 			if err != nil {
-				utils.RespondError(w, "write_message_error")
+				utils.RespondError(w, record, "write_message_error")
 				return
 			}
 		}
@@ -136,14 +145,16 @@ generation_loop:
 
 		err = conn.WriteMessage(websocket.TextMessage, byteMessage)
 		if err != nil {
-			utils.RespondError(w, "write_info_error")
+			utils.RespondError(w, record, "write_info_error")
 			return
 		}
 	}
 
+	record(total_result)
+
 	err = conn.WriteMessage(websocket.TextMessage, []byte(""))
 	if err != nil {
-		utils.RespondError(w, "write_end_message_error")
+		utils.RespondError(w, record, "write_end_message_error")
 		return
 	}
 }
