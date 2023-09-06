@@ -67,16 +67,17 @@ func TokenExchangeHandler(
 	getUserFromToken func(token string, project_id string) (string, string, error),
 ) func(w http.ResponseWriter, r *http.Request, ps router.Params) {
 	return func(w http.ResponseWriter, r *http.Request, ps router.Params) {
+		record := r.Context().Value("recordEvent").(utils.RecordFunc)
 		project_id := ps.ByName("id")
 
 		if len(r.Header["Authorization"]) == 0 {
-			utils.RespondError(w, "missing_authorization")
+			utils.RespondError(w, record, "missing_authorization")
 			return
 		}
 
 		auth_header := strings.Split(r.Header["Authorization"][0], " ")
 		if len(auth_header) != 2 {
-			utils.RespondError(w, "invalid_authorization_format")
+			utils.RespondError(w, record, "invalid_authorization_format")
 			return
 		}
 
@@ -85,30 +86,30 @@ func TokenExchangeHandler(
 		auth_id, email, err := getUserFromToken(token, project_id)
 		if err != nil {
 			fmt.Println(err)
-			utils.RespondError(w, "token_exchange_failed")
+			utils.RespondError(w, record, "token_exchange_failed")
 			return
 		}
 
 		user_id, err := GetUserIdFromProjectAuthId(project_id, auth_id, email)
 		if err != nil {
 			fmt.Println(err)
-			utils.RespondError(w, "token_exchange_failed")
+			utils.RespondError(w, record, "token_exchange_failed")
 			return
 		}
 
 		if user_id == nil {
 			project, err := db.GetProjectByID(project_id)
 			if err != nil {
-				utils.RespondError(w, "project_retrieval_error")
+				utils.RespondError(w, record, "project_retrieval_error")
 				return
 			}
 			if project.FreeUserInit == false {
-				utils.RespondError(w, "free_user_init_disabled")
+				utils.RespondError(w, record, "free_user_init_disabled")
 				return
 			}
 			user_id, err = CreateProjectUser(auth_id, email, project_id, project.DefaultMonthlyTokenRateLimit)
 			if err != nil {
-				utils.RespondError(w, "project_user_creation_failed")
+				utils.RespondError(w, record, "project_user_creation_failed")
 				return
 			}
 		}
@@ -119,7 +120,7 @@ func TokenExchangeHandler(
 
 		user_token, err := unsigned_user_token.SignedString([]byte(os.Getenv("JWT_SECRET")))
 		if err != nil {
-			utils.RespondError(w, "token_signature_error")
+			utils.RespondError(w, record, "token_signature_error")
 			return
 		}
 

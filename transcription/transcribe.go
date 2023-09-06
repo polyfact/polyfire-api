@@ -18,7 +18,6 @@ import (
 	router "github.com/julienschmidt/httprouter"
 	supa "github.com/nedpals/supabase-go"
 
-	posthog "github.com/polyfact/api/posthog"
 	stt "github.com/polyfact/api/stt"
 	"github.com/polyfact/api/utils"
 )
@@ -81,8 +80,7 @@ type Result struct {
 }
 
 func Transcribe(w http.ResponseWriter, r *http.Request, _ router.Params) {
-	user_id := r.Context().Value("user_id").(string)
-	posthog.TranscribeEvent(user_id)
+	record := r.Context().Value("recordEvent").(utils.RecordFunc)
 	content_type := r.Header.Get("Content-Type")
 	var file_size int
 	var file_buf_reader io.Reader
@@ -92,14 +90,14 @@ func Transcribe(w http.ResponseWriter, r *http.Request, _ router.Params) {
 
 		err := json.NewDecoder(r.Body).Decode(&input)
 		if err != nil {
-			utils.RespondError(w, "invalid_json")
+			utils.RespondError(w, record, "invalid_json")
 			return
 		}
 
 		b, err := DownloadFromBucket("audio_transcribes", input.FilePath)
 		if err != nil {
 			fmt.Println(err)
-			utils.RespondError(w, "read_error")
+			utils.RespondError(w, record, "read_error")
 			return
 		}
 
@@ -111,18 +109,18 @@ func Transcribe(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		reader := multipart.NewReader(r.Body, boundary)
 		part, err := reader.NextPart()
 		if err == io.EOF {
-			utils.RespondError(w, "missing_content")
+			utils.RespondError(w, record, "missing_content")
 			return
 		}
 		if err != nil {
-			utils.RespondError(w, "read_error", err.Error())
+			utils.RespondError(w, record, "read_error", err.Error())
 			return
 		}
 		file_buf_reader = bufio.NewReader(part)
 
 		file_size, err = strconv.Atoi(r.Header.Get("Content-Length"))
 		if err != nil {
-			utils.RespondError(w, "read_error", err.Error())
+			utils.RespondError(w, record, "read_error", err.Error())
 			return
 		}
 
@@ -133,14 +131,14 @@ func Transcribe(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		// The format doesn't seem to really matter
 		files, close_func, err := SplitFile(file_buf_reader)
 		if err != nil {
-			utils.RespondError(w, "splitting_error")
+			utils.RespondError(w, record, "splitting_error")
 		}
 		defer close_func()
 		for i, r := range files {
 			res, err := stt.Transcribe(r, "mpeg")
 			if err != nil {
 				fmt.Printf("%v\n", err)
-				utils.RespondError(w, "transcription_error")
+				utils.RespondError(w, record, "transcription_error")
 				return
 			}
 			total_str += " " + res.Text
@@ -150,13 +148,16 @@ func Transcribe(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		res, err := stt.Transcribe(file_buf_reader, "mpeg")
 		if err != nil {
 			fmt.Printf("%v\n", err)
-			utils.RespondError(w, "transcription_error")
+			utils.RespondError(w, record, "transcription_error")
 			return
 		}
 		total_str = res.Text
 	}
 
 	res := Result{Text: total_str}
+
+	response, _ := json.Marshal(&res)
+	record(string(response))
 
 	json.NewEncoder(w).Encode(res)
 }

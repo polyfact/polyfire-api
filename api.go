@@ -24,7 +24,8 @@ func (h CORSRouter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Headers", "*")
 
-	defer middlewares.RecoverFromPanic(w)
+	middlewares.AddRecord(r)
+	defer middlewares.RecoverFromPanic(w, r)
 
 	h.Router.ServeHTTP(w, r)
 }

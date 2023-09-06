@@ -1,9 +1,9 @@
 package auth
 
 import (
+	_ "embed"
 	"encoding/json"
 	"fmt"
-	_ "embed"
 
 	jwt "github.com/golang-jwt/jwt/v5"
 	db "github.com/polyfact/api/db"

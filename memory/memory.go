@@ -10,7 +10,6 @@ import (
 	textsplitter "github.com/tmc/langchaingo/textsplitter"
 
 	db "github.com/polyfact/api/db"
-	posthog "github.com/polyfact/api/posthog"
 	"github.com/polyfact/api/llm"
 	"github.com/polyfact/api/utils"
 )
@@ -18,10 +17,10 @@ import (
 const BatchSize int = 512
 
 func Create(w http.ResponseWriter, r *http.Request, _ router.Params) {
-
+	record := r.Context().Value("recordEvent").(utils.RecordFunc)
 	userId, ok := r.Context().Value("user_id").(string)
 	if !ok {
-		utils.RespondError(w, "user_id_missing")
+		utils.RespondError(w, record, "user_id_missing")
 		return
 	}
 
@@ -30,7 +29,7 @@ func Create(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&requestBody); err != nil {
-		utils.RespondError(w, "decode_error")
+		utils.RespondError(w, record, "decode_error")
 		return
 	}
 
@@ -40,25 +39,27 @@ func Create(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	}
 
 	memoryId := uuid.New().String()
-	userId := r.Context().Value("user_id").(string)
-	posthog.CreateMemoryEvent(userId)
-
 
 	if err := db.CreateMemory(memoryId, userId, *requestBody.Public); err != nil {
-		utils.RespondError(w, "db_creation_error")
+		utils.RespondError(w, record, "db_creation_error")
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(db.Memory{ID: memoryId, UserId: userId, Public: *requestBody.Public}); err != nil {
-		utils.RespondError(w, "encode_error")
+	memory := db.Memory{ID: memoryId, UserId: userId, Public: *requestBody.Public}
+
+	response, _ := json.Marshal(&memory)
+	record(string(response))
+
+	if err := json.NewEncoder(w).Encode(memory); err != nil {
+		utils.RespondError(w, record, "encode_error")
 	}
 }
 
 func Add(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	decoder := json.NewDecoder(r.Body)
+	record := r.Context().Value("recordEvent").(utils.RecordFunc)
 	userId := r.Context().Value("user_id").(string)
-	posthog.AddToMemoryEvent(userId)
 
 	var requestBody struct {
 		ID       string `json:"id"`
@@ -68,7 +69,7 @@ func Add(w http.ResponseWriter, r *http.Request, _ router.Params) {
 
 	err := decoder.Decode(&requestBody)
 	if err != nil {
-		utils.RespondError(w, "decode_error")
+		utils.RespondError(w, record, "decode_error")
 		return
 	}
 
@@ -82,7 +83,7 @@ func Add(w http.ResponseWriter, r *http.Request, _ router.Params) {
 
 	chunks, err := splitter.SplitText(requestBody.Input)
 	if err != nil {
-		utils.RespondError(w, "splitting_error")
+		utils.RespondError(w, record, "splitting_error")
 		return
 	}
 
@@ -93,14 +94,14 @@ func Add(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	for _, chunk := range chunks {
 		embedding, err := llm.Embed(chunk, &callback)
 		if err != nil {
-			utils.RespondError(w, "embedding_error")
+			utils.RespondError(w, record, "embedding_error")
 			return
 		}
 
 		err = db.AddMemory(userId, requestBody.ID, chunk, embedding[0])
 
 		if err != nil {
-			utils.RespondError(w, "db_insert_error")
+			utils.RespondError(w, record, "db_insert_error")
 			return
 		}
 	}
@@ -108,6 +109,10 @@ func Add(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	response := map[string]bool{"success": true}
 
 	w.Header().Set("Content-Type", "application/json")
+
+	response_str, _ := json.Marshal(&response)
+	record(string(response_str))
+
 	json.NewEncoder(w).Encode(response)
 }
 
@@ -116,16 +121,16 @@ type memoryRecord struct {
 }
 
 func Get(w http.ResponseWriter, r *http.Request, _ router.Params) {
+	record := r.Context().Value("recordEvent").(utils.RecordFunc)
 	userId, ok := r.Context().Value("user_id").(string)
 	if !ok {
-		utils.RespondError(w, "user_id_error")
+		utils.RespondError(w, record, "user_id_error")
 		return
 	}
-	posthog.GetMemoryEvent(userId)
 
 	results, err := db.GetMemoryIds(userId)
 	if err != nil {
-		utils.RespondError(w, "retrieval_error")
+		utils.RespondError(w, record, "retrieval_error")
 		return
 	}
 
@@ -137,6 +142,10 @@ func Get(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	response := map[string][]string{"ids": ids}
 
 	w.Header().Set("Content-Type", "application/json")
+
+	response_str, _ := json.Marshal(&response)
+	record(string(response_str))
+
 	json.NewEncoder(w).Encode(response)
 }
 

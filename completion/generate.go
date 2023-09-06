@@ -14,7 +14,6 @@ import (
 	llm "github.com/polyfact/api/llm"
 	providers "github.com/polyfact/api/llm/providers"
 	memory "github.com/polyfact/api/memory"
-	posthog "github.com/polyfact/api/posthog"
 	utils "github.com/polyfact/api/utils"
 	webrequest "github.com/polyfact/api/web_request"
 )
@@ -109,7 +108,6 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 
 	callback := func(model_name string, input_count int, output_count int) {
 		db.LogRequests(user_id, model_name, input_count, output_count, "completion")
-		posthog.GenerateEvent(user_id, model_name, input_count, output_count)
 	}
 
 	if input.Provider == "" {
@@ -246,9 +244,10 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 
 func Generate(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	user_id := r.Context().Value("user_id").(string)
+	record := r.Context().Value("recordEvent").(utils.RecordFunc)
 
 	if len(r.Header["Content-Type"]) == 0 || r.Header["Content-Type"][0] != "application/json" {
-		utils.RespondError(w, "invalid_content_type")
+		utils.RespondError(w, record, "invalid_content_type")
 		return
 	}
 
@@ -256,7 +255,7 @@ func Generate(w http.ResponseWriter, r *http.Request, _ router.Params) {
 
 	err := json.NewDecoder(r.Body).Decode(&input)
 	if err != nil {
-		utils.RespondError(w, "invalid_json")
+		utils.RespondError(w, record, "invalid_json")
 		return
 	}
 
@@ -264,25 +263,25 @@ func Generate(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	if err != nil {
 		switch err {
 		case webrequest.WebsiteExceedsLimit:
-			utils.RespondError(w, "error_website_exceeds_limit")
+			utils.RespondError(w, record, "error_website_exceeds_limit")
 		case webrequest.WebsitesContentExceeds:
-			utils.RespondError(w, "error_websites_content_exceeds")
+			utils.RespondError(w, record, "error_websites_content_exceeds")
 		case webrequest.NoContentFound:
-			utils.RespondError(w, "error_no_content_found")
+			utils.RespondError(w, record, "error_no_content_found")
 		case webrequest.FetchWebpageError:
-			utils.RespondError(w, "error_fetch_webpage")
+			utils.RespondError(w, record, "error_fetch_webpage")
 		case webrequest.ParseContentError:
-			utils.RespondError(w, "error_parse_content")
+			utils.RespondError(w, record, "error_parse_content")
 		case webrequest.VisitBaseURLError:
-			utils.RespondError(w, "error_visit_base_url")
+			utils.RespondError(w, record, "error_visit_base_url")
 		case NotFound:
-			utils.RespondError(w, "not_found")
+			utils.RespondError(w, record, "not_found")
 		case UnknownModelProvider:
-			utils.RespondError(w, "invalid_model_provider")
+			utils.RespondError(w, record, "invalid_model_provider")
 		case RateLimitReached:
-			utils.RespondError(w, "rate_limit_reached")
+			utils.RespondError(w, record, "rate_limit_reached")
 		default:
-			utils.RespondError(w, "internal_error", err.Error())
+			utils.RespondError(w, record, "internal_error", err.Error())
 		}
 		return
 	}
@@ -303,6 +302,9 @@ func Generate(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	}
 
 	w.Header()["Content-Type"] = []string{"application/json"}
+
+	response, _ := json.Marshal(&result)
+	record(string(response))
 
 	json.NewEncoder(w).Encode(result)
 }
