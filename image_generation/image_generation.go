@@ -8,8 +8,8 @@ import (
 
 	"github.com/google/uuid"
 	router "github.com/julienschmidt/httprouter"
-	"github.com/polyfact/api/utils"
 	"github.com/polyfact/api/db"
+	"github.com/polyfact/api/utils"
 )
 
 type Image struct {
@@ -59,8 +59,10 @@ func ImageGeneration(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	switch provider {
 	case "openai":
 		reader, err = DALLEGenerate(prompt)
+		db.LogRequests(user_id, "openai", "dalle-2", 0, 0, "image")
 	case "midjourney":
 		reader, err = MJGenerate(prompt)
+		db.LogRequests(user_id, "midjourney", "midjourney", 0, 0, "image")
 	default:
 		utils.RespondError(w, record, "unknown_model_provider")
 		return

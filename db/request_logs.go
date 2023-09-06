@@ -38,6 +38,8 @@ func tokenToCredit(provider_name string, model_name string, input_token_count in
 			return (input_token_count * 600) + (output_token_count * 1200)
 		case "text-embedding-ada-002":
 			return input_token_count * 1
+		case "dalle-2":
+			return 200000
 		}
 	case "llama":
 		return 0
@@ -71,6 +73,31 @@ func LogRequests(
 		InputTokenCount:  toRef(input_token_count),
 		OutputTokenCount: toRef(output_token_count),
 		Credits:          tokenToCredit(provider_name, model_name, input_token_count, output_token_count),
+	}
+
+	_, _, err = supabase.From("request_logs").Insert(row, false, "", "", "exact").Execute()
+	if err != nil {
+		panic(err)
+	}
+}
+
+func LogRequestsCredits(
+	user_id string,
+	provider_name string,
+	model_name string,
+	credits int,
+	kind Kind,
+) {
+	supabase, err := CreateClient()
+	if err != nil {
+		panic(err)
+	}
+
+	row := RequestLog{
+		UserID:    user_id,
+		ModelName: model_name,
+		Kind:      kind,
+		Credits:   credits,
 	}
 
 	_, _, err = supabase.From("request_logs").Insert(row, false, "", "", "exact").Execute()
