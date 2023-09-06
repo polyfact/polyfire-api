@@ -69,6 +69,11 @@ var ErrorMessages = map[string]APIError{
 		Message:    "This project has reached its monthly rate limit",
 		StatusCode: http.StatusTooManyRequests,
 	},
+	"project_not_premium_model": {
+		Code:       "project_not_premium_model",
+		Message:    "This model can only be accessed by premium projects",
+		StatusCode: http.StatusForbidden,
+	},
 
 	// Bad Request Errors (Communication, Content, Decoding, Generation, Model, and Methods)
 	"communication_error": {
@@ -193,7 +198,7 @@ var ErrorMessages = map[string]APIError{
 	"invalid_column": {
 		Code:       "invalid_column",
 		Message:    "Filter column name not allowed",
-		StatusCode: http.StatusForbidden,
+		StatusCode: http.StatusBadRequest,
 	},
 	"invalid_length_value": {
 		Code:       "invalid_length_value",

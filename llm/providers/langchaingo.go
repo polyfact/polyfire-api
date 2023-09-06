@@ -8,6 +8,7 @@ import (
 
 	"github.com/tmc/langchaingo/llms"
 	"github.com/tmc/langchaingo/schema"
+	db "github.com/polyfact/api/db"
 )
 
 type LangchainProvider struct {
@@ -92,4 +93,9 @@ func (m LangchainProvider) Generate(
 	}(chan_res)
 
 	return chan_res
+}
+
+func (m LangchainProvider) UserAllowed(user_id string) bool {
+	res, _ := db.ProjectIsPremium(user_id)
+	return res
 }

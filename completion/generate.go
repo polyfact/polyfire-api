@@ -41,6 +41,7 @@ var (
 	NotFound                error = errors.New("404 Not Found")
 	RateLimitReached        error = errors.New("429 Monthly Rate Limit Reached")
 	ProjectRateLimitReached error = errors.New("429 Monthly Project Rate Limit Reached")
+	ProjectNotPremiumModel  error = errors.New("403 Project Can't Use Premium Models")
 )
 
 func getLanguageCompletion(language *string) string {
@@ -122,6 +123,10 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 	provider, err := llm.NewProvider(input.Provider, input.Model)
 	if err == llm.ErrUnknownModel {
 		return nil, UnknownModelProvider
+	}
+
+	if !provider.UserAllowed(user_id) {
+		return nil, ProjectNotPremiumModel
 	}
 
 	if err != nil {
@@ -287,6 +292,8 @@ func Generate(w http.ResponseWriter, r *http.Request, _ router.Params) {
 			utils.RespondError(w, record, "rate_limit_reached")
 		case ProjectRateLimitReached:
 			utils.RespondError(w, record, "project_rate_limit_reached")
+		case ProjectNotPremiumModel:
+			utils.RespondError(w, record, "project_not_premium_model")
 		default:
 			utils.RespondError(w, record, "internal_error", err.Error())
 		}
