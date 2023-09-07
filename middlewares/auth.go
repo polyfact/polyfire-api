@@ -82,7 +82,6 @@ func authenticateAndHandle(
 		return
 	}
 
-	fmt.Println(version, dbVersion)
 	if version != dbVersion {
 		utils.RespondError(w, record, "invalid_token")
 		return
