@@ -54,12 +54,12 @@ type MemoryProcessResult struct {
 	ContextCompletion string
 }
 
-func getMemory(user_id string, input GenerateRequestBody) (*MemoryProcessResult, error) {
-	if input.MemoryId == nil {
+func getMemory(user_id string, memoryId []string, task string, infos bool) (*MemoryProcessResult, error) {
+	if memoryId == nil {
 		return nil, nil
 	}
 
-	results, err := memory.Embedder(user_id, input.MemoryId, input.Task)
+	results, err := memory.Embedder(user_id, memoryId, task)
 	if err != nil {
 		return nil, InternalServerError
 	}
@@ -73,7 +73,7 @@ func getMemory(user_id string, input GenerateRequestBody) (*MemoryProcessResult,
 		ContextCompletion: context_completion,
 	}
 
-	if input.Infos {
+	if infos {
 		response.Ressources = results
 	}
 
@@ -100,9 +100,7 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 		}
 	}
 
-	input.MemoryId = memoryIdArray
-
-	memoryResult, err := getMemory(user_id, input)
+	memoryResult, err := getMemory(user_id, memoryIdArray, input.Task, input.Infos)
 	if err != nil {
 		return nil, err
 	}
@@ -182,7 +180,7 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 			defer close(result)
 			total_result := ""
 			for v := range pre_result {
-				if input.MemoryId != nil && input.MemoryId != nil && input.Infos && len(ressources) > 0 {
+				if  memoryIdArray != nil && input.Infos && len(ressources) > 0 {
 					v.Ressources = ressources
 				}
 
