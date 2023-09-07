@@ -19,19 +19,19 @@ import (
 )
 
 type GenerateRequestBody struct {
-	Task           string    `json:"task"`
-	Provider       string    `json:"provider,omitempty"`
-	Model          *string   `json:"model,omitempty"`
-	MemoryId       *string   `json:"memory_id,omitempty"`
-	ChatId         *string   `json:"chat_id,omitempty"`
-	Stop           *[]string `json:"stop,omitempty"`
-	Temperature    *float32  `json:"temperature,omitempty"`
-	Stream         bool      `json:"stream,omitempty"`
-	Infos          bool      `json:"infos,omitempty"`
-	SystemPromptId *string   `json:"system_prompt_id,omitempty"`
-	SystemPrompt   *string   `json:"system_prompt,omitempty"`
-	WebRequest     bool      `json:"web,omitempty"`
-	Language       *string   `json:"language,omitempty"`
+	Task           string      `json:"task"`
+	Provider       string      `json:"provider,omitempty"`
+	Model          *string     `json:"model,omitempty"`
+	MemoryId       interface{} `json:"memory_id,omitempty"`
+	ChatId         *string     `json:"chat_id,omitempty"`
+	Stop           *[]string   `json:"stop,omitempty"`
+	Temperature    *float32    `json:"temperature,omitempty"`
+	Stream         bool        `json:"stream,omitempty"`
+	Infos          bool        `json:"infos,omitempty"`
+	SystemPromptId *string     `json:"system_prompt_id,omitempty"`
+	SystemPrompt   *string     `json:"system_prompt,omitempty"`
+	WebRequest     bool        `json:"web,omitempty"`
+	Language       *string     `json:"language,omitempty"`
 }
 
 var (
@@ -54,12 +54,12 @@ type MemoryProcessResult struct {
 	ContextCompletion string
 }
 
-func getMemory(user_id string, input GenerateRequestBody) (*MemoryProcessResult, error) {
-	if input.MemoryId == nil || len(*input.MemoryId) == 0 {
+func getMemory(user_id string, memoryId []string, task string, infos bool) (*MemoryProcessResult, error) {
+	if memoryId == nil {
 		return nil, nil
 	}
 
-	results, err := memory.Embedder(user_id, *input.MemoryId, input.Task)
+	results, err := memory.Embedder(user_id, memoryId, task)
 	if err != nil {
 		return nil, InternalServerError
 	}
@@ -73,7 +73,7 @@ func getMemory(user_id string, input GenerateRequestBody) (*MemoryProcessResult,
 		ContextCompletion: context_completion,
 	}
 
-	if input.Infos {
+	if infos {
 		response.Ressources = results
 	}
 
@@ -88,7 +88,19 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 
 	language_completion := getLanguageCompletion(input.Language)
 
-	memoryResult, err := getMemory(user_id, input)
+	var memoryIdArray []string
+
+	if str, ok := input.MemoryId.(string); ok {
+		memoryIdArray = append(memoryIdArray, str)
+	} else if array, ok := input.MemoryId.([]interface{}); ok {
+		for _, item := range array {
+			if str, ok := item.(string); ok {
+				memoryIdArray = append(memoryIdArray, str)
+			}
+		}
+	}
+
+	memoryResult, err := getMemory(user_id, memoryIdArray, input.Task, input.Infos)
 	if err != nil {
 		return nil, err
 	}
@@ -168,7 +180,7 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 			defer close(result)
 			total_result := ""
 			for v := range pre_result {
-				if input.MemoryId != nil && *input.MemoryId != "" && input.Infos && len(ressources) > 0 {
+				if  memoryIdArray != nil && input.Infos && len(ressources) > 0 {
 					v.Ressources = ressources
 				}
 
