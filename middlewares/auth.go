@@ -72,7 +72,6 @@ func authenticateAndHandle(
 
 	var version int = 0
 	versionJSON, ok := claims["version"].(float64)
-	fmt.Println(versionJSON)
 	if ok {
 		version = int(versionJSON)
 	}
