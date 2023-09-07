@@ -45,17 +45,12 @@ func ImageGeneration(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		provider = "openai"
 	}
 
-	var reader io.Reader
-	var err error
-	switch provider {
-	case "openai":
-		reader, err = DALLEGenerate(prompt)
-	case "midjourney":
-		reader, err = MJGenerate(prompt)
-	default:
+	if provider != "openai" {
 		utils.RespondError(w, record, "unknown_model_provider")
 		return
 	}
+
+	reader, err := DALLEGenerate(prompt)
 	if err != nil {
 		utils.RespondError(w, record, "image_generation_error")
 		return
