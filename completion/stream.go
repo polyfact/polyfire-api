@@ -137,7 +137,7 @@ generation_loop:
 		}
 	}
 
-	if input.MemoryId != nil && *input.MemoryId != "" && input.Infos {
+	if input.MemoryId != nil && input.Infos {
 		infosJSON, err := json.Marshal(result)
 
 		infos := "[INFOS]:" + string(infosJSON)
