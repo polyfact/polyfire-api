@@ -122,10 +122,6 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 		db.LogRequests(user_id, model_name, input_count, output_count, "completion")
 	}
 
-	if input.Provider == "" {
-		input.Provider = "openai"
-	}
-
 	provider, err := llm.NewProvider(input.Provider, input.Model)
 	if err == llm.ErrUnknownModel {
 		return nil, UnknownModelProvider

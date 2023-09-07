@@ -80,3 +80,38 @@ func GetUserIdMonthlyTokenUsage(user_id string) (int, error) {
 
 	return usage, nil
 }
+
+type Event struct {
+	Path         string `json:"path"`
+	Error        bool   `json:"error"`
+	UserID       string `json:"user_id"`
+	ProjectID    string `json:"project_id"`
+	RequestBody  string `json:"request_body"`
+	ResponseBody string `json:"response_body"`
+}
+
+func LogEvents(
+	path string,
+	userId string,
+	projectId string,
+	requestBody string,
+	responseBody string,
+) {
+	supabase, err := CreateClient()
+	if err != nil {
+		panic(err)
+	}
+
+	row := Event{
+		Path:         path,
+		UserID:       userId,
+		ProjectID:    projectId,
+		RequestBody:  requestBody,
+		ResponseBody: responseBody,
+	}
+
+	_, _, err = supabase.From("events").Insert(row, false, "", "", "exact").Execute()
+	if err != nil {
+		panic(err)
+	}
+}

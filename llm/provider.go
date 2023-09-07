@@ -14,7 +14,30 @@ type Provider interface {
 	Generate(prompt string, c *func(string, int, int), opts *providers.ProviderOptions) chan providers.Result
 }
 
+func defaultModel(model string) (string, string) {
+	switch model {
+	case "cheap":
+		return "llama", "llama2"
+	case "regular":
+		return "openai", "gpt-3.5-turbo"
+	case "best":
+		return "openai", "gpt-4"
+	}
+	return "", ""
+}
+
 func NewProvider(provider string, model *string) (Provider, error) {
+	fmt.Println("%v, %v", provider, model)
+	if provider == "" && model == nil {
+		provider = "openai"
+	}
+
+	if provider == "" && model != nil {
+		var newModel string
+		provider, newModel = defaultModel(*model)
+		model = &newModel
+	}
+
 	switch provider {
 	case "openai":
 		fmt.Println("Using OpenAI")
