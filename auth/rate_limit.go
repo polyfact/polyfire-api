@@ -32,7 +32,7 @@ func UserRateLimit(w http.ResponseWriter, r *http.Request, _ router.Params) {
 
 	result := UserRateLimitResponse{
 		Usage:     tokenUsage,
-		RateLimit: rateLimit,
+		RateLimit: rateLimit, // TODO: Change to credit once we migrated from token rate limit to credit rate limit
 	}
 
 	response, _ := json.Marshal(&result)

@@ -81,6 +81,30 @@ func GetUserIdMonthlyTokenUsage(user_id string) (int, error) {
 	return usage, nil
 }
 
+func GetUserIdMonthlyCreditUsage(user_id string) (int, error) {
+	params := UsageParams{
+		UserID: user_id,
+	}
+
+	client, err := CreateClient()
+	if err != nil {
+		return 0, err
+	}
+
+	response := client.Rpc("get_monthly_credit_usage", "", params)
+
+	if response == "null" {
+		return 0, nil
+	}
+
+	usage, err := strconv.Atoi(response)
+	if err != nil {
+		return 0, err
+	}
+
+	return usage, nil
+}
+
 type Event struct {
 	Path         string `json:"path"`
 	Error        bool   `json:"error"`
