@@ -16,6 +16,7 @@ type RequestLog struct {
 	ModelName        string `json:"model_name"`
 	InputTokenCount  *int   `json:"input_token_count"`
 	OutputTokenCount *int   `json:"output_token_count"`
+	Credits          int    `json:"credits"`
 	Kind             Kind   `json:"kind"`
 }
 
@@ -23,8 +24,34 @@ func toRef[T interface{}](n T) *T {
 	return &n
 }
 
+func tokenToCredit(provider_name string, model_name string, input_token_count int, output_token_count int) int {
+	switch provider_name {
+	case "openai":
+		switch model_name {
+		case "gpt-3.5-turbo":
+			return (input_token_count * 15) + (output_token_count * 20)
+		case "gpt-3.5-turbo-16k":
+			return (input_token_count * 30) + (output_token_count * 40)
+		case "gpt-4":
+			return (input_token_count * 300) + (output_token_count * 600)
+		case "gpt-4-32k":
+			return (input_token_count * 600) + (output_token_count * 1200)
+		case "text-embedding-ada-002":
+			return input_token_count * 1
+		case "dalle-2":
+			return 200000
+		}
+	case "llama":
+		return 0
+	case "cohere":
+		return (input_token_count + output_token_count) * 150
+	}
+	return 0
+}
+
 func LogRequests(
 	user_id string,
+	provider_name string,
 	model_name string,
 	input_token_count int,
 	output_token_count int,
@@ -45,6 +72,32 @@ func LogRequests(
 		Kind:             kind,
 		InputTokenCount:  toRef(input_token_count),
 		OutputTokenCount: toRef(output_token_count),
+		Credits:          tokenToCredit(provider_name, model_name, input_token_count, output_token_count),
+	}
+
+	_, _, err = supabase.From("request_logs").Insert(row, false, "", "", "exact").Execute()
+	if err != nil {
+		panic(err)
+	}
+}
+
+func LogRequestsCredits(
+	user_id string,
+	provider_name string,
+	model_name string,
+	credits int,
+	kind Kind,
+) {
+	supabase, err := CreateClient()
+	if err != nil {
+		panic(err)
+	}
+
+	row := RequestLog{
+		UserID:    user_id,
+		ModelName: model_name,
+		Kind:      kind,
+		Credits:   credits,
 	}
 
 	_, _, err = supabase.From("request_logs").Insert(row, false, "", "", "exact").Execute()

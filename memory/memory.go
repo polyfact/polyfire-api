@@ -88,7 +88,7 @@ func Add(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	}
 
 	callback := func(model_name string, input_count int) {
-		db.LogRequests(userId, model_name, input_count, 0, "embedding")
+		db.LogRequests(userId, "openai", model_name, input_count, 0, "embedding")
 	}
 
 	for _, chunk := range chunks {
@@ -151,7 +151,7 @@ func Get(w http.ResponseWriter, r *http.Request, _ router.Params) {
 
 func Embedder(userId string, memoryId []string, task string) ([]db.MatchResult, error) {
 	callback := func(model_name string, input_count int) {
-		db.LogRequests(userId, model_name, input_count, 0, "embedding")
+		db.LogRequests(userId, "openai", model_name, input_count, 0, "embedding")
 	}
 
 	embeddings, err := llm.Embed(task, &callback)
