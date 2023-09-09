@@ -9,8 +9,9 @@ import (
 	"math"
 	"os"
 
+	db "github.com/polyfact/api/db"
 	goOpenai "github.com/sashabaranov/go-openai"
-	"github.com/tmc/langchaingo/llms"
+	llms "github.com/tmc/langchaingo/llms"
 )
 
 type OpenAIStreamProvider struct {
@@ -27,7 +28,7 @@ func NewOpenAIStreamProvider(model string) OpenAIStreamProvider {
 	}
 }
 
-func (m OpenAIStreamProvider) Generate(task string, c *func(string, int, int), opts *ProviderOptions) chan Result {
+func (m OpenAIStreamProvider) Generate(task string, c *func(string, string, int, int), opts *ProviderOptions) chan Result {
 	chan_res := make(chan Result)
 
 	go func() {
@@ -93,7 +94,7 @@ func (m OpenAIStreamProvider) Generate(task string, c *func(string, int, int), o
 			}
 
 			if c != nil {
-				(*c)(m.Model, tokenUsage.Input, totalOutput)
+				(*c)("openai", m.Model, tokenUsage.Input, totalOutput)
 			}
 			return
 		}
@@ -108,4 +109,13 @@ func (m OpenAIStreamProvider) Generate(task string, c *func(string, int, int), o
 	}()
 
 	return chan_res
+}
+
+func (m OpenAIStreamProvider) UserAllowed(user_id string) bool {
+	if m.Model == "gpt-3.5-turbo" || m.Model == "gpt-3.5-turbo-16k" {
+		return true
+	}
+
+	res, _ := db.ProjectIsPremium(user_id)
+	return res
 }

@@ -13,16 +13,18 @@ import (
 	"os"
 	"os/exec"
 	"strconv"
+	"strings"
 
 	"github.com/google/uuid"
 	router "github.com/julienschmidt/httprouter"
 	supa "github.com/nedpals/supabase-go"
 
+	db "github.com/polyfact/api/db"
 	stt "github.com/polyfact/api/stt"
 	"github.com/polyfact/api/utils"
 )
 
-func SplitFile(file io.Reader) ([]io.Reader, func(), error) {
+func SplitFile(file io.Reader) ([]io.Reader, int, func(), error) {
 	id := "split_transcribe-" + uuid.New().String()
 	os.Mkdir("/tmp/"+id, 0700)
 	close_func := func() {
@@ -31,18 +33,40 @@ func SplitFile(file io.Reader) ([]io.Reader, func(), error) {
 	fmt.Println(id)
 	f, err := os.Create("/tmp/" + id + "/audio-file")
 	if err != nil {
-		return nil, nil, err
+		fmt.Println("create")
+		return nil, 0, nil, err
 	}
 	io.Copy(f, file)
-	exec.Command("ffmpeg", "-i", "/tmp/"+id+"/audio-file", "/tmp/"+id+"/audio-file.ts").Run()
+	exec.Command("ffmpeg", "-i", "/tmp/"+id+"/audio-file", "/tmp/"+id+"/audio-file.ts", "-ar", "44100").Run()
+	ffprobe_result, err := exec.Command("ffprobe", "-i", "/tmp/"+id+"/audio-file", "-show_entries", "format=duration", "-v", "quiet", "-of", "csv=p=0").
+		Output()
+	if err != nil {
+		return nil, 0, nil, err
+	}
+
+	duration_ffprobe := strings.Split(strings.Trim(string(ffprobe_result), " \t\n"), ".")
+
+	duration_minutes, err := strconv.Atoi(duration_ffprobe[0])
+	if err != nil {
+		return nil, 0, nil, err
+	}
+
+	duration_seconds, err := strconv.Atoi(duration_ffprobe[1][0:2])
+	if err != nil {
+		return nil, 0, nil, err
+	}
+
+	duration_seconds = duration_minutes*60 + duration_seconds + 1
 	os.Remove("/tmp/" + id + "/audio-file")
+
 	split_cmd := exec.Command("split", "-b", "20971400", "/tmp/"+id+"/audio-file.ts")
 	split_cmd.Dir = "/tmp/" + id
 	split_cmd.Run()
 	os.Remove("/tmp/" + id + "/audio-file.ts")
 	files, err := ioutil.ReadDir("/tmp/" + id)
 	if err != nil {
-		return nil, nil, err
+		fmt.Println("readdir")
+		return nil, 0, nil, err
 	}
 
 	var res []io.Reader = make([]io.Reader, 0)
@@ -52,14 +76,15 @@ func SplitFile(file io.Reader) ([]io.Reader, func(), error) {
 			os.Remove("/tmp/" + id + "/" + file.Name())
 			audio_part_r, err := os.Open("/tmp/" + id + "/" + file.Name() + ".mp3")
 			if err != nil {
-				return nil, nil, err
+				fmt.Println("open part")
+				return nil, 0, nil, err
 			}
 			res = append(res, audio_part_r)
 			fmt.Println("adding:", file.Name())
 		}
 	}
 
-	return res, close_func, nil
+	return res, duration_seconds, close_func, nil
 }
 
 func DownloadFromBucket(bucket string, path string) ([]byte, error) {
@@ -80,9 +105,9 @@ type Result struct {
 }
 
 func Transcribe(w http.ResponseWriter, r *http.Request, _ router.Params) {
+	user_id := r.Context().Value("user_id").(string)
 	record := r.Context().Value("recordEvent").(utils.RecordFunc)
 	content_type := r.Header.Get("Content-Type")
-	var file_size int
 	var file_buf_reader io.Reader
 
 	if content_type == "application/json" {
@@ -101,7 +126,6 @@ func Transcribe(w http.ResponseWriter, r *http.Request, _ router.Params) {
 			return
 		}
 
-		file_size = len(b)
 		file_buf_reader = bytes.NewReader(b)
 	} else {
 		_, p, _ := mime.ParseMediaType(content_type)
@@ -118,41 +142,28 @@ func Transcribe(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		}
 		file_buf_reader = bufio.NewReader(part)
 
-		file_size, err = strconv.Atoi(r.Header.Get("Content-Length"))
-		if err != nil {
-			utils.RespondError(w, record, "read_error", err.Error())
-			return
-		}
-
 	}
 
 	total_str := ""
-	if file_size > 25000000 {
-		// The format doesn't seem to really matter
-		files, close_func, err := SplitFile(file_buf_reader)
-		if err != nil {
-			utils.RespondError(w, record, "splitting_error")
-		}
-		defer close_func()
-		for i, r := range files {
-			res, err := stt.Transcribe(r, "mpeg")
-			if err != nil {
-				fmt.Printf("%v\n", err)
-				utils.RespondError(w, record, "transcription_error")
-				return
-			}
-			total_str += " " + res.Text
-			fmt.Printf("Transcription %v/%v\n", i+1, len(files))
-		}
-	} else {
-		res, err := stt.Transcribe(file_buf_reader, "mpeg")
+	// The format doesn't seem to really matter
+	files, duration, close_func, err := SplitFile(file_buf_reader)
+	if err != nil {
+		fmt.Println(err)
+		utils.RespondError(w, record, "splitting_error")
+	}
+	defer close_func()
+	for i, r := range files {
+		res, err := stt.Transcribe(r, "mpeg")
 		if err != nil {
 			fmt.Printf("%v\n", err)
 			utils.RespondError(w, record, "transcription_error")
 			return
 		}
-		total_str = res.Text
+		total_str += " " + res.Text
+		fmt.Printf("Transcription %v/%v\n", i+1, len(files))
 	}
+
+	db.LogRequestsCredits(user_id, "openai", "whisper", duration*1000, "transcription")
 
 	res := Result{Text: total_str}
 

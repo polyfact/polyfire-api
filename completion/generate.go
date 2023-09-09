@@ -35,11 +35,13 @@ type GenerateRequestBody struct {
 }
 
 var (
-	UnknownUserId        error = errors.New("400 Unknown user Id")
-	InternalServerError  error = errors.New("500 InternalServerError")
-	UnknownModelProvider error = errors.New("400 Unknown model provider")
-	NotFound             error = errors.New("404 Not Found")
-	RateLimitReached     error = errors.New("429 Monthly Rate Limit Reached")
+	UnknownUserId           error = errors.New("400 Unknown user Id")
+	InternalServerError     error = errors.New("500 InternalServerError")
+	UnknownModelProvider    error = errors.New("400 Unknown model provider")
+	NotFound                error = errors.New("404 Not Found")
+	RateLimitReached        error = errors.New("429 Monthly Rate Limit Reached")
+	ProjectRateLimitReached error = errors.New("429 Monthly Project Rate Limit Reached")
+	ProjectNotPremiumModel  error = errors.New("403 Project Can't Use Premium Models")
 )
 
 func getLanguageCompletion(language *string) string {
@@ -118,13 +120,25 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 		return nil, RateLimitReached
 	}
 
-	callback := func(model_name string, input_count int, output_count int) {
-		db.LogRequests(user_id, model_name, input_count, output_count, "completion")
+	reached, err = db.ProjectReachedRateLimit(user_id)
+	if err != nil {
+		return nil, UnknownUserId
+	}
+	if reached {
+		return nil, ProjectRateLimitReached
+	}
+
+	callback := func(provider_name string, model_name string, input_count int, output_count int) {
+		db.LogRequests(user_id, provider_name, model_name, input_count, output_count, "completion")
 	}
 
 	provider, err := llm.NewProvider(input.Provider, input.Model)
 	if err == llm.ErrUnknownModel {
 		return nil, UnknownModelProvider
+	}
+
+	if !provider.UserAllowed(user_id) {
+		return nil, ProjectNotPremiumModel
 	}
 
 	if err != nil {
@@ -288,6 +302,10 @@ func Generate(w http.ResponseWriter, r *http.Request, _ router.Params) {
 			utils.RespondError(w, record, "invalid_model_provider")
 		case RateLimitReached:
 			utils.RespondError(w, record, "rate_limit_reached")
+		case ProjectRateLimitReached:
+			utils.RespondError(w, record, "project_rate_limit_reached")
+		case ProjectNotPremiumModel:
+			utils.RespondError(w, record, "project_not_premium_model")
 		default:
 			utils.RespondError(w, record, "internal_error", err.Error())
 		}
