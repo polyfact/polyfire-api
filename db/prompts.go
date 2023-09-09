@@ -22,6 +22,7 @@ type PromptInsert struct {
 	Description string   `json:"description"`
 	Prompt      string   `json:"prompt"`
 	Tags        []string `json:"tags,omitempty"`
+	UserId      string   `json:"user_id"`
 }
 
 type PromptUpdate struct {
@@ -30,8 +31,14 @@ type PromptUpdate struct {
 	Description string    `json:"description,omitempty"`
 	Prompt      string    `json:"prompt,omitempty"`
 	Tags        []string  `json:"tags,omitempty"`
-	Likes       int64     `json:"likes,omitempty"`
-	Use         int64     `json:"use,omitempty"`
+}
+
+type PromptUse struct {
+	Use int64 `json:"use"`
+}
+
+type PromptLike struct {
+	Like int64 `json:"like"`
 }
 
 type FilterOperation string
@@ -56,6 +63,8 @@ type SupabaseFilter struct {
 
 type SupabaseFilters []SupabaseFilter
 
+var selectableFields = "name, description, prompt, created_at, updated_at, like, use, tags"
+
 func GetPromptById(id string) (*Prompt, error) {
 	client, err := CreateClient()
 	if err != nil {
@@ -64,7 +73,7 @@ func GetPromptById(id string) (*Prompt, error) {
 
 	var result *Prompt
 
-	_, err = client.From("prompts").Select("*", "exact", false).Eq("id", id).Single().ExecuteTo(&result)
+	_, err = client.From("prompts").Select(selectableFields, "exact", false).Eq("id", id).Single().ExecuteTo(&result)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +89,7 @@ func GetPromptByName(name string) (*Prompt, error) {
 
 	var result *Prompt
 
-	_, err = client.From("prompts").Select("*", "exact", false).Eq("name", name).Single().ExecuteTo(&result)
+	_, err = client.From("prompts").Select(selectableFields, "exact", false).Eq("name", name).Single().ExecuteTo(&result)
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +119,7 @@ func GetAllPrompts(filters SupabaseFilters) ([]Prompt, error) {
 		return nil, err
 	}
 
-	query := client.From("prompts").Select("*", "exact", false)
+	query := client.From("prompts").Select(selectableFields, "exact", false)
 
 	for _, filter := range filters {
 		columnFilter := filter.Column
@@ -158,13 +167,34 @@ func CreatePrompt(input PromptInsert) (*Prompt, error) {
 	return result, nil
 }
 
-func UpdatePrompt(id string, input PromptUpdate) (*Prompt, error) {
+func UpdatePrompt(id string, input PromptUpdate, user_id string) (*Prompt, error) {
 	client, err := CreateClient()
 	if err != nil {
 		return nil, err
 	}
 
 	input.UpdatedAt = time.Now()
+
+	var result *Prompt
+
+	count, err := client.From("prompts").Update(input, "", "exact").Eq("id", id).Eq("user_id", user_id).Single().ExecuteTo(&result)
+
+	if count == 0 {
+		return nil, fmt.Errorf("failed to update prompt with id: %s", id)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func UpdatePromptUse(id string, input PromptUse) (*Prompt, error) {
+	client, err := CreateClient()
+	if err != nil {
+		return nil, err
+	}
 
 	var result *Prompt
 
@@ -177,13 +207,34 @@ func UpdatePrompt(id string, input PromptUpdate) (*Prompt, error) {
 	return result, nil
 }
 
-func DeletePrompt(id string) error {
+func UpdatePromptLike(id string, input PromptLike) (*Prompt, error) {
+	client, err := CreateClient()
+	if err != nil {
+		return nil, err
+	}
+
+	var result *Prompt
+
+	_, err = client.From("prompts").Update(input, "", "").Eq("id", id).Single().ExecuteTo(&result)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func DeletePrompt(id string, user_id string) error {
 	client, err := CreateClient()
 	if err != nil {
 		return err
 	}
 
-	_, _, err = client.From("prompts").Delete("", "").Eq("id", id).Execute()
+	_, count, err := client.From("prompts").Delete("", "exact").Eq("id", id).Eq("user_id", user_id).Execute()
+
+	if count == 0 {
+		return fmt.Errorf("failed to delete prompt with id: %s", id)
+	}
 
 	if err != nil {
 		return err

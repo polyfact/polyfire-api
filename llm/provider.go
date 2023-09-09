@@ -68,7 +68,7 @@ func NewProvider(provider string, model *string) (Provider, error) {
 		} else {
 			m = *model
 		}
-		if m != "llama" && m != "llama2" {
+		if m != "llama" && m != "llama2" && m != "codellama" {
 			return nil, ErrUnknownModel
 		}
 		return providers.LLaMaProvider{

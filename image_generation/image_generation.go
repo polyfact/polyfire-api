@@ -39,9 +39,15 @@ func storeImageBucket(reader io.Reader, path string) (string, error) {
 
 func ImageGeneration(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	user_id := r.Context().Value("user_id").(string)
+	request, _ := json.Marshal(r.URL.Query())
 	prompt := r.URL.Query().Get("p")
 	provider := r.URL.Query().Get("provider")
-	record := r.Context().Value("recordEvent").(utils.RecordFunc)
+	recordEventRequest := r.Context().Value("recordEventRequest").(utils.RecordRequestFunc)
+
+	var record utils.RecordFunc
+	record = func(response string, props ...utils.KeyValue) {
+		recordEventRequest(string(request), response, user_id, props...)
+	}
 
 	if provider == "" {
 		provider = "openai"
@@ -54,19 +60,12 @@ func ImageGeneration(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		return
 	}
 
-	var reader io.Reader
-	var err error
-	switch provider {
-	case "openai":
-		reader, err = DALLEGenerate(prompt)
-		db.LogRequests(user_id, "openai", "dalle-2", 0, 0, "image")
-	case "midjourney":
-		reader, err = MJGenerate(prompt)
-		db.LogRequests(user_id, "midjourney", "midjourney", 0, 0, "image")
-	default:
+	if provider != "openai" {
 		utils.RespondError(w, record, "unknown_model_provider")
 		return
 	}
+
+	reader, err := DALLEGenerate(prompt)
 	if err != nil {
 		utils.RespondError(w, record, "image_generation_error")
 		return

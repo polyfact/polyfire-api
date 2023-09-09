@@ -81,8 +81,15 @@ func containsURL(content string) ([]string, bool) {
 	return nil, false
 }
 
-func WebRequest(query string, model string) (string, error) {
+func WebRequest(query string, m *string) (string, error) {
 	var accumulatedText strings.Builder
+	var model string
+
+	if m == nil {
+		model = "gpt-3.5-turbo"
+	} else {
+		model = *m
+	}
 
 	contextSize := llms.GetModelContextSize(model) - answerTokenLength
 

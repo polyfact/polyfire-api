@@ -24,6 +24,7 @@ type Project struct {
 	AuthID                       string `json:"auth_id"`
 	FreeUserInit                 bool   `json:"free_user_init"`
 	DefaultMonthlyTokenRateLimit *int   `json:"default_monthly_token_rate_limit"`
+	FirebaseProjectID            string `json:"firebase_project_id"`
 }
 
 func GetProjectByID(id string) (*Project, error) {

@@ -149,7 +149,7 @@ func Get(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	json.NewEncoder(w).Encode(response)
 }
 
-func Embedder(userId string, memoryId string, task string) ([]db.MatchResult, error) {
+func Embedder(userId string, memoryId []string, task string) ([]db.MatchResult, error) {
 	callback := func(model_name string, input_count int) {
 		db.LogRequests(userId, "openai", model_name, input_count, 0, "embedding")
 	}
