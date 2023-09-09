@@ -39,6 +39,12 @@ func main() {
 
 	router := httprouter.New()
 
+	// Auth Routes
+	router.GET("/project/:id/auth/token", auth.ManagedSupabaseTokenExchangeHandler)
+	router.GET("/project/:id/auth/firebase", auth.ExternalFirebaseTokenExchangeHandler)
+	router.GET("/auth/id", middlewares.Auth(auth.GetAuthId))
+	router.GET("/usage", middlewares.Auth(auth.UserRateLimit))
+
 	// Completion Routes
 	router.POST("/generate", middlewares.Auth(completion.Generate))
 	router.GET("/chat/:id/history", middlewares.Auth(completion.GetChatHistory))
@@ -55,10 +61,6 @@ func main() {
 	router.GET("/memories", middlewares.Auth(memory.Get))
 	router.POST("/memory", middlewares.Auth(memory.Create))
 	router.PUT("/memory", middlewares.Auth(memory.Add))
-
-	// Auth Routes
-	router.GET("/project/:id/auth/token", auth.TokenExchangeHandler)
-	router.GET("/usage", middlewares.Auth(auth.UserRateLimit))
 
 	// KV Routes
 	router.GET("/kv", middlewares.Auth(kv.Get))

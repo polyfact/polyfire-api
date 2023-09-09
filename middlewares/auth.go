@@ -8,6 +8,7 @@ import (
 
 	jwt "github.com/golang-jwt/jwt/v5"
 	router "github.com/julienschmidt/httprouter"
+	"github.com/polyfact/api/db"
 	"github.com/polyfact/api/utils"
 )
 
@@ -66,6 +67,23 @@ func authenticateAndHandle(
 	userID, ok := claims["user_id"].(string)
 	if !ok {
 		utils.RespondError(w, record, "missing_user_id")
+		return
+	}
+
+	var version int = 0
+	versionJSON, ok := claims["version"].(float64)
+	if ok {
+		version = int(versionJSON)
+	}
+
+	dbVersion, err := db.GetVersionForUser(userID)
+	if err != nil {
+		utils.RespondError(w, record, "database_error")
+		return
+	}
+
+	if version != dbVersion {
+		utils.RespondError(w, record, "invalid_token")
 		return
 	}
 
