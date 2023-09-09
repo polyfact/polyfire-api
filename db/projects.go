@@ -102,6 +102,8 @@ func UserReachedRateLimit(id string) (bool, error) {
 	if creditUsage >= *projectUser.MonthlyCreditRateLimit {
 		return true, nil
 	}
+
+	return false, nil
 }
 
 func GetProjectForUserId(user_id string) (*string, error) {
