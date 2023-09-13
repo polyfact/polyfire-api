@@ -23,6 +23,7 @@ type CORSRouter struct {
 func (h CORSRouter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Headers", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "*")
 
 	middlewares.AddRecord(r)
 	defer middlewares.RecoverFromPanic(w, r)
