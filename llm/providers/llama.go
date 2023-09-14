@@ -9,7 +9,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/tmc/langchaingo/llms"
+	tokens "github.com/polyfact/api/tokens"
 )
 
 type LLaMaInputBody struct {
@@ -34,7 +34,7 @@ func (m LLaMaProvider) Generate(task string, c *func(string, string, int, int), 
 		}
 		fmt.Println(body)
 		input, err := json.Marshal(body)
-		tokenUsage.Input += llms.CountTokens("gpt-2", task)
+		tokenUsage.Input += tokens.CountTokens("gpt-2", task)
 		if err != nil {
 			fmt.Printf("%v\n", err)
 			return
@@ -54,7 +54,7 @@ func (m LLaMaProvider) Generate(task string, c *func(string, string, int, int), 
 			if errors.Is(err, io.EOF) || err != nil {
 				break
 			}
-			tokenUsage.Output = llms.CountTokens("gpt-2", string(p[:nb]))
+			tokenUsage.Output = tokens.CountTokens("gpt-2", string(p[:nb]))
 			totalOutput += tokenUsage.Output
 			chan_res <- Result{Result: string(p[:nb]), TokenUsage: tokenUsage}
 		}

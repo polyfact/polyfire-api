@@ -10,6 +10,7 @@ import (
 
 	"github.com/cixtor/readability"
 	"github.com/gocolly/colly/v2"
+	tokens "github.com/polyfact/api/tokens"
 	"github.com/tmc/langchaingo/llms"
 )
 
@@ -102,12 +103,12 @@ func WebRequest(query string, m *string) (string, error) {
 				continue
 			}
 
-			contentTokenCount := llms.CountTokens(model, content)
+			contentTokenCount := tokens.CountTokens(model, content)
 			if contentTokenCount > contextSize {
 				return "", WebsiteExceedsLimit
 			}
 
-			totalTokens := llms.CountTokens(model, accumulatedText.String()+content)
+			totalTokens := tokens.CountTokens(model, accumulatedText.String()+content)
 			if totalTokens > contextSize {
 				return "", WebsitesContentExceeds
 			}
@@ -146,7 +147,7 @@ func WebRequest(query string, m *string) (string, error) {
 
 		formattedContent := fmt.Sprintf("Site %d (%s): %s\n==========\n", sitesVisited+1, link, content)
 
-		totalTokens := llms.CountTokens(model, accumulatedText.String()+formattedContent)
+		totalTokens := tokens.CountTokens(model, accumulatedText.String()+formattedContent)
 
 		if totalTokens <= contextSize && totalTokens+additionalTokenSpace <= contextSize {
 			accumulatedText.WriteString(formattedContent)
