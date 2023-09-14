@@ -10,8 +10,8 @@ import (
 	"os"
 
 	db "github.com/polyfact/api/db"
+	tokens "github.com/polyfact/api/tokens"
 	goOpenai "github.com/sashabaranov/go-openai"
-	llms "github.com/tmc/langchaingo/llms"
 )
 
 type OpenAIStreamProvider struct {
@@ -74,7 +74,7 @@ func (m OpenAIStreamProvider) Generate(task string, c *func(string, string, int,
 				continue
 			}
 
-			tokenUsage.Input += llms.CountTokens(m.Model, task)
+			tokenUsage.Input += tokens.CountTokens(m.Model, task)
 
 			totalOutput := 0
 
@@ -85,7 +85,10 @@ func (m OpenAIStreamProvider) Generate(task string, c *func(string, string, int,
 					break
 				}
 
-				tokenUsage.Output = llms.CountTokens(m.Model, completion.Choices[0].Delta.Content)
+				tokenUsage.Output = tokens.CountTokens(m.Model, completion.Choices[0].Delta.Content)
+
+				fmt.Printf("%v %v\n", completion.Choices[0].Delta.Content, tokenUsage.Output)
+
 				totalOutput += tokenUsage.Output
 
 				result := Result{Result: completion.Choices[0].Delta.Content, TokenUsage: tokenUsage}

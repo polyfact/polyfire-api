@@ -23,7 +23,7 @@ require (
 	github.com/antchfx/xpath v1.2.4 // indirect
 	github.com/cixtor/readability v1.0.0 // indirect
 	github.com/cohere-ai/tokenizer v1.1.2 // indirect
-	github.com/dlclark/regexp2 v1.8.1 // indirect
+	github.com/dlclark/regexp2 v1.10.0 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/gocolly/colly/v2 v2.1.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
@@ -33,7 +33,8 @@ require (
 	github.com/lib/pq v1.10.9 // indirect
 	github.com/nedpals/postgrest-go v0.1.3 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/pkoukk/tiktoken-go v0.1.2 // indirect
+	github.com/pkoukk/tiktoken-go v0.1.6 // indirect
+	github.com/pkoukk/tiktoken-go-loader v0.0.1 // indirect
 	github.com/posthog/posthog-go v0.0.0-20230801140217-d607812dee69 // indirect
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d // indirect
 	github.com/stretchr/testify v1.8.4 // indirect
