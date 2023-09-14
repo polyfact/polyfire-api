@@ -141,7 +141,6 @@ func Transcribe(w http.ResponseWriter, r *http.Request, _ router.Params) {
 			return
 		}
 		file_buf_reader = bufio.NewReader(part)
-
 	}
 
 	total_str := ""
