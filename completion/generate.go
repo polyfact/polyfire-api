@@ -128,6 +128,12 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 
 	ressources := []db.MatchResult{}
 
+	err := checkRateLimit(user_id)
+
+	if err != nil {
+		return nil, err
+	}
+
 	language_completion := getLanguageCompletion(input.Language)
 
 	var memoryIdArray []string
@@ -150,12 +156,6 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 	if memoryResult != nil {
 		ressources = memoryResult.Ressources
 		context_completion = memoryResult.ContextCompletion
-	}
-
-	err = checkRateLimit(user_id)
-
-	if err != nil {
-		return nil, err
 	}
 
 	callback := func(provider_name string, model_name string, input_count int, output_count int) {
