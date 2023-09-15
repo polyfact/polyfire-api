@@ -10,11 +10,11 @@ type Memory struct {
 	Public bool   `json:"public"`
 }
 type MatchParams struct {
-	QueryEmbedding []float64   `json:"query_embedding"`
-	MatchTreshold  float64     `json:"match_threshold"`
-	MatchCount     int16       `json:"match_count"`
-	MemoryID       []string `json:"memoryid"`
-	UserID         string      `json:"userid"`
+	QueryEmbedding []float64 `json:"query_embedding"`
+	MatchTreshold  float64   `json:"match_threshold"`
+	MatchCount     int16     `json:"match_count"`
+	MemoryID       []string  `json:"memoryid"`
+	UserID         string    `json:"userid"`
 }
 
 type MatchResult struct {
