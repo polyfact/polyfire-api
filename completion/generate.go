@@ -137,9 +137,9 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 		return nil, UnknownModelProvider
 	}
 
-	if !provider.UserAllowed(user_id) {
-		return nil, ProjectNotPremiumModel
-	}
+	// if !provider.UserAllowed(user_id) {
+	// 	return nil, ProjectNotPremiumModel
+	// }
 
 	if err != nil {
 		return nil, InternalServerError
