@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"sync"
 	"text/template"
 	"time"
 
@@ -82,11 +83,56 @@ func getMemory(user_id string, memoryId []string, task string, infos bool) (*Mem
 	return response, nil
 }
 
+func checkRateLimit(user_id string) error {
+	var wg sync.WaitGroup
+	var userReached bool
+	var projectReached bool
+
+	var userRateLimitErr error
+	var projectRateLimitErr error
+
+	wg.Add(2)
+
+	go func() {
+		defer wg.Done()
+		userReached, userRateLimitErr = db.UserReachedRateLimit(user_id)
+	}()
+
+	go func() {
+		defer wg.Done()
+		projectReached, projectRateLimitErr = db.ProjectReachedRateLimit(user_id)
+	}()
+
+	wg.Wait()
+
+	if userRateLimitErr != nil {
+		return UnknownUserId
+	}
+	if projectRateLimitErr != nil {
+		return UnknownUserId
+	}
+
+	if userReached {
+		return RateLimitReached
+	}
+	if projectReached {
+		return ProjectRateLimitReached
+	}
+
+	return nil
+}
+
 func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers.Result, error) {
 	result := make(chan providers.Result)
 	context_completion := ""
 
 	ressources := []db.MatchResult{}
+
+	err := checkRateLimit(user_id)
+
+	if err != nil {
+		return nil, err
+	}
 
 	language_completion := getLanguageCompletion(input.Language)
 
@@ -110,22 +156,6 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 	if memoryResult != nil {
 		ressources = memoryResult.Ressources
 		context_completion = memoryResult.ContextCompletion
-	}
-
-	reached, err := db.UserReachedRateLimit(user_id)
-	if err != nil {
-		return nil, UnknownUserId
-	}
-	if reached {
-		return nil, RateLimitReached
-	}
-
-	reached, err = db.ProjectReachedRateLimit(user_id)
-	if err != nil {
-		return nil, UnknownUserId
-	}
-	if reached {
-		return nil, ProjectRateLimitReached
 	}
 
 	callback := func(provider_name string, model_name string, input_count int, output_count int) {
@@ -190,7 +220,7 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 			defer close(result)
 			total_result := ""
 			for v := range pre_result {
-				if  memoryIdArray != nil && input.Infos && len(ressources) > 0 {
+				if memoryIdArray != nil && input.Infos && len(ressources) > 0 {
 					v.Ressources = ressources
 				}
 
@@ -219,6 +249,7 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 		If website content is not enough, you can use your own knowledge.
 		Use All websites content to make your relevant answer.
 		`
+
 		data := struct {
 			Task     string
 			Content  string

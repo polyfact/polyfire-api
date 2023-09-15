@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"log"
 
+	db "github.com/polyfact/api/db"
 	"github.com/tmc/langchaingo/llms"
 	"github.com/tmc/langchaingo/schema"
-	db "github.com/polyfact/api/db"
 )
 
 type LangchainProvider struct {
