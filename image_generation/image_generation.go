@@ -8,7 +8,6 @@ import (
 
 	"github.com/google/uuid"
 	router "github.com/julienschmidt/httprouter"
-	"github.com/polyfact/api/db"
 	"github.com/polyfact/api/utils"
 )
 
@@ -53,12 +52,12 @@ func ImageGeneration(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		provider = "openai"
 	}
 
-	premium, _ := db.ProjectIsPremium(user_id)
+	// premium, _ := db.ProjectIsPremium(user_id)
 
-	if !premium {
-		utils.RespondError(w, record, "project_not_premium_model")
-		return
-	}
+	// if !premium {
+	// 	utils.RespondError(w, record, "project_not_premium_model")
+	// 	return
+	// }
 
 	if provider != "openai" {
 		utils.RespondError(w, record, "unknown_model_provider")
