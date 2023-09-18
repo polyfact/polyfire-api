@@ -40,22 +40,24 @@ func getErrorMessage(rec interface{}) string {
 func AddRecord(r *http.Request) {
 	var recordEventRequest utils.RecordRequestFunc
 	recordEventRequest = func(request string, response string, userID string, props ...utils.KeyValue) {
-		pId, _ := db.GetProjectForUserId(userID)
-		projectId := "00000000-0000-0000-0000-000000000000"
+		go func() {
+			pId, _ := db.GetProjectForUserId(userID)
+			projectId := "00000000-0000-0000-0000-000000000000"
 
-		if pId != nil {
-			projectId = *pId
-		}
-		properties := make(map[string]string)
-		properties["path"] = string(r.URL.Path)
-		properties["projectId"] = projectId
-		properties["requestBody"] = request
-		properties["responseBody"] = response
-		for _, element := range props {
-			properties[element.Key] = element.Value
-		}
-		posthog.Event("API Request", userID, properties)
-		db.LogEvents(string(r.URL.Path), userID, projectId, request, response)
+			if pId != nil {
+				projectId = *pId
+			}
+			properties := make(map[string]string)
+			properties["path"] = string(r.URL.Path)
+			properties["projectId"] = projectId
+			properties["requestBody"] = request
+			properties["responseBody"] = response
+			for _, element := range props {
+				properties[element.Key] = element.Value
+			}
+			posthog.Event("API Request", userID, properties)
+			db.LogEvents(string(r.URL.Path), userID, projectId, request, response)
+		}()
 	}
 
 	buf, _ := ioutil.ReadAll(r.Body)

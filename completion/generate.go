@@ -129,7 +129,6 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 	ressources := []db.MatchResult{}
 
 	err := checkRateLimit(user_id)
-
 	if err != nil {
 		return nil, err
 	}
@@ -227,7 +226,7 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 				total_result += v.Result
 				result <- v
 			}
-			err = db.AddChatMessage(chat.ID, false, total_result)
+			go db.AddChatMessage(chat.ID, false, total_result)
 		}()
 
 	} else if input.WebRequest && input.Provider != "llama" {
