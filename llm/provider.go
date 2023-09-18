@@ -23,6 +23,20 @@ func defaultModel(model string) (string, string) {
 		return "openai", "gpt-3.5-turbo"
 	case "best":
 		return "openai", "gpt-4"
+	case "gpt-3.5-turbo":
+		return "openai", "gpt-3.5-turbo"
+	case "gpt-3.5-turbo-16k":
+		return "openai", "gpt-3.5-turbo-16k"
+	case "gpt-4":
+		return "openai", "gpt-4"
+	case "cohere":
+		return "cohere", "cohere_command"
+	case "codellama":
+		return "llama", "codellama"
+	case "llama":
+		return "llama", "llama"
+	case "llama2":
+		return "llama", "llama2"
 	}
 	return "", ""
 }
