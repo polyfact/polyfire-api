@@ -53,6 +53,13 @@ const (
 	Like  FilterOperation = "like"  // pattern match
 	Ilike FilterOperation = "ilike" // pattern match, case-insensitive
 	Cs    FilterOperation = "cs"    // contains
+	Is    FilterOperation = "is"    // is null
+	In    FilterOperation = "in"    // in
+	Fts   FilterOperation = "fts"   // full-text search
+	Plfts FilterOperation = "plfts" // phrase full-text search
+	Phfts FilterOperation = "phfts" // phrase full-text search
+	Wfts  FilterOperation = "wfts"  // web search
+
 )
 
 type SupabaseFilter struct {
@@ -63,7 +70,7 @@ type SupabaseFilter struct {
 
 type SupabaseFilters []SupabaseFilter
 
-var selectableFields = "name, description, prompt, created_at, updated_at, like, use, tags"
+var selectableFields = "id, name, description, prompt, created_at, updated_at, like, use, tags"
 
 func GetPromptById(id string) (*Prompt, error) {
 	client, err := CreateClient()
