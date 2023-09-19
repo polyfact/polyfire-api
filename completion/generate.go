@@ -177,9 +177,12 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 
 	if input.SystemPromptId != nil && len(*input.SystemPromptId) > 0 {
 		p, err := db.GetPromptById(*input.SystemPromptId)
-
-		db.UpdatePromptUse(*input.SystemPromptId, db.PromptUse{Use: p.Use + 1})
 		if err != nil || p == nil {
+			return nil, NotFound
+		}
+
+		_, err = db.UpdatePromptUse(*input.SystemPromptId, db.PromptUse{Use: p.Use + 1})
+		if err != nil {
 			return nil, NotFound
 		}
 		system_prompt = p.Prompt
@@ -226,7 +229,7 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 				total_result += v.Result
 				result <- v
 			}
-			go db.AddChatMessage(chat.ID, false, total_result)
+			go func() { _ = db.AddChatMessage(chat.ID, false, total_result) }()
 		}()
 
 	} else if input.WebRequest && input.Provider != "llama" {
@@ -295,8 +298,8 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 }
 
 func Generate(w http.ResponseWriter, r *http.Request, _ router.Params) {
-	user_id := r.Context().Value("user_id").(string)
-	record := r.Context().Value("recordEvent").(utils.RecordFunc)
+	user_id := r.Context().Value(utils.ContextKeyUserID).(string)
+	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
 
 	if len(r.Header["Content-Type"]) == 0 || r.Header["Content-Type"][0] != "application/json" {
 		utils.RespondError(w, record, "invalid_content_type")
@@ -362,5 +365,5 @@ func Generate(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	response, _ := json.Marshal(&result)
 	record(string(response))
 
-	json.NewEncoder(w).Encode(result)
+	_ = json.NewEncoder(w).Encode(result)
 }

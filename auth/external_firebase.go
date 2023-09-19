@@ -19,7 +19,10 @@ func getUserFromFirebaseToken(firebase_token string, project_id string) (string,
 	}
 
 	var objmap map[string]string
-	json.Unmarshal(public_keys, &objmap)
+	err = json.Unmarshal(public_keys, &objmap)
+	if err != nil {
+		return "", "", err
+	}
 
 	token, err := jwt.Parse(firebase_token, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {

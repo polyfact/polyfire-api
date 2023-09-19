@@ -108,7 +108,6 @@ func (m OpenAIStreamProvider) Generate(task string, c *func(string, string, int,
 				"Generation failed after 5 retries",
 			),
 		}
-		return
 	}()
 
 	return chan_res
