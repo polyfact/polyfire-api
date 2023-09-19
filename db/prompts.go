@@ -53,6 +53,13 @@ const (
 	Like  FilterOperation = "like"  // pattern match
 	Ilike FilterOperation = "ilike" // pattern match, case-insensitive
 	Cs    FilterOperation = "cs"    // contains
+	Is    FilterOperation = "is"    // is null
+	In    FilterOperation = "in"    // in
+	Fts   FilterOperation = "fts"   // full-text search
+	Plfts FilterOperation = "plfts" // phrase full-text search
+	Phfts FilterOperation = "phfts" // phrase full-text search
+	Wfts  FilterOperation = "wfts"  // web search
+
 )
 
 type SupabaseFilter struct {
