@@ -72,11 +72,11 @@ func CreateChat(userId string, systemPrompt *string, SystemPromptId *string) (*C
 }
 
 type ChatMessage struct {
-	ID            *string `json:"id",omitempty`
+	ID            *string `json:"id"`
 	ChatID        string  `json:"chat_id"`
 	IsUserMessage bool    `json:"is_user_message"`
 	Content       string  `json:"content"`
-	CreatedAt     string  `json:"created_at",omitempty`
+	CreatedAt     string  `json:"created_at"`
 }
 
 type ChatMessageInsert struct {

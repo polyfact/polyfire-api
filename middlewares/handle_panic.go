@@ -3,7 +3,7 @@ package middlewares
 import (
 	"bytes"
 	"context"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 
@@ -15,7 +15,7 @@ import (
 var isDevelopment = os.Getenv("APP_MODE") == "development"
 
 func RecoverFromPanic(w http.ResponseWriter, r *http.Request) {
-	record := r.Context().Value("recordEvent").(utils.RecordFunc)
+	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
 	if rec := recover(); rec != nil {
 		errorMessage := getErrorMessage(rec)
 
@@ -38,8 +38,7 @@ func getErrorMessage(rec interface{}) string {
 }
 
 func AddRecord(r *http.Request) {
-	var recordEventRequest utils.RecordRequestFunc
-	recordEventRequest = func(request string, response string, userID string, props ...utils.KeyValue) {
+	var recordEventRequest utils.RecordRequestFunc = func(request string, response string, userID string, props ...utils.KeyValue) {
 		go func() {
 			pId, _ := db.GetProjectForUserId(userID)
 			projectId := "00000000-0000-0000-0000-000000000000"
@@ -60,24 +59,22 @@ func AddRecord(r *http.Request) {
 		}()
 	}
 
-	buf, _ := ioutil.ReadAll(r.Body)
-	rdr1 := ioutil.NopCloser(bytes.NewBuffer(buf))
+	buf, _ := io.ReadAll(r.Body)
+	rdr1 := io.NopCloser(bytes.NewBuffer(buf))
 
 	r.Body = rdr1
 
-	var recordEventWithUserID utils.RecordWithUserIDFunc
-	recordEventWithUserID = func(response string, userID string, props ...utils.KeyValue) {
+	var recordEventWithUserID utils.RecordWithUserIDFunc = func(response string, userID string, props ...utils.KeyValue) {
 		recordEventRequest(string(buf), response, userID, props...)
 	}
 
-	var recordEvent utils.RecordFunc
-	recordEvent = func(response string, props ...utils.KeyValue) {
+	var recordEvent utils.RecordFunc = func(response string, props ...utils.KeyValue) {
 		recordEventWithUserID(response, "", props...)
 	}
 
-	newCtx := context.WithValue(r.Context(), "recordEvent", recordEvent)
-	newCtx = context.WithValue(newCtx, "recordEventRequest", recordEventRequest)
-	newCtx = context.WithValue(newCtx, "recordEventWithUserID", recordEventWithUserID)
+	newCtx := context.WithValue(r.Context(), utils.ContextKeyRecordEvent, recordEvent)
+	newCtx = context.WithValue(newCtx, utils.ContextKeyRecordEventRequest, recordEventRequest)
+	newCtx = context.WithValue(newCtx, utils.ContextKeyRecordEventWithUserID, recordEventWithUserID)
 
 	*r = *r.WithContext(newCtx)
 }

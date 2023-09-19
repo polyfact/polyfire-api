@@ -15,8 +15,8 @@ type UserRateLimitResponse struct {
 }
 
 func UserRateLimit(w http.ResponseWriter, r *http.Request, _ router.Params) {
-	user_id := r.Context().Value("user_id").(string)
-	record := r.Context().Value("recordEvent").(utils.RecordFunc)
+	user_id := r.Context().Value(utils.ContextKeyUserID).(string)
+	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
 
 	tokenUsage, err := db.GetUserIdMonthlyTokenUsage(user_id)
 	if err != nil {
@@ -38,5 +38,5 @@ func UserRateLimit(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	response, _ := json.Marshal(&result)
 	record(string(response))
 
-	json.NewEncoder(w).Encode(result)
+	_ = json.NewEncoder(w).Encode(result)
 }

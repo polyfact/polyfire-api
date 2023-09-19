@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"mime"
 	"mime/multipart"
 	"net/http"
@@ -26,18 +25,27 @@ import (
 
 func SplitFile(file io.Reader) ([]io.Reader, int, func(), error) {
 	id := "split_transcribe-" + uuid.New().String()
-	os.Mkdir("/tmp/"+id, 0700)
+	_ = os.Mkdir("/tmp/"+id, 0700)
 	close_func := func() {
 		os.RemoveAll("/tmp/" + id)
 	}
 	fmt.Println(id)
+
 	f, err := os.Create("/tmp/" + id + "/audio-file")
 	if err != nil {
-		fmt.Println("create")
 		return nil, 0, nil, err
 	}
-	io.Copy(f, file)
-	exec.Command("ffmpeg", "-i", "/tmp/"+id+"/audio-file", "/tmp/"+id+"/audio-file.ts", "-ar", "44100").Run()
+
+	_, err = io.Copy(f, file)
+	if err != nil {
+		return nil, 0, nil, err
+	}
+
+	err = exec.Command("ffmpeg", "-i", "/tmp/"+id+"/audio-file", "/tmp/"+id+"/audio-file.ts", "-ar", "44100").Run()
+	if err != nil {
+		return nil, 0, nil, err
+	}
+
 	ffprobe_result, err := exec.Command("ffprobe", "-i", "/tmp/"+id+"/audio-file", "-show_entries", "format=duration", "-v", "quiet", "-of", "csv=p=0").
 		Output()
 	if err != nil {
@@ -61,9 +69,13 @@ func SplitFile(file io.Reader) ([]io.Reader, int, func(), error) {
 
 	split_cmd := exec.Command("split", "-b", "20971400", "/tmp/"+id+"/audio-file.ts")
 	split_cmd.Dir = "/tmp/" + id
-	split_cmd.Run()
+	err = split_cmd.Run()
+	if err != nil {
+		return nil, 0, nil, err
+	}
+
 	os.Remove("/tmp/" + id + "/audio-file.ts")
-	files, err := ioutil.ReadDir("/tmp/" + id)
+	files, err := os.ReadDir("/tmp/" + id)
 	if err != nil {
 		fmt.Println("readdir")
 		return nil, 0, nil, err
@@ -72,7 +84,11 @@ func SplitFile(file io.Reader) ([]io.Reader, int, func(), error) {
 	var res []io.Reader = make([]io.Reader, 0)
 	for _, file := range files {
 		if file.Name() != "audio-file" && file.Name() != "audio-file.mpeg" {
-			exec.Command("ffmpeg", "-i", "/tmp/"+id+"/"+file.Name(), "/tmp/"+id+"/"+file.Name()+".mp3").Run()
+			err := exec.Command("ffmpeg", "-i", "/tmp/"+id+"/"+file.Name(), "/tmp/"+id+"/"+file.Name()+".mp3").Run()
+			if err != nil {
+				return nil, 0, nil, err
+			}
+
 			os.Remove("/tmp/" + id + "/" + file.Name())
 			audio_part_r, err := os.Open("/tmp/" + id + "/" + file.Name() + ".mp3")
 			if err != nil {
@@ -105,8 +121,8 @@ type Result struct {
 }
 
 func Transcribe(w http.ResponseWriter, r *http.Request, _ router.Params) {
-	user_id := r.Context().Value("user_id").(string)
-	record := r.Context().Value("recordEvent").(utils.RecordFunc)
+	user_id := r.Context().Value(utils.ContextKeyUserID).(string)
+	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
 	content_type := r.Header.Get("Content-Type")
 	var file_buf_reader io.Reader
 
@@ -169,5 +185,5 @@ func Transcribe(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	response, _ := json.Marshal(&res)
 	record(string(response))
 
-	json.NewEncoder(w).Encode(res)
+	_ = json.NewEncoder(w).Encode(res)
 }
