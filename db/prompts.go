@@ -63,7 +63,7 @@ type SupabaseFilter struct {
 
 type SupabaseFilters []SupabaseFilter
 
-var selectableFields = "name, description, prompt, created_at, updated_at, like, use, tags"
+var selectableFields = "id, name, description, prompt, created_at, updated_at, like, use, tags"
 
 func GetPromptById(id string) (*Prompt, error) {
 	client, err := CreateClient()
