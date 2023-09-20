@@ -43,10 +43,12 @@ func GetPromptByName(w http.ResponseWriter, r *http.Request, ps httprouter.Param
 func GetAllPrompts(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	record := r.Context().Value("recordEvent").(utils.RecordFunc)
 	queryParams := r.URL.Query()
+	userId := ""
 
 	var filters db.SupabaseFilters
 
 	for key, values := range queryParams {
+
 		splitted := strings.Split(key, "_")
 		if len(splitted) != 2 {
 			errorMessage := key + " is not a valid filter format"
@@ -69,10 +71,15 @@ func GetAllPrompts(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 			Operation: operation,
 		}
 
-		filters = append(filters, filter)
+		if column == "userid" && values[0] == r.Context().Value("user_id").(string) {
+			userId = r.Context().Value("user_id").(string)
+		} else {
+			filters = append(filters, filter)
+		}
+
 	}
 
-	result, err := db.GetAllPrompts(filters)
+	result, err := db.GetAllPrompts(filters, userId)
 	if err != nil {
 		switch err.Error() {
 		case "invalid_column":
