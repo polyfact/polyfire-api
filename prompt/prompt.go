@@ -11,7 +11,7 @@ import (
 )
 
 func GetPromptById(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	record := r.Context().Value("recordEvent").(utils.RecordFunc)
+	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
 	id := ps.ByName("id")
 	result, err := db.GetPromptById(id)
 	if err != nil {
@@ -22,11 +22,11 @@ func GetPromptById(w http.ResponseWriter, r *http.Request, ps httprouter.Params)
 	response, _ := json.Marshal(&result)
 	record(string(response))
 
-	json.NewEncoder(w).Encode(result)
+	_ = json.NewEncoder(w).Encode(result)
 }
 
 func GetPromptByName(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	record := r.Context().Value("recordEvent").(utils.RecordFunc)
+	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
 	name := ps.ByName("name")
 	result, err := db.GetPromptByName(name)
 	if err != nil {
@@ -37,11 +37,11 @@ func GetPromptByName(w http.ResponseWriter, r *http.Request, ps httprouter.Param
 	response, _ := json.Marshal(&result)
 	record(string(response))
 
-	json.NewEncoder(w).Encode(result)
+	_ = json.NewEncoder(w).Encode(result)
 }
 
 func GetAllPrompts(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	record := r.Context().Value("recordEvent").(utils.RecordFunc)
+	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
 	queryParams := r.URL.Query()
 	userId := ""
 
@@ -97,13 +97,13 @@ func GetAllPrompts(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 	response, _ := json.Marshal(&result)
 	record(string(response))
 
-	json.NewEncoder(w).Encode(result)
+	_ = json.NewEncoder(w).Encode(result)
 }
 
 func CreatePrompt(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	record := r.Context().Value("recordEvent").(utils.RecordFunc)
+	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
 
-	user_id := r.Context().Value("user_id").(string)
+	user_id := r.Context().Value(utils.ContextKeyUserID).(string)
 
 	var input db.PromptInsert
 
@@ -123,12 +123,12 @@ func CreatePrompt(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	response, _ := json.Marshal(&result)
 	record(string(response))
 
-	json.NewEncoder(w).Encode(result)
+	_ = json.NewEncoder(w).Encode(result)
 }
 
 func UpdatePrompt(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	record := r.Context().Value("recordEvent").(utils.RecordFunc)
-	user_id := r.Context().Value("user_id").(string)
+	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
+	user_id := r.Context().Value(utils.ContextKeyUserID).(string)
 
 	id := ps.ByName("id")
 	var input db.PromptUpdate
@@ -146,12 +146,12 @@ func UpdatePrompt(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 	response, _ := json.Marshal(&result)
 	record(string(response))
 
-	json.NewEncoder(w).Encode(result)
+	_ = json.NewEncoder(w).Encode(result)
 }
 
 func DeletePrompt(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	record := r.Context().Value("recordEvent").(utils.RecordFunc)
-	user_id := r.Context().Value("user_id").(string)
+	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
+	user_id := r.Context().Value(utils.ContextKeyUserID).(string)
 
 	id := ps.ByName("id")
 	if err := db.DeletePrompt(id, user_id); err != nil {

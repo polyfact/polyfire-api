@@ -74,7 +74,7 @@ func TokenExchangeHandler(
 	getUserFromToken func(token string, project_id string) (string, string, error),
 ) func(w http.ResponseWriter, r *http.Request, ps router.Params) {
 	return func(w http.ResponseWriter, r *http.Request, ps router.Params) {
-		record := r.Context().Value("recordEvent").(utils.RecordFunc)
+		record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
 		project_id := ps.ByName("id")
 
 		if len(r.Header["Authorization"]) == 0 {
@@ -110,7 +110,7 @@ func TokenExchangeHandler(
 				utils.RespondError(w, record, "project_retrieval_error")
 				return
 			}
-			if project.FreeUserInit == false {
+			if !project.FreeUserInit {
 				utils.RespondError(w, record, "free_user_init_disabled")
 				return
 			}
@@ -137,6 +137,6 @@ func TokenExchangeHandler(
 			return
 		}
 
-		w.Write([]byte(user_token))
+		_, _ = w.Write([]byte(user_token))
 	}
 }
