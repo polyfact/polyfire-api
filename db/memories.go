@@ -36,7 +36,9 @@ func CreateMemory(memoryId string, userId string, public bool) error {
 		return err
 	}
 
-	_, _, err = client.From("memories").Insert(Memory{ID: memoryId, UserId: userId, Public: public}, false, "", "", "exact").Execute()
+	_, _, err = client.From("memories").
+		Insert(Memory{ID: memoryId, UserId: userId, Public: public}, false, "", "", "exact").
+		Execute()
 
 	return err
 }
@@ -87,6 +89,9 @@ func MatchEmbeddings(memoryIds []string, userId string, embedding []float64) ([]
 	}
 
 	client, err := CreateClient()
+	if err != nil {
+		return nil, err
+	}
 
 	response := client.Rpc("retrieve_embeddings", "", params)
 

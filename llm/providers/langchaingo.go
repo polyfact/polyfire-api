@@ -89,7 +89,6 @@ func (m LangchainProvider) Generate(
 				"Generation failed after 5 retries",
 			),
 		}
-		return
 	}(chan_res)
 
 	return chan_res

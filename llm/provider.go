@@ -42,7 +42,6 @@ func defaultModel(model string) (string, string) {
 }
 
 func NewProvider(provider string, model *string) (Provider, error) {
-	fmt.Println("%v, %v", provider, model)
 	if provider == "" && model == nil {
 		provider = "openai"
 	}

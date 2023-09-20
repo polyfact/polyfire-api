@@ -48,3 +48,12 @@ func CutChatHistory(chat_messages []db.ChatMessage, max_token int) []db.ChatMess
 
 	return res
 }
+
+type ContextKey string
+
+const (
+	ContextKeyUserID                ContextKey = "user_id"
+	ContextKeyRecordEvent           ContextKey = "recordEvent"
+	ContextKeyRecordEventWithUserID ContextKey = "recordEventWithUserID"
+	ContextKeyRecordEventRequest    ContextKey = "recordEventRequest"
+)
