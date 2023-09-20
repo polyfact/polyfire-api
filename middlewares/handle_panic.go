@@ -3,7 +3,7 @@ package middlewares
 import (
 	"bytes"
 	"context"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 
@@ -15,7 +15,7 @@ import (
 var isDevelopment = os.Getenv("APP_MODE") == "development"
 
 func RecoverFromPanic(w http.ResponseWriter, r *http.Request) {
-	record := r.Context().Value("recordEvent").(utils.RecordFunc)
+	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
 	if rec := recover(); rec != nil {
 		errorMessage := getErrorMessage(rec)
 
@@ -38,44 +38,43 @@ func getErrorMessage(rec interface{}) string {
 }
 
 func AddRecord(r *http.Request) {
-	var recordEventRequest utils.RecordRequestFunc
-	recordEventRequest = func(request string, response string, userID string, props ...utils.KeyValue) {
-		pId, _ := db.GetProjectForUserId(userID)
-		projectId := "00000000-0000-0000-0000-000000000000"
+	var recordEventRequest utils.RecordRequestFunc = func(request string, response string, userID string, props ...utils.KeyValue) {
+		go func() {
+			pId, _ := db.GetProjectForUserId(userID)
+			projectId := "00000000-0000-0000-0000-000000000000"
 
-		if pId != nil {
-			projectId = *pId
-		}
-		properties := make(map[string]string)
-		properties["path"] = string(r.URL.Path)
-		properties["projectId"] = projectId
-		properties["requestBody"] = request
-		properties["responseBody"] = response
-		for _, element := range props {
-			properties[element.Key] = element.Value
-		}
-		posthog.Event("API Request", userID, properties)
-		db.LogEvents(string(r.URL.Path), userID, projectId, request, response)
+			if pId != nil {
+				projectId = *pId
+			}
+			properties := make(map[string]string)
+			properties["path"] = string(r.URL.Path)
+			properties["projectId"] = projectId
+			properties["requestBody"] = request
+			properties["responseBody"] = response
+			for _, element := range props {
+				properties[element.Key] = element.Value
+			}
+			posthog.Event("API Request", userID, properties)
+			db.LogEvents(string(r.URL.Path), userID, projectId, request, response)
+		}()
 	}
 
-	buf, _ := ioutil.ReadAll(r.Body)
-	rdr1 := ioutil.NopCloser(bytes.NewBuffer(buf))
+	buf, _ := io.ReadAll(r.Body)
+	rdr1 := io.NopCloser(bytes.NewBuffer(buf))
 
 	r.Body = rdr1
 
-	var recordEventWithUserID utils.RecordWithUserIDFunc
-	recordEventWithUserID = func(response string, userID string, props ...utils.KeyValue) {
+	var recordEventWithUserID utils.RecordWithUserIDFunc = func(response string, userID string, props ...utils.KeyValue) {
 		recordEventRequest(string(buf), response, userID, props...)
 	}
 
-	var recordEvent utils.RecordFunc
-	recordEvent = func(response string, props ...utils.KeyValue) {
+	var recordEvent utils.RecordFunc = func(response string, props ...utils.KeyValue) {
 		recordEventWithUserID(response, "", props...)
 	}
 
-	newCtx := context.WithValue(r.Context(), "recordEvent", recordEvent)
-	newCtx = context.WithValue(newCtx, "recordEventRequest", recordEventRequest)
-	newCtx = context.WithValue(newCtx, "recordEventWithUserID", recordEventWithUserID)
+	newCtx := context.WithValue(r.Context(), utils.ContextKeyRecordEvent, recordEvent)
+	newCtx = context.WithValue(newCtx, utils.ContextKeyRecordEventRequest, recordEventRequest)
+	newCtx = context.WithValue(newCtx, utils.ContextKeyRecordEventWithUserID, recordEventWithUserID)
 
 	*r = *r.WithContext(newCtx)
 }

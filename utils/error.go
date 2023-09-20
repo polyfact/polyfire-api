@@ -2,6 +2,7 @@ package utils
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 
@@ -342,7 +343,10 @@ func RespondError(w http.ResponseWriter, record RecordFunc, errorCode string, me
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(apiError.StatusCode)
-	json.NewEncoder(w).Encode(apiError)
+	err := json.NewEncoder(w).Encode(apiError)
+	if err != nil {
+		fmt.Println(err)
+	}
 }
 
 func RespondErrorStream(conn *websocket.Conn, record RecordFunc, errorCode string, message ...string) {
@@ -362,5 +366,8 @@ func RespondErrorStream(conn *websocket.Conn, record RecordFunc, errorCode strin
 
 	res, _ := json.Marshal(apiError)
 
-	conn.WriteMessage(websocket.TextMessage, []byte("[ERROR]:"+string(res)))
+	err := conn.WriteMessage(websocket.TextMessage, []byte("[ERROR]:"+string(res)))
+	if err != nil {
+		fmt.Println(err)
+	}
 }
