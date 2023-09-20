@@ -2,6 +2,7 @@ package db
 
 import (
 	"fmt"
+	"log"
 	"time"
 )
 
@@ -15,6 +16,8 @@ type Prompt struct {
 	Like        int64     `json:"like,omitempty"`
 	Use         int64     `json:"use,omitempty"`
 	Tags        []string  `json:"tags,omitempty"`
+	Public      bool      `json:"public"`
+	UserId      string    `json:"user_id"`
 }
 
 type PromptInsert struct {
@@ -23,6 +26,7 @@ type PromptInsert struct {
 	Prompt      string   `json:"prompt"`
 	Tags        []string `json:"tags,omitempty"`
 	UserId      string   `json:"user_id"`
+	Public      bool     `json:"public"`
 }
 
 type PromptUpdate struct {
@@ -31,6 +35,7 @@ type PromptUpdate struct {
 	Description string    `json:"description,omitempty"`
 	Prompt      string    `json:"prompt,omitempty"`
 	Tags        []string  `json:"tags,omitempty"`
+	Public      bool      `json:"public"`
 }
 
 type PromptUse struct {
@@ -70,7 +75,8 @@ type SupabaseFilter struct {
 
 type SupabaseFilters []SupabaseFilter
 
-var selectableFields = "id, name, description, prompt, created_at, updated_at, like, use, tags"
+var selectableFields = "id, name, description, prompt, created_at, updated_at, like, use, tags, public, user_id"
+var selectableMinFields = "id, name, description, like, use, tags, public, user_id"
 
 func GetPromptById(id string) (*Prompt, error) {
 	client, err := CreateClient()
@@ -106,7 +112,7 @@ func GetPromptByName(name string) (*Prompt, error) {
 
 func StringToFilterOperation(op string) (FilterOperation, error) {
 	switch FilterOperation(op) {
-	case Eq, Neq, Gt, Lt, Gte, Lte, Like, Ilike, Cs:
+	case Eq, Neq, Gt, Lt, Gte, Lte, Like, Ilike, Cs, Is, In, Fts, Plfts, Phfts, Wfts:
 		return FilterOperation(op), nil
 	default:
 		return "", fmt.Errorf("invalid filter operation: %s", op)
@@ -119,14 +125,14 @@ var AllowedColumns = map[string]bool{
 	"tags":        true,
 }
 
-func GetAllPrompts(filters SupabaseFilters) ([]Prompt, error) {
+func GetAllPrompts(filters SupabaseFilters, userId string) ([]Prompt, error) {
 	client, err := CreateClient()
 
 	if err != nil {
 		return nil, err
 	}
 
-	query := client.From("prompts").Select(selectableFields, "exact", false)
+	query := client.From("prompts").Select(selectableMinFields, "exact", false)
 
 	for _, filter := range filters {
 		columnFilter := filter.Column
@@ -144,11 +150,22 @@ func GetAllPrompts(filters SupabaseFilters) ([]Prompt, error) {
 			value = "{" + value + "}"
 		}
 
+		if filter.Operation == Ilike || filter.Operation == Like {
+			value = "%" + value + "%"
+		}
+
 		query.Filter(filter.Column, string(filter.Operation), value)
 
 	}
 
+	if userId != "" {
+		query.Eq("user_id", userId)
+	} else {
+		query.Filter("public", "eq", "true")
+	}
+
 	var results []Prompt
+
 	_, err = query.ExecuteTo(&results)
 	if err != nil {
 		return nil, err
@@ -164,6 +181,8 @@ func CreatePrompt(input PromptInsert) (*Prompt, error) {
 	}
 
 	var result *Prompt
+
+	log.Println("public :", input.Public)
 
 	_, err = client.From("prompts").Insert(input, false, "", "", "exact").Single().ExecuteTo(&result)
 
