@@ -27,8 +27,8 @@ func FormatPrompt(systemPrompt string, chatHistory []db.ChatMessage, userPrompt 
 }
 
 func CreateChat(w http.ResponseWriter, r *http.Request, _ router.Params) {
-	user_id := r.Context().Value("user_id").(string)
-	record := r.Context().Value("recordEvent").(utils.RecordFunc)
+	user_id := r.Context().Value(utils.ContextKeyUserID).(string)
+	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
 
 	var requestBody struct {
 		SystemPrompt   *string `json:"system_prompt"`
@@ -56,13 +56,13 @@ func CreateChat(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	response, _ := json.Marshal(&chat)
 	record(string(response))
 
-	json.NewEncoder(w).Encode(chat)
+	_ = json.NewEncoder(w).Encode(chat)
 }
 
 func GetChatHistory(w http.ResponseWriter, r *http.Request, ps router.Params) {
 	id := ps.ByName("id")
-	user_id := r.Context().Value("user_id").(string)
-	record := r.Context().Value("recordEvent").(utils.RecordFunc)
+	user_id := r.Context().Value(utils.ContextKeyUserID).(string)
+	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
 
 	messages, err := db.GetChatMessages(user_id, id)
 	if err != nil {
@@ -73,5 +73,5 @@ func GetChatHistory(w http.ResponseWriter, r *http.Request, ps router.Params) {
 	response, _ := json.Marshal(&messages)
 	record(string(response))
 
-	json.NewEncoder(w).Encode(messages)
+	_ = json.NewEncoder(w).Encode(messages)
 }

@@ -10,8 +10,8 @@ import (
 )
 
 func Get(w http.ResponseWriter, r *http.Request, _ router.Params) {
-	user_id := r.Context().Value("user_id").(string)
-	record := r.Context().Value("recordEvent").(utils.RecordFunc)
+	user_id := r.Context().Value(utils.ContextKeyUserID).(string)
+	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
 
 	id := r.URL.Query().Get("key")
 
@@ -29,12 +29,12 @@ func Get(w http.ResponseWriter, r *http.Request, _ router.Params) {
 
 	record(store.Value)
 
-	w.Write([]byte(store.Value))
+	_, _ = w.Write([]byte(store.Value))
 }
 
 func Set(w http.ResponseWriter, r *http.Request, _ router.Params) {
-	user_id := r.Context().Value("user_id").(string)
-	record := r.Context().Value("recordEvent").(utils.RecordFunc)
+	user_id := r.Context().Value(utils.ContextKeyUserID).(string)
+	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
 
 	var data struct {
 		Key   string `json:"key"`

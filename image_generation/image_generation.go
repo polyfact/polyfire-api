@@ -37,14 +37,13 @@ func storeImageBucket(reader io.Reader, path string) (string, error) {
 }
 
 func ImageGeneration(w http.ResponseWriter, r *http.Request, _ router.Params) {
-	user_id := r.Context().Value("user_id").(string)
+	user_id := r.Context().Value(utils.ContextKeyUserID).(string)
 	request, _ := json.Marshal(r.URL.Query())
 	prompt := r.URL.Query().Get("p")
 	provider := r.URL.Query().Get("provider")
-	recordEventRequest := r.Context().Value("recordEventRequest").(utils.RecordRequestFunc)
+	recordEventRequest := r.Context().Value(utils.ContextKeyRecordEventRequest).(utils.RecordRequestFunc)
 
-	var record utils.RecordFunc
-	record = func(response string, props ...utils.KeyValue) {
+	var record utils.RecordFunc = func(response string, props ...utils.KeyValue) {
 		recordEventRequest(string(request), response, user_id, props...)
 	}
 
@@ -86,9 +85,9 @@ func ImageGeneration(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		response, _ := json.Marshal(&image)
 		record(string(response))
 
-		json.NewEncoder(w).Encode(image)
+		_ = json.NewEncoder(w).Encode(image)
 	} else {
 		record("[Raw image]")
-		io.Copy(w, reader)
+		_, _ = io.Copy(w, reader)
 	}
 }

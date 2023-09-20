@@ -30,8 +30,8 @@ var upgrader = websocket.Upgrader{
 }
 
 func Stream(w http.ResponseWriter, r *http.Request, _ router.Params) {
-	record := r.Context().Value("recordEvent").(utils.RecordFunc)
-	user_id := r.Context().Value("user_id").(string)
+	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
+	user_id := r.Context().Value(utils.ContextKeyUserID).(string)
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		utils.RespondError(w, record, "communication_error")
@@ -50,7 +50,7 @@ func Stream(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		return
 	}
 
-	recordEventRequest := r.Context().Value("recordEventRequest").(utils.RecordRequestFunc)
+	recordEventRequest := r.Context().Value(utils.ContextKeyRecordEventRequest).(utils.RecordRequestFunc)
 
 	record = func(response string, props ...utils.KeyValue) {
 		recordEventRequest(string(p), response, user_id, props...)
@@ -141,6 +141,10 @@ generation_loop:
 
 	if input.MemoryId != nil && input.Infos {
 		infosJSON, err := json.Marshal(result)
+		if err != nil {
+			utils.RespondErrorStream(conn, record, "invalid_json")
+			return
+		}
 
 		infos := "[INFOS]:" + string(infosJSON)
 		byteMessage := []byte(infos)
