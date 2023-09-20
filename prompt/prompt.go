@@ -71,8 +71,8 @@ func GetAllPrompts(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 			Operation: operation,
 		}
 
-		if column == "userid" && values[0] == r.Context().Value("user_id").(string) {
-			userId = r.Context().Value("user_id").(string)
+		if column == "userid" && values[0] == r.Context().Value(utils.ContextKeyUserID).(string) {
+			userId = r.Context().Value(utils.ContextKeyUserID).(string)
 		} else {
 			filters = append(filters, filter)
 		}
