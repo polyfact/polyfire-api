@@ -1,46 +1,26 @@
 package completion
 
 import (
-	"sync"
+	"context"
 
 	"github.com/polyfact/api/db"
+	"github.com/polyfact/api/utils"
 )
 
-func CheckRateLimit(user_id string) error {
-	var wg sync.WaitGroup
-	var userReached bool
-	var projectReached bool
+func CheckRateLimit(ctx context.Context) error {
+	rateLimitStatus := ctx.Value(utils.ContextKeyRateLimitStatus)
 
-	var userRateLimitErr error
-	var projectRateLimitErr error
-
-	wg.Add(2)
-
-	go func() {
-		defer wg.Done()
-		userReached, userRateLimitErr = db.UserReachedRateLimit(user_id)
-	}()
-
-	go func() {
-		defer wg.Done()
-		projectReached, projectRateLimitErr = db.ProjectReachedRateLimit(user_id)
-	}()
-
-	wg.Wait()
-
-	if userRateLimitErr != nil {
-		return UnknownUserId
-	}
-	if projectRateLimitErr != nil {
-		return UnknownUserId
+	if rateLimitStatus == db.RateLimitStatusOk {
+		return nil
 	}
 
-	if userReached {
+	if rateLimitStatus == db.RateLimitStatusReached {
 		return RateLimitReached
 	}
-	if projectReached {
+
+	if rateLimitStatus == db.RateLimitStatusProjectReached {
 		return ProjectRateLimitReached
 	}
 
-	return nil
+	return UnknownError
 }

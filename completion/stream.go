@@ -64,7 +64,7 @@ func Stream(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		return
 	}
 
-	chan_res, err := GenerationStart(user_id, input)
+	chan_res, err := GenerationStart(r.Context(), user_id, input)
 	if err != nil {
 		if err != nil {
 			switch err {
