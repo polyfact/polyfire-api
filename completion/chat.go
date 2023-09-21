@@ -81,46 +81,48 @@ func chatContext(
 	user_id string,
 	task string,
 	chatId string,
-	system_prompt *string,
 	callback providers.ProviderCallback,
 	opts *providers.ProviderOptions,
-) (string, error) {
+) (string, *string, error) {
+	log.Println("GetChatById")
 	chat, err := db.GetChatById(chatId)
 	if err != nil {
-		return "", InternalServerError
+		return "", nil, InternalServerError
 	}
 
 	if chat == nil || chat.UserID != user_id {
-		return "", NotFound
+		return "", nil, NotFound
 	}
 
+	log.Println("GetChatMessages")
 	allHistory, err := db.GetChatMessages(user_id, chatId)
 	if err != nil {
-		return "", InternalServerError
+		return "", nil, InternalServerError
 	}
 
+	log.Println("CutChatHistory")
 	chatHistory := utils.CutChatHistory(allHistory, 1000)
 
-	if (system_prompt == nil || *system_prompt == "") && chat.SystemPrompt != nil {
-		*system_prompt = *(chat.SystemPrompt)
-	}
-
+	log.Println("FormatPrompt")
 	prompt := FormatPrompt(chatHistory, task)
 
+	log.Println("Add Chat Message")
 	err = db.AddChatMessage(chat.ID, true, task)
 	if err != nil {
-		return "", InternalServerError
+		return "", nil, InternalServerError
 	}
 
 	old_callback := *callback
 	*callback = func(provider_name string, model_name string, input_count int, output_count int, completion string) {
 		if old_callback != nil {
+			log.Println("Old callback")
 			old_callback(provider_name, model_name, input_count, output_count, completion)
 		}
+		log.Println("Add Chat Message Callback")
 		_ = db.AddChatMessage(chat.ID, false, completion)
 	}
 
 	opts.StopWords = &[]string{"AI:", "Human:"}
 
-	return prompt, nil
+	return prompt, chat.SystemPrompt, nil
 }
