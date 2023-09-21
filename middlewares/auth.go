@@ -3,6 +3,7 @@ package middlewares
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 
@@ -75,7 +76,9 @@ func authenticateAndHandle(
 		version = int(versionJSON)
 	}
 
+	log.Println("DB VERSION")
 	dbVersion, err := db.GetVersionForUser(userID)
+	log.Println("DB VERSION END")
 	if err != nil {
 		utils.RespondError(w, record, "database_error")
 		return

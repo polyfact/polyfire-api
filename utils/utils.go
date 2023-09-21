@@ -1,10 +1,8 @@
 package utils
 
 import (
-	"os"
-
 	db "github.com/polyfact/api/db"
-	llm "github.com/polyfact/api/llm"
+	llmTokens "github.com/polyfact/api/tokens"
 )
 
 func FillContext(embeddings []db.MatchResult) (string, error) {
@@ -12,7 +10,7 @@ func FillContext(embeddings []db.MatchResult) (string, error) {
 	tokens := 0
 
 	for _, item := range embeddings {
-		textTokens := llm.CountTokens(item.Content, os.Getenv("OPENAI_MODEL"))
+		textTokens := llmTokens.CountTokens("gpt3.5-turbo", item.Content)
 
 		if tokens+textTokens > 2000 {
 			break
@@ -36,7 +34,7 @@ func CutChatHistory(chat_messages []db.ChatMessage, max_token int) []db.ChatMess
 	tokens := 0
 
 	for _, item := range chat_messages {
-		textTokens := llm.CountTokens(item.Content, os.Getenv("OPENAI_MODEL"))
+		textTokens := llmTokens.CountTokens("gpt3.5-turbo", item.Content)
 
 		if tokens+textTokens > max_token {
 			break
