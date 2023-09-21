@@ -1,6 +1,7 @@
 package completion
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -35,14 +36,12 @@ func getLanguageCompletion(language *string) string {
 	return ""
 }
 
-func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers.Result, error) {
-	log.Println("START A")
+func GenerationStart(ctx context.Context, user_id string, input GenerateRequestBody) (*chan providers.Result, error) {
 	context_completion := ""
 	resources := []db.MatchResult{}
 
-	log.Println("RATE LIMIT")
-	err := CheckRateLimit(user_id)
-	log.Println("RATE LIMIT END")
+	log.Println("Check Rate Limit")
+	err := CheckRateLimit(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -156,7 +155,7 @@ func Generate(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		return
 	}
 
-	res_chan, err := GenerationStart(user_id, input)
+	res_chan, err := GenerationStart(r.Context(), user_id, input)
 	if err != nil {
 		switch err {
 		case webrequest.WebsiteExceedsLimit:
