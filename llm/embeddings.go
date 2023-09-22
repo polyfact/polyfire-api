@@ -4,17 +4,9 @@ import (
 	"context"
 	"log"
 
+	llmTokens "github.com/polyfact/api/tokens"
 	"github.com/tmc/langchaingo/llms/openai"
 )
-
-func CountTokens(content string, model string) int {
-	llm, err := openai.New(openai.WithModel(model))
-	if err != nil {
-		log.Println("Error initializing LLM for CountTokens :", err)
-		return 0
-	}
-	return llm.GetNumTokens(content)
-}
 
 func Embed(content string, c *func(string, int)) ([][]float64, error) {
 	model := "text-embedding-ada-002"
@@ -30,7 +22,7 @@ func Embed(content string, c *func(string, int)) ([][]float64, error) {
 		return nil, err
 	}
 
-	token_usage := CountTokens(content, model)
+	token_usage := llmTokens.CountTokens(model, content)
 
 	if c != nil {
 		(*c)(model, token_usage)

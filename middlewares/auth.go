@@ -3,6 +3,7 @@ package middlewares
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 
@@ -31,9 +32,10 @@ func parseJWT(token string) (jwt.MapClaims, error) {
 	return claims, nil
 }
 
-func createContextWithUserID(r *http.Request, userID string) context.Context {
+func createContextWithUserID(r *http.Request, userID string, rateLimitStatus db.RateLimitStatus) context.Context {
 	recordEventWithUserID := r.Context().Value(utils.ContextKeyRecordEventWithUserID).(utils.RecordWithUserIDFunc)
 	newCtx := context.WithValue(r.Context(), utils.ContextKeyUserID, userID)
+	newCtx = context.WithValue(newCtx, utils.ContextKeyRateLimitStatus, rateLimitStatus)
 
 	var recordEvent utils.RecordFunc = func(response string, props ...utils.KeyValue) {
 		recordEventWithUserID(response, userID, props...)
@@ -75,18 +77,20 @@ func authenticateAndHandle(
 		version = int(versionJSON)
 	}
 
-	dbVersion, err := db.GetVersionForUser(userID)
+	log.Println("DB Version / Rate Limit Status In Context")
+	rateLimitStatus, err := db.CheckDBVersionRateLimit(userID, version)
+
+	if err == db.DBVersionMismatch {
+		utils.RespondError(w, record, "invalid_token")
+		return
+	}
+
 	if err != nil {
 		utils.RespondError(w, record, "database_error")
 		return
 	}
 
-	if version != dbVersion {
-		utils.RespondError(w, record, "invalid_token")
-		return
-	}
-
-	ctx := createContextWithUserID(r, userID)
+	ctx := createContextWithUserID(r, userID, rateLimitStatus)
 	handler(w, r.WithContext(ctx), params)
 }
 
