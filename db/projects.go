@@ -2,6 +2,7 @@ package db
 
 import (
 	"encoding/json"
+	"regexp"
 	"fmt"
 )
 
@@ -31,6 +32,14 @@ type Project struct {
 }
 
 func GetProjectByID(id string) (*Project, error) {
+	matchUUID, _ := regexp.MatchString("^[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$", id)
+
+	matchSlug, _ := regexp.MatchString("^[a-z0-9-_]*$", id)
+
+	if !matchUUID && !matchSlug {
+		return nil, fmt.Errorf("Invalid project id")
+	}
+
 	client, err := CreateClient()
 	if err != nil {
 		return nil, err
@@ -38,9 +47,16 @@ func GetProjectByID(id string) (*Project, error) {
 
 	var result Project
 
+	var id_field string
+	if matchUUID {
+		id_field = "id"
+	} else {
+		id_field = "slug"
+	}
+
 	_, err = client.From("projects").
 		Select("*", "exact", false).
-		Eq("id", id).
+		Eq(id_field, id).
 		Single().
 		ExecuteTo(&result)
 	if err != nil {
@@ -166,7 +182,6 @@ func ProjectReachedRateLimit(user_id string) (bool, error) {
 
 func ProjectIsPremium(user_id string) (bool, error) {
 	auth_users, err := GetDevAuthUserForUserIDProject(user_id)
-	fmt.Println(auth_users)
 	if err != nil {
 		return false, err
 	}

@@ -76,6 +76,11 @@ func TokenExchangeHandler(
 	return func(w http.ResponseWriter, r *http.Request, ps router.Params) {
 		record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
 		project_id := ps.ByName("id")
+		project, err := db.GetProjectByID(project_id)
+		if err != nil {
+			utils.RespondError(w, record, "project_retrieval_error")
+			return
+		}
 
 		if len(r.Header["Authorization"]) == 0 {
 			utils.RespondError(w, record, "missing_authorization")
@@ -90,14 +95,14 @@ func TokenExchangeHandler(
 
 		token := auth_header[1]
 
-		auth_id, email, err := getUserFromToken(token, project_id)
+		auth_id, email, err := getUserFromToken(token, project.ID)
 		if err != nil {
 			fmt.Println(err)
 			utils.RespondError(w, record, "token_exchange_failed")
 			return
 		}
 
-		user_id, err := GetUserIdFromProjectAuthId(project_id, auth_id, email)
+		user_id, err := GetUserIdFromProjectAuthId(project.ID, auth_id, email)
 		if err != nil {
 			fmt.Println(err)
 			utils.RespondError(w, record, "token_exchange_failed")
@@ -105,11 +110,7 @@ func TokenExchangeHandler(
 		}
 
 		if user_id == nil {
-			project, err := db.GetProjectByID(project_id)
-			if err != nil {
-				utils.RespondError(w, record, "project_retrieval_error")
-				return
-			}
+
 			if !project.FreeUserInit {
 				utils.RespondError(w, record, "free_user_init_disabled")
 				return
@@ -117,7 +118,7 @@ func TokenExchangeHandler(
 			user_id, err = CreateProjectUser(
 				auth_id,
 				email,
-				project_id,
+				project.ID,
 				project.DefaultMonthlyTokenRateLimit,
 				project.DefaultMonthlyCreditRateLimit,
 			)
