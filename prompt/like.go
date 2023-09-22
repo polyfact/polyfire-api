@@ -32,7 +32,7 @@ func HandlePromptLike(w http.ResponseWriter, r *http.Request, ps httprouter.Para
 
 	var data db.PromptLikeOutput
 
-	if len(prompts) == 0 {
+	if prompts == nil {
 		if _, err := db.AddPromptLike(input); err != nil {
 			utils.RespondError(w, record, DBAddLikeError, err.Error())
 			return
@@ -43,10 +43,11 @@ func HandlePromptLike(w http.ResponseWriter, r *http.Request, ps httprouter.Para
 			Like:     true,
 		}
 	} else {
-		if _, err := db.RemovePromptLike(input); err != nil {
+		if err := db.RemovePromptLike(input); err != nil {
 			utils.RespondError(w, record, DBRemoveLikeError, err.Error())
 			return
 		}
+
 		data = db.PromptLikeOutput{
 			UserId:   input.UserId,
 			PromptId: input.PromptId,
