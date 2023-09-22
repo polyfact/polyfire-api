@@ -6,12 +6,13 @@ import (
 	"net/http"
 
 	router "github.com/julienschmidt/httprouter"
-	db "github.com/polyfact/api/db"
-	utils "github.com/polyfact/api/utils"
+	"github.com/polyfact/api/db"
+	"github.com/polyfact/api/llm/providers"
+	"github.com/polyfact/api/utils"
 )
 
-func FormatPrompt(systemPrompt string, chatHistory []db.ChatMessage, userPrompt string) string {
-	res := systemPrompt
+func FormatPrompt(chatHistory []db.ChatMessage, userPrompt string) string {
+	res := ""
 
 	for i := len(chatHistory) - 1; i >= 0; i-- {
 		if chatHistory[i].IsUserMessage {
@@ -74,4 +75,52 @@ func GetChatHistory(w http.ResponseWriter, r *http.Request, ps router.Params) {
 	record(string(response))
 
 	_ = json.NewEncoder(w).Encode(messages)
+}
+
+func chatContext(
+	user_id string,
+	task string,
+	chatId string,
+	system_prompt *string,
+	callback providers.ProviderCallback,
+	opts *providers.ProviderOptions,
+) (string, error) {
+	chat, err := db.GetChatById(chatId)
+	if err != nil {
+		return "", InternalServerError
+	}
+
+	if chat == nil || chat.UserID != user_id {
+		return "", NotFound
+	}
+
+	allHistory, err := db.GetChatMessages(user_id, chatId)
+	if err != nil {
+		return "", InternalServerError
+	}
+
+	chatHistory := utils.CutChatHistory(allHistory, 1000)
+
+	if (system_prompt == nil || *system_prompt == "") && chat.SystemPrompt != nil {
+		*system_prompt = *(chat.SystemPrompt)
+	}
+
+	prompt := FormatPrompt(chatHistory, task)
+
+	err = db.AddChatMessage(chat.ID, true, task)
+	if err != nil {
+		return "", InternalServerError
+	}
+
+	old_callback := *callback
+	*callback = func(provider_name string, model_name string, input_count int, output_count int, completion string) {
+		if old_callback != nil {
+			old_callback(provider_name, model_name, input_count, output_count, completion)
+		}
+		_ = db.AddChatMessage(chat.ID, false, completion)
+	}
+
+	opts.StopWords = &[]string{"AI:", "Human:"}
+
+	return prompt, nil
 }

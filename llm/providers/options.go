@@ -17,6 +17,8 @@ type TokenUsage struct {
 type Result struct {
 	Result     string           `json:"result"`
 	TokenUsage TokenUsage       `json:"token_usage"`
-	Ressources []db.MatchResult `json:"ressources,omitempty"`
+	Resources  []db.MatchResult `json:"ressources,omitempty"`
 	Err        error
 }
+
+type ProviderCallback *func(string, string, int, int, string)

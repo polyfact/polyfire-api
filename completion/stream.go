@@ -120,8 +120,8 @@ generation_loop:
 		result.TokenUsage.Input += v.TokenUsage.Input
 		result.TokenUsage.Output += v.TokenUsage.Output
 
-		if len(v.Ressources) > 0 {
-			result.Ressources = v.Ressources
+		if len(v.Resources) > 0 {
+			result.Resources = v.Resources
 		}
 		select {
 		case <-chan_stop:
@@ -139,7 +139,7 @@ generation_loop:
 		}
 	}
 
-	if input.MemoryId != nil && input.Infos {
+	if input.MemoryId != nil {
 		infosJSON, err := json.Marshal(result)
 		if err != nil {
 			utils.RespondErrorStream(conn, record, "invalid_json")

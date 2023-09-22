@@ -28,7 +28,11 @@ func NewOpenAIStreamProvider(model string) OpenAIStreamProvider {
 	}
 }
 
-func (m OpenAIStreamProvider) Generate(task string, c *func(string, string, int, int), opts *ProviderOptions) chan Result {
+func (m OpenAIStreamProvider) Generate(
+	task string,
+	c ProviderCallback,
+	opts *ProviderOptions,
+) chan Result {
 	chan_res := make(chan Result)
 
 	go func() {
@@ -77,6 +81,7 @@ func (m OpenAIStreamProvider) Generate(task string, c *func(string, string, int,
 			tokenUsage.Input += tokens.CountTokens(m.Model, task)
 
 			totalOutput := 0
+			totalCompletion := ""
 
 			for {
 				completion, err := stream.Recv()
@@ -93,11 +98,13 @@ func (m OpenAIStreamProvider) Generate(task string, c *func(string, string, int,
 
 				result := Result{Result: completion.Choices[0].Delta.Content, TokenUsage: tokenUsage}
 
+				totalCompletion += completion.Choices[0].Delta.Content
+
 				chan_res <- result
 			}
 
 			if c != nil {
-				(*c)("openai", m.Model, tokenUsage.Input, totalOutput)
+				(*c)("openai", m.Model, tokenUsage.Input, totalOutput, totalCompletion)
 			}
 			return
 		}
