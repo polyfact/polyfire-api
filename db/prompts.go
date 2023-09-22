@@ -42,10 +42,6 @@ type PromptUse struct {
 	Use int64 `json:"use"`
 }
 
-type PromptLike struct {
-	Like int64 `json:"like"`
-}
-
 type FilterOperation string
 
 const (
@@ -217,23 +213,6 @@ func UpdatePrompt(id string, input PromptUpdate, user_id string) (*Prompt, error
 }
 
 func UpdatePromptUse(id string, input PromptUse) (*Prompt, error) {
-	client, err := CreateClient()
-	if err != nil {
-		return nil, err
-	}
-
-	var result *Prompt
-
-	_, err = client.From("prompts").Update(input, "", "").Eq("id", id).Single().ExecuteTo(&result)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return result, nil
-}
-
-func UpdatePromptLike(id string, input PromptLike) (*Prompt, error) {
 	client, err := CreateClient()
 	if err != nil {
 		return nil, err
