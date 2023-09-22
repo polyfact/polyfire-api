@@ -21,7 +21,7 @@ type PromptLike struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-func GetPromptLikeByUserId(input PromptLikeInput) ([]PromptLike, error) {
+func GetPromptLikeByUserId(input PromptLikeInput) (*PromptLike, error) {
 	client, err := CreateClient()
 
 	if err != nil {
@@ -31,10 +31,14 @@ func GetPromptLikeByUserId(input PromptLikeInput) ([]PromptLike, error) {
 	var result []PromptLike
 	_, err = client.From("prompts_likes").Select("*", "exact", false).Eq("prompt_id", input.PromptId).Eq("user_id", input.UserId).Limit(1, "").ExecuteTo(&result)
 
-	return result, err
+	if len(result) == 0 {
+		return nil, nil
+	}
+
+	return &result[0], err
 }
 
-func AddPromptLike(input PromptLikeInput) ([]PromptLike, error) {
+func AddPromptLike(input PromptLikeInput) (*PromptLike, error) {
 	client, err := CreateClient()
 
 	if err != nil {
@@ -44,17 +48,25 @@ func AddPromptLike(input PromptLikeInput) ([]PromptLike, error) {
 	var result []PromptLike
 	_, err = client.From("prompts_likes").Insert(input, false, "", "", "exact").ExecuteTo(&result)
 
-	return result, err
+	if len(result) == 0 {
+		return nil, nil
+	}
+	return &result[0], err
 }
 
-func RemovePromptLike(input PromptLikeInput) ([]PromptLike, error) {
+func RemovePromptLike(input PromptLikeInput) error {
 	client, err := CreateClient()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	var result []PromptLike
 	_, err = client.From("prompts_likes").Delete("", "").Eq("user_id", input.UserId).Eq("prompt_id", input.PromptId).ExecuteTo(&result)
 
-	return result, err
+	if err != nil {
+		return err
+	}
+
+	return nil
+
 }
