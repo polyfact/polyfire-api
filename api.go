@@ -75,5 +75,8 @@ func main() {
 	router.PUT("/prompt/:id", middlewares.Auth(prompt.UpdatePrompt))
 	router.DELETE("/prompt/:id", middlewares.Auth(prompt.DeletePrompt))
 
+	// Prompt Like Routes
+	router.POST("/prompt/like/:id", middlewares.Auth(prompt.HandlePromptLike))
+
 	log.Fatal(http.ListenAndServe(":8080", GlobalMiddleware(router)))
 }
