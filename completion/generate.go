@@ -1,7 +1,9 @@
 package completion
 
 import (
+	"context"
 	"encoding/json"
+	"log"
 	"net/http"
 
 	router "github.com/julienschmidt/httprouter"
@@ -34,29 +36,43 @@ func getLanguageCompletion(language *string) string {
 	return ""
 }
 
-func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers.Result, error) {
+func GenerationStart(ctx context.Context, user_id string, input GenerateRequestBody) (*chan providers.Result, error) {
 	context_completion := ""
 	resources := []db.MatchResult{}
 
-	err := CheckRateLimit(user_id)
+	log.Println("Check Rate Limit")
+	err := CheckRateLimit(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	memoryResult, err := getMemory(user_id, input.MemoryId, input.Task)
-	if err != nil {
-		return nil, err
-	}
+	chan_memory_res := make(chan *MemoryProcessResult)
 
-	if memoryResult != nil {
-		context_completion = memoryResult.ContextCompletion
-		resources = memoryResult.Resources
-	}
+	go func() {
+		defer close(chan_memory_res)
+		memoryResult, err := getMemory(user_id, input.MemoryId, input.Task)
+		if err != nil {
+			panic(err)
+		}
+
+		chan_memory_res <- memoryResult
+	}()
+
+	chan_system_prompt := make(chan string)
+	go func() {
+		defer close(chan_system_prompt)
+		system_prompt, err := getSystemPrompt(input.SystemPromptId, input.SystemPrompt)
+		if err != nil {
+			panic(err)
+		}
+		chan_system_prompt <- system_prompt
+	}()
 
 	callback := func(provider_name string, model_name string, input_count int, output_count int, _completion string) {
 		db.LogRequests(user_id, provider_name, model_name, input_count, output_count, "completion")
 	}
 
+	log.Println("Init provider")
 	provider, err := llm.NewProvider(input.Provider, input.Model)
 	if err == llm.ErrUnknownModel {
 		return nil, UnknownModelProvider
@@ -64,11 +80,6 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 
 	if err != nil {
 		return nil, InternalServerError
-	}
-
-	system_prompt, err := getSystemPrompt(input.SystemPromptId, input.SystemPrompt)
-	if err != nil {
-		return nil, err
 	}
 
 	opts := providers.ProviderOptions{}
@@ -79,9 +90,11 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 		opts.Temperature = input.Temperature
 	}
 
+	log.Println("Get ContextTask")
 	var prompt string
+	var chat_system_prompt *string = nil
 	if input.ChatId != nil && len(*input.ChatId) > 0 {
-		prompt, err = chatContext(user_id, input.Task, *input.ChatId, &system_prompt, &callback, &opts)
+		prompt, chat_system_prompt, err = chatContext(user_id, input.Task, *input.ChatId, &callback, &opts)
 		if err != nil {
 			return nil, err
 		}
@@ -94,8 +107,23 @@ func GenerationStart(user_id string, input GenerateRequestBody) (*chan providers
 		prompt = input.Task
 	}
 
+	log.Println("Wait for memory")
+	memoryResult := <-chan_memory_res
+	if memoryResult != nil {
+		context_completion = memoryResult.ContextCompletion
+		resources = memoryResult.Resources
+	}
+
+	log.Println("Wait for system_prompt")
+	system_prompt := <-chan_system_prompt
+
+	if system_prompt == "" && chat_system_prompt != nil {
+		system_prompt = *chat_system_prompt
+	}
+
 	prompt = context_completion + "\n" + system_prompt + "\n" + getLanguageCompletion(input.Language) + "\n" + prompt
 
+	log.Println("Generate")
 	res_chan := provider.Generate(prompt, &callback, &opts)
 
 	result := make(chan providers.Result)
@@ -127,7 +155,7 @@ func Generate(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		return
 	}
 
-	res_chan, err := GenerationStart(user_id, input)
+	res_chan, err := GenerationStart(r.Context(), user_id, input)
 	if err != nil {
 		switch err {
 		case webrequest.WebsiteExceedsLimit:

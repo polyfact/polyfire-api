@@ -84,16 +84,6 @@ func UserReachedRateLimit(id string) (bool, error) {
 		return false, nil
 	}
 
-	// TODO: Remove the tokenUsage check once we've migrated to the new rate limit system
-	tokenUsage, err := GetUserIdMonthlyTokenUsage(id)
-	if err != nil {
-		return false, err
-	}
-
-	if tokenUsage >= *projectUser.MonthlyTokenRateLimit {
-		return true, nil
-	}
-
 	creditUsage, err := GetUserIdMonthlyCreditUsage(id)
 	if err != nil {
 		return false, err
