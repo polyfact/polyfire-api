@@ -22,7 +22,7 @@ type LLaMaProvider struct {
 	Model string
 }
 
-func (m LLaMaProvider) Generate(task string, c *func(string, string, int, int), opts *ProviderOptions) chan Result {
+func (m LLaMaProvider) Generate(task string, c ProviderCallback, opts *ProviderOptions) chan Result {
 	chan_res := make(chan Result)
 
 	go func() {
@@ -49,6 +49,7 @@ func (m LLaMaProvider) Generate(task string, c *func(string, string, int, int), 
 		defer resp.Body.Close()
 		var p []byte = make([]byte, 128)
 		totalOutput := 0
+		totalCompletion := ""
 		for {
 			nb, err := resp.Body.Read(p)
 			if errors.Is(err, io.EOF) || err != nil {
@@ -56,10 +57,11 @@ func (m LLaMaProvider) Generate(task string, c *func(string, string, int, int), 
 			}
 			tokenUsage.Output = tokens.CountTokens("gpt-2", string(p[:nb]))
 			totalOutput += tokenUsage.Output
+			totalCompletion += string(p[:nb])
 			chan_res <- Result{Result: string(p[:nb]), TokenUsage: tokenUsage}
 		}
 		if c != nil {
-			(*c)("llama", m.Model, tokenUsage.Input, totalOutput)
+			(*c)("llama", m.Model, tokenUsage.Input, totalOutput, totalCompletion)
 		}
 	}()
 
