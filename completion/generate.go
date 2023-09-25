@@ -40,10 +40,6 @@ func GenerationStart(ctx context.Context, user_id string, input GenerateRequestB
 	context_completion := ""
 	resources := []db.MatchResult{}
 
-	callback := func(provider_name string, model_name string, input_count int, output_count int, _completion string) {
-		db.LogRequests(user_id, provider_name, model_name, input_count, output_count, "completion")
-	}
-
 	log.Println("Init provider")
 	provider, err := llm.NewProvider(ctx, input.Provider, input.Model)
 	if err == llm.ErrUnknownModel {
@@ -60,6 +56,18 @@ func GenerationStart(ctx context.Context, user_id string, input GenerateRequestB
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	callback := func(provider_name string, model_name string, input_count int, output_count int, _completion string) {
+		db.LogRequests(
+			user_id,
+			provider_name,
+			model_name,
+			input_count,
+			output_count,
+			"completion",
+			provider.DoesFollowRateLimit(),
+		)
 	}
 
 	chan_memory_res := make(chan *MemoryProcessResult)

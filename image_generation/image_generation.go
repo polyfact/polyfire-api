@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	router "github.com/julienschmidt/httprouter"
+	"github.com/polyfact/api/db"
 	"github.com/polyfact/api/utils"
 )
 
@@ -64,6 +65,9 @@ func ImageGeneration(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	}
 
 	reader, err := DALLEGenerate(prompt)
+
+	db.LogRequests(user_id, "openai", "dalle-2", 0, 0, "image", true)
+
 	if err != nil {
 		utils.RespondError(w, record, "image_generation_error")
 		return
