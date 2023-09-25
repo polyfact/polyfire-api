@@ -47,6 +47,17 @@ func ImageGeneration(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	var record utils.RecordFunc = func(response string, props ...utils.KeyValue) {
 		recordEventRequest(string(request), response, user_id, props...)
 	}
+	rateLimitStatus := r.Context().Value(utils.ContextKeyRateLimitStatus)
+
+	if rateLimitStatus == db.RateLimitStatusReached {
+		utils.RespondError(w, record, "rate_limit_reached")
+		return
+	}
+
+	if rateLimitStatus == db.RateLimitStatusProjectReached {
+		utils.RespondError(w, record, "project_rate_limit_reached")
+		return
+	}
 
 	if provider == "" {
 		provider = "openai"
