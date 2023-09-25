@@ -71,3 +71,11 @@ func (m LLaMaProvider) Generate(task string, c ProviderCallback, opts *ProviderO
 func (m LLaMaProvider) UserAllowed(_user_id string) bool {
 	return true
 }
+
+func (m LLaMaProvider) Name() string {
+	return "llama"
+}
+
+func (m LLaMaProvider) DoesFollowRateLimit() bool {
+	return false
+}

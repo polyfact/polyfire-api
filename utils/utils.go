@@ -55,4 +55,6 @@ const (
 	ContextKeyRecordEvent           ContextKey = "recordEvent"
 	ContextKeyRecordEventWithUserID ContextKey = "recordEventWithUserID"
 	ContextKeyRecordEventRequest    ContextKey = "recordEventRequest"
+	ContextKeyOpenAIToken           ContextKey = "openAIToken"
+	ContextKeyOpenAIOrg             ContextKey = "openAIOrg"
 )
