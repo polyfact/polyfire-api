@@ -11,20 +11,37 @@ import (
 
 	db "github.com/polyfact/api/db"
 	tokens "github.com/polyfact/api/tokens"
+	utils "github.com/polyfact/api/utils"
 	goOpenai "github.com/sashabaranov/go-openai"
 )
 
 type OpenAIStreamProvider struct {
-	client goOpenai.Client
-	Model  string
+	client        goOpenai.Client
+	Model         string
+	IsCustomToken bool
 }
 
-func NewOpenAIStreamProvider(model string) OpenAIStreamProvider {
-	config := goOpenai.DefaultConfig(os.Getenv("OPENAI_API_KEY"))
-	config.OrgID = os.Getenv("OPENAI_ORGANIZATION")
+func NewOpenAIStreamProvider(ctx context.Context, model string) OpenAIStreamProvider {
+	var config goOpenai.ClientConfig
+	var isCustomToken bool
+
+	customToken, ok := ctx.Value(utils.ContextKeyOpenAIToken).(string)
+	if ok {
+		config = goOpenai.DefaultConfig(customToken)
+		customOrg, ok := ctx.Value(utils.ContextKeyOpenAIOrg).(string)
+		if ok {
+			config.OrgID = customOrg
+		}
+		isCustomToken = true
+	} else {
+		config = goOpenai.DefaultConfig(os.Getenv("OPENAI_API_KEY"))
+		config.OrgID = os.Getenv("OPENAI_ORGANIZATION")
+		isCustomToken = false
+	}
 	return OpenAIStreamProvider{
-		client: *goOpenai.NewClientWithConfig(config),
-		Model:  model,
+		client:        *goOpenai.NewClientWithConfig(config),
+		Model:         model,
+		IsCustomToken: isCustomToken,
 	}
 }
 
@@ -127,4 +144,12 @@ func (m OpenAIStreamProvider) UserAllowed(user_id string) bool {
 
 	res, _ := db.ProjectIsPremium(user_id)
 	return res
+}
+
+func (m OpenAIStreamProvider) Name() string {
+	return "openai"
+}
+
+func (m OpenAIStreamProvider) DoesFollowRateLimit() bool {
+	return !m.IsCustomToken
 }

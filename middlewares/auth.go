@@ -32,10 +32,18 @@ func parseJWT(token string) (jwt.MapClaims, error) {
 	return claims, nil
 }
 
-func createContextWithUserID(r *http.Request, userID string, rateLimitStatus db.RateLimitStatus) context.Context {
+func createUserContext(r *http.Request, userID string, user *db.UserAuth, rateLimitStatus db.RateLimitStatus) context.Context {
 	recordEventWithUserID := r.Context().Value(utils.ContextKeyRecordEventWithUserID).(utils.RecordWithUserIDFunc)
 	newCtx := context.WithValue(r.Context(), utils.ContextKeyUserID, userID)
 	newCtx = context.WithValue(newCtx, utils.ContextKeyRateLimitStatus, rateLimitStatus)
+	if user != nil {
+		if user.OpenAIToken != "" {
+			newCtx = context.WithValue(newCtx, utils.ContextKeyOpenAIToken, user.OpenAIToken)
+			if user.OpenAIOrg != "" {
+				newCtx = context.WithValue(newCtx, utils.ContextKeyOpenAIOrg, user.OpenAIOrg)
+			}
+		}
+	}
 
 	var recordEvent utils.RecordFunc = func(response string, props ...utils.KeyValue) {
 		recordEventWithUserID(response, userID, props...)
@@ -78,7 +86,7 @@ func authenticateAndHandle(
 	}
 
 	log.Println("DB Version / Rate Limit Status In Context")
-	rateLimitStatus, err := db.CheckDBVersionRateLimit(userID, version)
+	user, rateLimitStatus, err := db.CheckDBVersionRateLimit(userID, version)
 
 	if err == db.DBVersionMismatch {
 		utils.RespondError(w, record, "invalid_token")
@@ -90,7 +98,7 @@ func authenticateAndHandle(
 		return
 	}
 
-	ctx := createContextWithUserID(r, userID, rateLimitStatus)
+	ctx := createUserContext(r, userID, user, rateLimitStatus)
 	handler(w, r.WithContext(ctx), params)
 }
 

@@ -98,3 +98,11 @@ func (m LangchainProvider) UserAllowed(user_id string) bool {
 	res, _ := db.ProjectIsPremium(user_id)
 	return res
 }
+
+func (m LangchainProvider) Name() string {
+	return m.ModelName
+}
+
+func (m LangchainProvider) DoesFollowRateLimit() bool {
+	return true
+}

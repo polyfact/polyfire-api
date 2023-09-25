@@ -1,6 +1,7 @@
 package llm
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -11,8 +12,10 @@ import (
 var ErrUnknownModel = errors.New("Unknown model")
 
 type Provider interface {
+	Name() string
 	Generate(prompt string, c providers.ProviderCallback, opts *providers.ProviderOptions) chan providers.Result
 	UserAllowed(user_id string) bool
+	DoesFollowRateLimit() bool
 }
 
 func defaultModel(model string) (string, string) {
@@ -41,7 +44,7 @@ func defaultModel(model string) (string, string) {
 	return "", ""
 }
 
-func NewProvider(provider string, model *string) (Provider, error) {
+func NewProvider(ctx context.Context, provider string, model *string) (Provider, error) {
 	if provider == "" && model == nil {
 		provider = "openai"
 	}
@@ -64,7 +67,7 @@ func NewProvider(provider string, model *string) (Provider, error) {
 		if m != "gpt-3.5-turbo" && m != "gpt-3.5-turbo-16k" && m != "gpt-4" {
 			return nil, ErrUnknownModel
 		}
-		llm := providers.NewOpenAIStreamProvider(m)
+		llm := providers.NewOpenAIStreamProvider(ctx, m)
 		return llm, nil
 	case "cohere":
 		fmt.Println("Using Cohere")
