@@ -112,7 +112,7 @@ func CheckDBVersionRateLimit(user_id string, version int) (*UserAuth, RateLimitS
 		return nil, RateLimitStatusNone, DBError
 	}
 
-	if user.Version != version {
+	if user != nil && user.Version != version {
 		return nil, RateLimitStatusNone, DBVersionMismatch
 	}
 
