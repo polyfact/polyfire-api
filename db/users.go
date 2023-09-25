@@ -5,20 +5,18 @@ import (
 	"sync"
 )
 
-type UserAuth struct {
-	Id          string `json:"id"`
-	Version     int    `json:"version,omitempty"`
-	OpenAIToken string `json:"openai_token,omitempty"`
-	OpenAIOrg   string `json:"openai_org,omitempty"`
+type User struct {
+	Id      string `json:"id"`
+	Version int    `json:"version,omitempty"`
 }
 
-func getAuthUser(auth_id string) (*UserAuth, error) {
+func getUserDBVersion(auth_id string) (*User, error) {
 	client, err := CreateClient()
 	if err != nil {
 		return nil, err
 	}
 
-	var results []UserAuth
+	var results []User
 
 	_, err = client.From("auth_users").Select("*", "exact", false).Eq("id", auth_id).ExecuteTo(&results)
 
@@ -48,62 +46,47 @@ var (
 	RateLimitStatusNone           = RateLimitStatus("")
 )
 
-func checkRateLimit(user_id string) (RateLimitStatus, error) {
-	var wg sync.WaitGroup
+func checkUserRateLimit(user_id string) (RateLimitStatus, error) {
 	var userReached bool
-	var projectReached bool
-
 	var userRateLimitErr error
-	var projectRateLimitErr error
 
-	wg.Add(2)
-
-	go func() {
-		defer wg.Done()
-		userReached, userRateLimitErr = UserReachedRateLimit(user_id)
-	}()
-
-	go func() {
-		defer wg.Done()
-		projectReached, projectRateLimitErr = ProjectReachedRateLimit(user_id)
-	}()
-
-	wg.Wait()
+	userReached, userRateLimitErr = UserReachedRateLimit(user_id)
 
 	if userRateLimitErr != nil {
-		return RateLimitStatusNone, UnknownUserId
-	}
-	if projectRateLimitErr != nil {
 		return RateLimitStatusNone, UnknownUserId
 	}
 
 	if userReached {
 		return RateLimitStatusReached, nil
 	}
-	if projectReached {
-		return RateLimitStatusProjectReached, nil
-	}
 
 	return RateLimitStatusOk, nil
 }
 
-func CheckDBVersionRateLimit(user_id string, version int) (*UserAuth, RateLimitStatus, error) {
+func CheckDBVersionRateLimit(user_id string, version int) (*AuthUser, RateLimitStatus, error) {
 	var wg sync.WaitGroup
-	var user *UserAuth
+	var user *User
 	var userErr error
 	var rateLimitStatus RateLimitStatus
 	var rateLimitErr error
+	var devAuthUser AuthUser
+	var devAuthUserErr error
 
-	wg.Add(2)
+	wg.Add(3)
 
 	go func() {
 		defer wg.Done()
-		user, userErr = getAuthUser(user_id)
+		user, userErr = getUserDBVersion(user_id)
 	}()
 
 	go func() {
 		defer wg.Done()
-		rateLimitStatus, rateLimitErr = checkRateLimit(user_id)
+		rateLimitStatus, rateLimitErr = checkUserRateLimit(user_id)
+	}()
+
+	go func() {
+		defer wg.Done()
+		devAuthUser, devAuthUserErr = GetDevAuthUserForUserIDProject(user_id)
 	}()
 
 	wg.Wait()
@@ -120,5 +103,13 @@ func CheckDBVersionRateLimit(user_id string, version int) (*UserAuth, RateLimitS
 		return nil, RateLimitStatusNone, rateLimitErr
 	}
 
-	return user, rateLimitStatus, nil
+	if devAuthUserErr != nil {
+		return nil, RateLimitStatusNone, devAuthUserErr
+	}
+
+	if devAuthUser.Usage >= devAuthUser.RateLimit {
+		return nil, RateLimitStatusProjectReached, nil
+	}
+
+	return &devAuthUser, rateLimitStatus, nil
 }
