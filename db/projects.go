@@ -2,8 +2,8 @@ package db
 
 import (
 	"encoding/json"
-	"regexp"
 	"fmt"
+	"regexp"
 )
 
 type ProjectUser struct {
@@ -137,9 +137,11 @@ func GetProjectForUserId(user_id string) (*string, error) {
 }
 
 type AuthUser struct {
-	Usage     int  `json:"usage"`
-	RateLimit int  `json:"rate_limit,omitempty"`
-	Premium   bool `json:"premium"`
+	Usage       int    `json:"usage"`
+	RateLimit   int    `json:"rate_limit,omitempty"`
+	Premium     bool   `json:"premium"`
+	OpenAIToken string `json:"openai_token,omitempty"`
+	OpenAIOrg   string `json:"openai_org,omitempty"`
 }
 
 type AuthUserProject struct {

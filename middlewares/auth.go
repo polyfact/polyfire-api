@@ -32,7 +32,7 @@ func parseJWT(token string) (jwt.MapClaims, error) {
 	return claims, nil
 }
 
-func createUserContext(r *http.Request, userID string, user *db.UserAuth, rateLimitStatus db.RateLimitStatus) context.Context {
+func createUserContext(r *http.Request, userID string, user *db.AuthUser, rateLimitStatus db.RateLimitStatus) context.Context {
 	recordEventWithUserID := r.Context().Value(utils.ContextKeyRecordEventWithUserID).(utils.RecordWithUserIDFunc)
 	newCtx := context.WithValue(r.Context(), utils.ContextKeyUserID, userID)
 	newCtx = context.WithValue(newCtx, utils.ContextKeyRateLimitStatus, rateLimitStatus)
