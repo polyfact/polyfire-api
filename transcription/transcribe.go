@@ -123,6 +123,19 @@ type Result struct {
 func Transcribe(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	user_id := r.Context().Value(utils.ContextKeyUserID).(string)
 	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
+
+	rateLimitStatus := r.Context().Value(utils.ContextKeyRateLimitStatus)
+
+	if rateLimitStatus == db.RateLimitStatusReached {
+		utils.RespondError(w, record, "rate_limit_reached")
+		return
+	}
+
+	if rateLimitStatus == db.RateLimitStatusProjectReached {
+		utils.RespondError(w, record, "project_rate_limit_reached")
+		return
+	}
+
 	content_type := r.Header.Get("Content-Type")
 	var file_buf_reader io.Reader
 
