@@ -69,7 +69,7 @@ func LogRequests(
 	var credits int
 
 	if countCredits {
-		tokenToCredit(provider_name, model_name, input_token_count, output_token_count)
+		credits = tokenToCredit(provider_name, model_name, input_token_count, output_token_count)
 	} else {
 		credits = 0
 	}
