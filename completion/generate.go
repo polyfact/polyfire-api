@@ -40,14 +40,37 @@ func GenerationStart(ctx context.Context, user_id string, input GenerateRequestB
 	context_completion := ""
 	resources := []db.MatchResult{}
 
-	log.Println("Check Rate Limit")
-	err := CheckRateLimit(ctx)
+	log.Println("Init provider")
+	provider, err := llm.NewProvider(ctx, input.Provider, input.Model)
+	if err == llm.ErrUnknownModel {
+		return nil, UnknownModelProvider
+	}
+
 	if err != nil {
-		return nil, err
+		return nil, InternalServerError
+	}
+
+	if provider.DoesFollowRateLimit() {
+		log.Println("Check Rate Limit")
+		err = CheckRateLimit(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	callback := func(provider_name string, model_name string, input_count int, output_count int, _completion string) {
+		db.LogRequests(
+			user_id,
+			provider_name,
+			model_name,
+			input_count,
+			output_count,
+			"completion",
+			provider.DoesFollowRateLimit(),
+		)
 	}
 
 	chan_memory_res := make(chan *MemoryProcessResult)
-
 	go func() {
 		defer close(chan_memory_res)
 		memoryResult, err := getMemory(user_id, input.MemoryId, input.Task)
@@ -65,22 +88,9 @@ func GenerationStart(ctx context.Context, user_id string, input GenerateRequestB
 		if err != nil {
 			panic(err)
 		}
+
 		chan_system_prompt <- system_prompt
 	}()
-
-	callback := func(provider_name string, model_name string, input_count int, output_count int, _completion string) {
-		db.LogRequests(user_id, provider_name, model_name, input_count, output_count, "completion")
-	}
-
-	log.Println("Init provider")
-	provider, err := llm.NewProvider(input.Provider, input.Model)
-	if err == llm.ErrUnknownModel {
-		return nil, UnknownModelProvider
-	}
-
-	if err != nil {
-		return nil, InternalServerError
-	}
 
 	opts := providers.ProviderOptions{}
 	if input.Stop != nil {

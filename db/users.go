@@ -6,29 +6,31 @@ import (
 )
 
 type UserAuth struct {
-	Id      string `json:"id"`
-	Version int    `json:"version,omitempty"`
+	Id          string `json:"id"`
+	Version     int    `json:"version,omitempty"`
+	OpenAIToken string `json:"openai_token,omitempty"`
+	OpenAIOrg   string `json:"openai_org,omitempty"`
 }
 
-func getVersionForUser(user_id string) (int, error) {
+func getAuthUser(auth_id string) (*UserAuth, error) {
 	client, err := CreateClient()
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	var results []UserAuth
 
-	_, err = client.From("auth_users").Select("*", "exact", false).Eq("id", user_id).ExecuteTo(&results)
+	_, err = client.From("auth_users").Select("*", "exact", false).Eq("id", auth_id).ExecuteTo(&results)
 
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	if len(results) == 0 {
-		return 0, nil
+		return nil, nil
 	}
 
-	return results[0].Version, nil
+	return &results[0], nil
 }
 
 var (
@@ -85,10 +87,10 @@ func checkRateLimit(user_id string) (RateLimitStatus, error) {
 	return RateLimitStatusOk, nil
 }
 
-func CheckDBVersionRateLimit(user_id string, version int) (RateLimitStatus, error) {
+func CheckDBVersionRateLimit(user_id string, version int) (*UserAuth, RateLimitStatus, error) {
 	var wg sync.WaitGroup
-	var dbVersion int
-	var dbVersionErr error
+	var user *UserAuth
+	var userErr error
 	var rateLimitStatus RateLimitStatus
 	var rateLimitErr error
 
@@ -96,7 +98,7 @@ func CheckDBVersionRateLimit(user_id string, version int) (RateLimitStatus, erro
 
 	go func() {
 		defer wg.Done()
-		dbVersion, dbVersionErr = getVersionForUser(user_id)
+		user, userErr = getAuthUser(user_id)
 	}()
 
 	go func() {
@@ -106,17 +108,17 @@ func CheckDBVersionRateLimit(user_id string, version int) (RateLimitStatus, erro
 
 	wg.Wait()
 
-	if dbVersionErr != nil {
-		return RateLimitStatusNone, DBError
+	if userErr != nil {
+		return nil, RateLimitStatusNone, DBError
 	}
 
-	if dbVersion != version {
-		return RateLimitStatusNone, DBVersionMismatch
+	if user.Version != version {
+		return nil, RateLimitStatusNone, DBVersionMismatch
 	}
 
 	if rateLimitErr != nil {
-		return RateLimitStatusNone, rateLimitErr
+		return nil, RateLimitStatusNone, rateLimitErr
 	}
 
-	return rateLimitStatus, nil
+	return user, rateLimitStatus, nil
 }

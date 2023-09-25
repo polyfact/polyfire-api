@@ -56,6 +56,7 @@ func LogRequests(
 	input_token_count int,
 	output_token_count int,
 	kind Kind,
+	countCredits bool,
 ) {
 	supabase, err := CreateClient()
 	if err != nil {
@@ -65,6 +66,13 @@ func LogRequests(
 	if kind == "" {
 		kind = "completion"
 	}
+	var credits int
+
+	if countCredits {
+		credits = tokenToCredit(provider_name, model_name, input_token_count, output_token_count)
+	} else {
+		credits = 0
+	}
 
 	row := RequestLog{
 		UserID:           user_id,
@@ -72,7 +80,7 @@ func LogRequests(
 		Kind:             kind,
 		InputTokenCount:  toRef(input_token_count),
 		OutputTokenCount: toRef(output_token_count),
-		Credits:          tokenToCredit(provider_name, model_name, input_token_count, output_token_count),
+		Credits:          credits,
 	}
 
 	_, _, err = supabase.From("request_logs").Insert(row, false, "", "", "exact").Execute()
