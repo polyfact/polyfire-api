@@ -4,7 +4,20 @@ import (
 	"os"
 
 	postgrest "github.com/supabase/postgrest-go"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
+
+func createDB() gorm.DB {
+	db, err := gorm.Open(postgres.Open(os.Getenv("POSTGRES_URI")), &gorm.Config{})
+	if err != nil {
+		panic("failed to connect database")
+	}
+
+	return *db
+}
+
+var DB gorm.DB = createDB()
 
 func CreateClient() (*postgrest.Client, error) {
 	supabaseUrl := os.Getenv("SUPABASE_URL")
