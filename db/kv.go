@@ -8,26 +8,14 @@ type KVStore struct {
 	CreatedAt string `json:"created_at"`
 }
 
-type KVStoreInsert struct {
-	UserID string `json:"user_id"`
-	Key    string `json:"key"`
-	Value  string `json:"value"`
+func (KVStore) TableName() string {
+	return "kvs"
 }
 
 func GetKV(userId string, key string) (*KVStore, error) {
-	client, err := CreateClient()
-	if err != nil {
-		return nil, err
-	}
-
 	var result *KVStore
 
-	_, err = client.From("kvs").
-		Select("*", "exact", false).
-		Single().
-		Eq("user_id", userId).
-		Eq("key", userId+"|"+key).
-		ExecuteTo(&result)
+	err := DB.First(&result, "user_id = ? AND key = ?", userId, userId+"|"+key).Error
 
 	if err != nil || result == nil {
 		return nil, err
@@ -39,17 +27,13 @@ func GetKV(userId string, key string) (*KVStore, error) {
 }
 
 func SetKV(userId string, key string, value string) error {
-	client, err := CreateClient()
-	if err != nil {
-		return err
-	}
-
-	_, _, err = client.From("kvs").Insert(KVStoreInsert{
-		UserID: userId,
-		Key:    userId + "|" + key,
-		Value:  value,
-	}, true, "key", "", "exact").Execute()
-
+	err := DB.Exec(
+		"INSERT INTO kvs (user_id, key, value) VALUES (?, ?, ?) ON CONFLICT (key) DO UPDATE SET value = ?",
+		userId,
+		userId+"|"+key,
+		value,
+		value,
+	).Error
 	if err != nil {
 		return err
 	}

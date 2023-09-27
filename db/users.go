@@ -11,15 +11,9 @@ type User struct {
 }
 
 func getUserDBVersion(auth_id string) (*User, error) {
-	client, err := CreateClient()
-	if err != nil {
-		return nil, err
-	}
-
 	var results []User
 
-	_, err = client.From("auth_users").Select("*", "exact", false).Eq("id", auth_id).ExecuteTo(&results)
-
+	err := DB.Find(&results, "id = ?", auth_id).Error
 	if err != nil {
 		return nil, err
 	}

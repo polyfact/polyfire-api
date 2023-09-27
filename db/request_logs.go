@@ -20,10 +20,6 @@ type RequestLog struct {
 	Kind             Kind   `json:"kind"`
 }
 
-func toRef[T interface{}](n T) *T {
-	return &n
-}
-
 func tokenToCredit(provider_name string, model_name string, input_token_count int, output_token_count int) int {
 	switch provider_name {
 	case "openai":
@@ -58,11 +54,6 @@ func LogRequests(
 	kind Kind,
 	countCredits bool,
 ) {
-	supabase, err := CreateClient()
-	if err != nil {
-		panic(err)
-	}
-
 	if kind == "" {
 		kind = "completion"
 	}
@@ -74,16 +65,15 @@ func LogRequests(
 		credits = 0
 	}
 
-	row := RequestLog{
-		UserID:           user_id,
-		ModelName:        model_name,
-		Kind:             kind,
-		InputTokenCount:  toRef(input_token_count),
-		OutputTokenCount: toRef(output_token_count),
-		Credits:          credits,
-	}
-
-	_, _, err = supabase.From("request_logs").Insert(row, false, "", "", "exact").Execute()
+	err := DB.Exec(
+		"INSERT INTO request_logs (user_id, model_name, kind, input_token_count, output_token_count, credits) VALUES (?, ?, ?, ?, ?, ?)",
+		user_id,
+		model_name,
+		kind,
+		input_token_count,
+		output_token_count,
+		credits,
+	).Error
 	if err != nil {
 		panic(err)
 	}
@@ -96,19 +86,13 @@ func LogRequestsCredits(
 	credits int,
 	kind Kind,
 ) {
-	supabase, err := CreateClient()
-	if err != nil {
-		panic(err)
-	}
-
-	row := RequestLog{
-		UserID:    user_id,
-		ModelName: model_name,
-		Kind:      kind,
-		Credits:   credits,
-	}
-
-	_, _, err = supabase.From("request_logs").Insert(row, false, "", "", "exact").Execute()
+	err := DB.Exec(
+		"INSERT INTO request_logs (user_id, model_name, kind, credits) VALUES (?, ?, ?, ?)",
+		user_id,
+		model_name,
+		kind,
+		credits,
+	).Error
 	if err != nil {
 		panic(err)
 	}
@@ -182,20 +166,14 @@ func LogEvents(
 	requestBody string,
 	responseBody string,
 ) {
-	supabase, err := CreateClient()
-	if err != nil {
-		panic(err)
-	}
-
-	row := Event{
-		Path:         path,
-		UserID:       userId,
-		ProjectID:    projectId,
-		RequestBody:  requestBody,
-		ResponseBody: responseBody,
-	}
-
-	_, _, err = supabase.From("events").Insert(row, false, "", "", "exact").Execute()
+	err := DB.Exec(
+		"INSERT INTO events (path, user_id, project_id, request_body, response_body) VALUES (?, ?, ?, ?, ?)",
+		path,
+		userId,
+		projectId,
+		requestBody,
+		responseBody,
+	).Error
 	if err != nil {
 		panic(err)
 	}
