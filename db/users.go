@@ -10,6 +10,10 @@ type User struct {
 	Version int    `json:"version,omitempty"`
 }
 
+func (User) TableName() string {
+	return "auth_users"
+}
+
 func getUserDBVersion(auth_id string) (*User, error) {
 	var results []User
 
