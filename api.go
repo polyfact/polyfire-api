@@ -12,7 +12,7 @@ import (
 	kv "github.com/polyfact/api/kv"
 	memory "github.com/polyfact/api/memory"
 	middlewares "github.com/polyfact/api/middlewares"
-	"github.com/polyfact/api/prompt"
+	prompt "github.com/polyfact/api/prompt"
 	transcription "github.com/polyfact/api/transcription"
 )
 
