@@ -9,6 +9,7 @@ type Memory struct {
 	UserId string `json:"user_id"`
 	Public bool   `json:"public"`
 }
+
 type MatchParams struct {
 	QueryEmbedding []float64 `json:"query_embedding"`
 	MatchTreshold  float64   `json:"match_threshold"`
@@ -56,6 +57,10 @@ func AddMemory(userId string, memoryId string, content string, embedding []float
 
 type MemoryRecord struct {
 	ID string `json:"id"`
+}
+
+func (MemoryRecord) TableName() string {
+	return "memories"
 }
 
 func GetMemoryIds(userId string) ([]MemoryRecord, error) {
