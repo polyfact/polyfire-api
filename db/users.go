@@ -1,33 +1,11 @@
 package db
 
 import (
+	"database/sql"
+	"encoding/json"
 	"errors"
-	"sync"
+	"log"
 )
-
-type User struct {
-	Id      string `json:"id"`
-	Version int    `json:"version,omitempty"`
-}
-
-func (User) TableName() string {
-	return "auth_users"
-}
-
-func getUserDBVersion(auth_id string) (*User, error) {
-	var results []User
-
-	err := DB.Find(&results, "id = ?", auth_id).Error
-	if err != nil {
-		return nil, err
-	}
-
-	if len(results) == 0 {
-		return nil, nil
-	}
-
-	return &results[0], nil
-}
 
 var (
 	UnknownUserId     = errors.New("Unknown user id")
@@ -44,70 +22,63 @@ var (
 	RateLimitStatusNone           = RateLimitStatus("")
 )
 
-func checkUserRateLimit(user_id string) (RateLimitStatus, error) {
-	var userReached bool
-	var userRateLimitErr error
-
-	userReached, userRateLimitErr = UserReachedRateLimit(user_id)
-
-	if userRateLimitErr != nil {
-		return RateLimitStatusNone, UnknownUserId
-	}
-
-	if userReached {
-		return RateLimitStatusReached, nil
-	}
-
-	return RateLimitStatusOk, nil
+type UserInfos struct {
+	AuthId       string `json:"auth_id"`
+	DevRateLimit int    `json:"dev_rate_limit"`
+	DevUsage     int    `json:"dev_usage"`
+	Version      int    `json:"version"`
+	DevAuthId    string `json:"dev_auth_id"`
+	OpenaiToken  string `json:"openai_token"` // Somehow this is case sensitive, don't change to OpenAI
+	OpenaiOrg    string `json:"openai_org"`
 }
 
-func CheckDBVersionRateLimit(user_id string, version int) (*AuthUser, RateLimitStatus, error) {
-	var wg sync.WaitGroup
-	var user *User
-	var userErr error
-	var rateLimitStatus RateLimitStatus
-	var rateLimitErr error
-	var devAuthUser AuthUser
-	var devAuthUserErr error
+func getUserInfos(user_id string) (*UserInfos, error) {
+	var userInfos UserInfos
 
-	wg.Add(3)
-
-	go func() {
-		defer wg.Done()
-		user, userErr = getUserDBVersion(user_id)
-	}()
-
-	go func() {
-		defer wg.Done()
-		rateLimitStatus, rateLimitErr = checkUserRateLimit(user_id)
-	}()
-
-	go func() {
-		defer wg.Done()
-		devAuthUser, devAuthUserErr = GetDevAuthUserForUserIDProject(user_id)
-	}()
-
-	wg.Wait()
-
-	if userErr != nil {
-		return nil, RateLimitStatusNone, DBError
+	err := DB.Raw(`
+		SELECT
+			user_users.id as auth_id,
+			COALESCE(dev_users.rate_limit, 50000000) as dev_rate_limit,
+			COALESCE((SELECT SUM(credits) FROM get_logs_per_projects(dev_users.id, now()::timestamp, (now() - interval '1' month)::timestamp)), 0) as dev_usage,
+			user_users.version,
+			dev_users.id as dev_auth_id,
+			dev_users.openai_token as openai_token,
+			dev_users.openai_org as openai_org
+		FROM
+			project_users
+		JOIN projects ON project_users.project_id = projects.id
+		JOIN auth_users as dev_users ON (project_users.id = @id AND dev_users.id = projects.auth_id::text) OR (project_users.id != @id AND dev_users.id = @id)
+		FULL JOIN auth_users as user_users ON user_users.id = project_users.auth_id
+		WHERE project_users.id = @id OR user_users.id = @id
+		LIMIT 1
+	`, sql.Named("id", user_id)).Scan(&userInfos).Error
+	if err != nil {
+		return nil, err
 	}
 
-	if user != nil && user.Version != version {
+	bytes, _ := json.Marshal(userInfos)
+	log.Println("USERINFOS:", string(bytes))
+
+	return &userInfos, nil
+}
+
+func CheckDBVersionRateLimit(user_id string, version int) (*UserInfos, RateLimitStatus, error) {
+	userInfos, err := getUserInfos(user_id)
+	if err != nil {
+		return nil, RateLimitStatusNone, err
+	}
+
+	if userInfos == nil {
+		return nil, RateLimitStatusNone, UnknownUserId
+	}
+
+	if userInfos.Version != version {
 		return nil, RateLimitStatusNone, DBVersionMismatch
 	}
 
-	if rateLimitErr != nil {
-		return nil, RateLimitStatusNone, rateLimitErr
-	}
-
-	if devAuthUserErr != nil {
-		return nil, RateLimitStatusNone, devAuthUserErr
-	}
-
-	if devAuthUser.Usage >= devAuthUser.RateLimit {
+	if userInfos.DevUsage >= userInfos.DevRateLimit {
 		return nil, RateLimitStatusProjectReached, nil
 	}
 
-	return &devAuthUser, rateLimitStatus, nil
+	return userInfos, RateLimitStatusOk, nil
 }
