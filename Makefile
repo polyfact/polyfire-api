@@ -33,7 +33,6 @@ app.yaml: app.dev.yaml check-env
 	| sed "s/{{OPENAI_ORGANIZATION}}/${OPENAI_ORGANIZATION}/" \
 	| sed "s/{{OPENAI_MODEL}}/${OPENAI_MODEL}/" \
 	| sed "s/{{POSTHOG_API_KEY}}/${POSTHOG_API_KEY}/" \
-	| sed "s/{{SLASHIMAGINE_API_KEY}}/${SLASHIMAGINE_API_KEY}/" \
 	| sed "s#{{LLAMA_URL}}#${LLAMA_URL}#" \
 	| sed "s/{{JWT_SECRET}}/${JWT_SECRET}/" > app.yaml
 
@@ -58,9 +57,6 @@ ifndef OPENAI_MODEL
 endif
 ifndef POSTHOG_API_KEY
 	$(error POSTHOG_API_KEY is undefined)
-endif
-ifndef SLASHIMAGINE_API_KEY
-	$(error SLASHIMAGINE_API_KEY is undefined)
 endif
 ifndef JWT_SECRET
 	$(error JWT_SECRET is undefined)
