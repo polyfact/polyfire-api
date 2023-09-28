@@ -84,7 +84,7 @@ func GenerationStart(ctx context.Context, user_id string, input GenerateRequestB
 	chan_system_prompt := make(chan string)
 	go func() {
 		defer close(chan_system_prompt)
-		system_prompt, err := getSystemPrompt(input.SystemPromptId, input.SystemPrompt)
+		system_prompt, err := getSystemPrompt(user_id, input.SystemPromptId, input.SystemPrompt)
 		if err != nil {
 			panic(err)
 		}
