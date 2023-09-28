@@ -99,9 +99,6 @@ type SupabaseFilter struct {
 
 type SupabaseFilters []SupabaseFilter
 
-var selectableFields = "id, name, description, prompt, created_at, updated_at, like, tags, public, user_id"
-var selectableMinFields = "id, name, description, like, tags, public, user_id"
-
 func (Prompt) TableName() string {
 	return "prompts"
 }
