@@ -34,5 +34,6 @@ jobs:
         SLASHIMAGINE_API_KEY: '${{ secrets.SLASHIMAGINE_API_KEY}}'
         OPENAI_MODEL: '${{ vars.OPENAI_MODEL }}'
         POSTHOG_API_KEY: '${{ vars.POSTHOG_API_KEY }}'
+        POSTGRES_URI: '${{ secrets.POSTGRES_URI }}'
         JWT_SECRET: '${{ secrets.JWT_SECRET }}'
         LLAMA_URL: '${{ secrets.LLAMA_URL }}'
