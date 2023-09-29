@@ -4,7 +4,7 @@ import (
 	"github.com/polyfact/api/db"
 )
 
-func getSystemPrompt(system_prompt_id *string, system_prompt *string) (string, error) {
+func getSystemPrompt(user_id string, system_prompt_id *string, system_prompt *string) (string, error) {
 	var result string = ""
 
 	if system_prompt != nil && len(*system_prompt) > 0 {
@@ -17,7 +17,7 @@ func getSystemPrompt(system_prompt_id *string, system_prompt *string) (string, e
 			return "", NotFound
 		}
 
-		_, err = db.UpdatePromptUse(*system_prompt_id, db.PromptUse{Use: p.Use + 1})
+		_, err = db.AddPromptUse(user_id, *system_prompt_id)
 		if err != nil {
 			return "", NotFound
 		}

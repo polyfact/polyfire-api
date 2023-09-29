@@ -1,23 +1,56 @@
 package db
 
 import (
+	"errors"
 	"fmt"
 	"log"
+	"strings"
 	"time"
+
+	"gorm.io/gorm"
 )
 
+type StringArray []string
+
+func (o *StringArray) Scan(src any) error {
+	str, ok := src.(string)
+	if !ok {
+		return errors.New("src value cannot cast to string")
+	}
+	*o = strings.Split(strings.Trim(str, "{}"), ",")
+	return nil
+}
+
+func (StringArray) GormDataType() string {
+	return "text[]"
+}
+
 type Prompt struct {
-	ID          string    `json:"id"`
-	Name        string    `json:"name"`
-	Description string    `json:"description"`
-	Prompt      string    `json:"prompt"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at,omitempty"`
-	Like        int64     `json:"like,omitempty"`
-	Use         int64     `json:"use,omitempty"`
-	Tags        []string  `json:"tags,omitempty"`
-	Public      bool      `json:"public"`
-	UserId      string    `json:"user_id"`
+	ID          string      `json:"id"`
+	Name        string      `json:"name"`
+	Description string      `json:"description"`
+	Prompt      string      `json:"prompt"`
+	CreatedAt   time.Time   `json:"created_at"`
+	UpdatedAt   time.Time   `json:"updated_at,omitempty"`
+	Like        int64       `json:"like,omitempty"`
+	Use         int64       `json:"use,omitempty"`
+	Tags        StringArray `json:"tags,omitempty"`
+	Public      bool        `json:"public"`
+	UserId      string      `json:"user_id"`
+}
+
+type PromptWithUses struct {
+	ID          string      `json:"id"`
+	Name        string      `json:"name"`
+	Description string      `json:"description"`
+	Prompt      string      `json:"prompt"`
+	CreatedAt   time.Time   `json:"created_at"`
+	UpdatedAt   time.Time   `json:"updated_at,omitempty"`
+	Like        int64       `json:"like,omitempty"`
+	Uses        StringArray `json:"uses,omitempty"`
+	Tags        StringArray `json:"tags,omitempty"`
+	Public      bool        `json:"public"`
+	UserId      string      `json:"user_id"`
 }
 
 type PromptInsert struct {
@@ -36,10 +69,6 @@ type PromptUpdate struct {
 	Prompt      string    `json:"prompt,omitempty"`
 	Tags        []string  `json:"tags,omitempty"`
 	Public      bool      `json:"public"`
-}
-
-type PromptUse struct {
-	Use int64 `json:"use"`
 }
 
 type FilterOperation string
@@ -65,45 +94,52 @@ const (
 
 type SupabaseFilter struct {
 	Column    string
-	Operation FilterOperation
+	Operation string
 	Value     string
 }
 
 type SupabaseFilters []SupabaseFilter
 
-var selectableFields = "id, name, description, prompt, created_at, updated_at, like, use, tags, public, user_id"
-var selectableMinFields = "id, name, description, like, use, tags, public, user_id"
-
-func GetPromptById(id string) (*Prompt, error) {
-	client, err := CreateClient()
-	if err != nil {
-		return nil, err
-	}
-
-	var result *Prompt
-
-	_, err = client.From("prompts").Select(selectableFields, "exact", false).Eq("id", id).Single().ExecuteTo(&result)
-	if err != nil {
-		return nil, err
-	}
-
-	return result, nil
+func (Prompt) TableName() string {
+	return "prompts"
 }
 
-func GetPromptByName(name string) (*Prompt, error) {
-	client, err := CreateClient()
+func (PromptUpdate) TableName() string {
+	return "prompts"
+}
+
+func (PromptWithUses) TableName() string {
+	return "prompts"
+}
+
+func GetPromptById(id string) (*PromptWithUses, error) {
+	var prompt PromptWithUses
+
+	sqlQuery := DB.Model(&PromptWithUses{}).
+		Select(selectableFields).
+		Where("prompts.id = ?", id)
+
+	err := sqlQuery.Scan(&prompt).Error
 	if err != nil {
 		return nil, err
 	}
 
-	var result *Prompt
+	return &prompt, nil
+}
 
-	_, err = client.From("prompts").Select(selectableFields, "exact", false).Eq("name", name).Single().ExecuteTo(&result)
+func GetPromptByName(name string) (*PromptWithUses, error) {
+	var prompt PromptWithUses
+
+	sqlQuery := DB.Model(&PromptWithUses{}).
+		Select(selectableFields).
+		Where("prompts.name = ?", name)
+
+	err := sqlQuery.Scan(&prompt).Error
 	if err != nil {
 		return nil, err
 	}
 
-	return result, nil
+	return &prompt, nil
 }
 
 func StringToFilterOperation(op string) (FilterOperation, error) {
@@ -121,20 +157,37 @@ var AllowedColumns = map[string]bool{
 	"tags":        true,
 }
 
-func GetAllPrompts(filters SupabaseFilters, userId string) ([]Prompt, error) {
-	client, err := CreateClient()
+var usesField = `array(SELECT prompts_uses.created_at FROM prompts_uses WHERE prompts_uses.prompt_id = prompts.id ) as uses`
+var minField = `prompts.id, prompts.name, prompts.description, prompts.use, prompts.tags, prompts.public, prompts.user_id`
+var maxField = `prompts.id, prompts.name, prompts.description, prompts.prompt, prompts.created_at, prompts.updated_at, prompts.tags, prompts.public, prompts.user_id`
 
-	if err != nil {
-		return nil, err
+var selectableFields = fmt.Sprintf("%s, %s", maxField, usesField)
+var selectableMinFields = fmt.Sprintf("%s, %s", minField, usesField)
+
+func applyAndValidateFilter(sqlQuery *gorm.DB, filter SupabaseFilter, value string) error {
+	_, ok := AllowedColumns[filter.Column]
+	if !ok {
+		return fmt.Errorf("invalid_column")
 	}
 
-	query := client.From("prompts").Select(selectableMinFields, "exact", false)
+	op, err := StringToFilterOperation(filter.Operation)
+	if err != nil {
+		return err
+	}
+
+	sqlQuery.Where(fmt.Sprintf("%s %s ?", filter.Column, op), value)
+
+	return nil
+
+}
+
+func GetAllPrompts(filters SupabaseFilters, userId string) ([]PromptWithUses, error) {
+	var results []PromptWithUses
+
+	sqlQuery := DB.Model(&PromptWithUses{}).
+		Select(selectableMinFields)
 
 	for _, filter := range filters {
-		columnFilter := filter.Column
-		if !AllowedColumns[columnFilter] {
-			return nil, fmt.Errorf("invalid_column")
-		}
 
 		value := filter.Value
 
@@ -142,107 +195,74 @@ func GetAllPrompts(filters SupabaseFilters, userId string) ([]Prompt, error) {
 			return nil, fmt.Errorf("invalid_length_value")
 		}
 
-		if filter.Operation == Cs {
+		switch FilterOperation(filter.Operation) {
+		case Cs:
 			value = "{" + value + "}"
-		}
-
-		if filter.Operation == Ilike || filter.Operation == Like {
+		case Ilike, Like:
 			value = "%" + value + "%"
 		}
 
-		query.Filter(filter.Column, string(filter.Operation), value)
+		err := applyAndValidateFilter(sqlQuery, filter, value)
 
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if userId != "" {
-		query.Eq("user_id", userId)
+		sqlQuery = sqlQuery.Where("user_id = ?", userId)
 	} else {
-		query.Filter("public", "eq", "true")
+		sqlQuery = sqlQuery.Where("public = true")
 	}
 
-	var results []Prompt
-
-	_, err = query.ExecuteTo(&results)
+	err := sqlQuery.Scan(&results).Error
 	if err != nil {
 		return nil, err
 	}
+
+	log.Println(results)
 
 	return results, nil
 }
 
 func CreatePrompt(input PromptInsert) (*Prompt, error) {
-	client, err := CreateClient()
+	var result Prompt
+
+	err := DB.Create(&result).Error
 	if err != nil {
 		return nil, err
 	}
 
-	var result *Prompt
-
-	log.Println("public :", input.Public)
-
-	_, err = client.From("prompts").Insert(input, false, "", "", "exact").Single().ExecuteTo(&result)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return result, nil
+	return &result, nil
 }
 
 func UpdatePrompt(id string, input PromptUpdate, user_id string) (*Prompt, error) {
-	client, err := CreateClient()
-	if err != nil {
-		return nil, err
-	}
+	var result Prompt
 
 	input.UpdatedAt = time.Now()
 
-	var result *Prompt
-
-	count, err := client.From("prompts").Update(input, "", "exact").Eq("id", id).Eq("user_id", user_id).Single().ExecuteTo(&result)
-
-	if count == 0 {
-		return nil, fmt.Errorf("failed to update prompt with id: %s", id)
-	}
+	err := DB.Table("prompts").Where("id = ? AND user_id = ?", id, user_id).Updates(input).First(&result).Error
 
 	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, fmt.Errorf("failed to find prompt with id: %s", id)
+		}
 		return nil, err
 	}
 
-	return result, nil
-}
-
-func UpdatePromptUse(id string, input PromptUse) (*Prompt, error) {
-	client, err := CreateClient()
-	if err != nil {
-		return nil, err
-	}
-
-	var result *Prompt
-
-	_, err = client.From("prompts").Update(input, "", "").Eq("id", id).Single().ExecuteTo(&result)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return result, nil
+	return &result, nil
 }
 
 func DeletePrompt(id string, user_id string) error {
-	client, err := CreateClient()
+	result := Prompt{}
+
+	err := DB.Where("id = ? AND user_id = ?", id, user_id).Delete(&result).Error
 	if err != nil {
 		return err
 	}
 
-	_, count, err := client.From("prompts").Delete("", "exact").Eq("id", id).Eq("user_id", user_id).Execute()
-
-	if count == 0 {
+	if result.ID == "" {
 		return fmt.Errorf("failed to delete prompt with id: %s", id)
-	}
-
-	if err != nil {
-		return err
 	}
 
 	return nil
