@@ -57,13 +57,7 @@ func GetAllPrompts(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 		}
 
 		column := splitted[0]
-		operationStr := splitted[1]
-
-		operation, err := db.StringToFilterOperation(operationStr)
-		if err != nil {
-			utils.RespondError(w, record, "invalid_filter_operation", err.Error())
-			return
-		}
+		operation := splitted[1]
 
 		filter := db.SupabaseFilter{
 			Column:    column,
@@ -87,6 +81,9 @@ func GetAllPrompts(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 			return
 		case "invalid_operation":
 			utils.RespondError(w, record, "invalid_length_value", err.Error())
+			return
+		case "invalid_filter_operation":
+			utils.RespondError(w, record, "invalid_filter_operation", err.Error())
 			return
 		default:
 			utils.RespondError(w, record, "db_fetch_prompt_error", err.Error())
