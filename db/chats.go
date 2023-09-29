@@ -1,9 +1,5 @@
 package db
 
-import (
-	postgrest "github.com/supabase/postgrest-go"
-)
-
 type Chat struct {
 	ID             string        `json:"id,omitempty"`
 	UserID         string        `json:"user_id"`
@@ -12,21 +8,14 @@ type Chat struct {
 	ChatMessages   []ChatMessage `json:"chat_messages"`
 }
 
-type ChatInsert struct {
-	UserID         string  `json:"user_id"`
-	SystemPrompt   *string `json:"system_prompt"`
-	SystemPromptId *string `json:"system_prompt_id"`
+func (Chat) TableName() string {
+	return "chats"
 }
 
 func GetChatForUser(userId string) ([]Chat, error) {
-	client, err := CreateClient()
-	if err != nil {
-		return nil, err
-	}
-
 	var results []Chat
 
-	_, err = client.From("chats").Select("id", "exact", false).Eq("user_id", userId).ExecuteTo(&results)
+	err := DB.Find(&results, "user_id = ?", userId).Error
 	if err != nil {
 		return nil, err
 	}
@@ -35,14 +24,9 @@ func GetChatForUser(userId string) ([]Chat, error) {
 }
 
 func GetChatById(id string) (*Chat, error) {
-	client, err := CreateClient()
-	if err != nil {
-		return nil, err
-	}
-
 	var result *Chat
 
-	_, err = client.From("chats").Select("*", "exact", false).Eq("id", id).Single().ExecuteTo(&result)
+	err := DB.First(&result, "id = ?", id).Error
 	if err != nil {
 		return nil, err
 	}
@@ -51,19 +35,11 @@ func GetChatById(id string) (*Chat, error) {
 }
 
 func CreateChat(userId string, systemPrompt *string, SystemPromptId *string) (*Chat, error) {
-	client, err := CreateClient()
-	if err != nil {
-		return nil, err
-	}
-
 	var result *Chat
 
-	_, err = client.From("chats").Insert(ChatInsert{
-		UserID:         userId,
-		SystemPrompt:   systemPrompt,
-		SystemPromptId: SystemPromptId,
-	}, false, "", "", "exact").Single().ExecuteTo(&result)
-
+	err := DB.Raw("INSERT INTO chats (user_id, system_prompt, system_prompt_id) VALUES (?, ?, ?) RETURNING *", userId, systemPrompt, SystemPromptId).
+		Scan(&result).
+		Error
 	if err != nil {
 		return nil, err
 	}
@@ -79,51 +55,26 @@ type ChatMessage struct {
 	CreatedAt     string  `json:"created_at"`
 }
 
-type ChatMessageInsert struct {
-	ChatID        string `json:"chat_id"`
-	IsUserMessage bool   `json:"is_user_message"`
-	Content       string `json:"content"`
-}
-
 func GetChatMessages(userId string, chatId string) ([]ChatMessage, error) {
-	client, err := CreateClient()
+	var results []ChatMessage = make([]ChatMessage, 0)
+
+	err := DB.Raw("SELECT chat_messages.* FROM chat_messages JOIN chats ON chats.id = chat_messages.chat_id WHERE chats.id = ? AND chats.user_id = ? ORDER BY chat_messages.created_at DESC LIMIT 20", chatId, userId).
+		Scan(&results).
+		Error
 	if err != nil {
-		panic(err)
-	}
-
-	var result *Chat
-
-	_, err = client.From("chats").
-		Select("*, chat_messages(*)", "exact", false).
-		Single().
-		Eq("id", chatId).
-		Eq("user_id", userId).
-		Order("created_at", &postgrest.OrderOpts{
-			Ascending:    false,
-			ForeignTable: "chat_messages",
-		}).
-		Limit(20, "chat_messages").
-		ExecuteTo(&result)
-
-	if err != nil || result == nil {
 		return nil, err
 	}
 
-	return result.ChatMessages, nil
+	return results, nil
 }
 
 func AddChatMessage(chatId string, isUserMessage bool, content string) error {
-	client, err := CreateClient()
-	if err != nil {
-		return err
-	}
-
-	_, _, err = client.From("chat_messages").Insert(ChatMessageInsert{
-		ChatID:        chatId,
-		IsUserMessage: isUserMessage,
-		Content:       content,
-	}, false, "", "", "exact").Execute()
-
+	err := DB.Exec(
+		"INSERT INTO chat_messages (chat_id, is_user_message, content) VALUES (?, ?, ?)",
+		chatId,
+		isUserMessage,
+		content,
+	).Error
 	if err != nil {
 		return err
 	}

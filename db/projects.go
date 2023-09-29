@@ -75,28 +75,6 @@ func GetProjectUserByID(id string) (*ProjectUser, error) {
 	return &results[0], nil
 }
 
-func UserReachedRateLimit(id string) (bool, error) {
-	projectUser, err := GetProjectUserByID(id)
-	if err != nil {
-		return false, err
-	}
-
-	if projectUser == nil || projectUser.MonthlyTokenRateLimit == nil || projectUser.MonthlyCreditRateLimit == nil {
-		return false, nil
-	}
-
-	creditUsage, err := GetUserIdMonthlyCreditUsage(id)
-	if err != nil {
-		return false, err
-	}
-
-	if creditUsage >= *projectUser.MonthlyCreditRateLimit {
-		return true, nil
-	}
-
-	return false, nil
-}
-
 func GetProjectForUserId(user_id string) (*string, error) {
 	var results []ProjectUser
 
