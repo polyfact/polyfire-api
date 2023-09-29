@@ -35,6 +35,7 @@ app.yaml: app.dev.yaml check-env
 	| sed "s/{{POSTHOG_API_KEY}}/${POSTHOG_API_KEY}/" \
 	| sed "s/{{SLASHIMAGINE_API_KEY}}/${SLASHIMAGINE_API_KEY}/" \
 	| sed "s#{{LLAMA_URL}}#${LLAMA_URL}#" \
+	| sed "s#{{POSTGRES_URI}}#${POSTGRES_URI}#" \
 	| sed "s/{{JWT_SECRET}}/${JWT_SECRET}/" > app.yaml
 
 check-env:
@@ -64,6 +65,9 @@ ifndef SLASHIMAGINE_API_KEY
 endif
 ifndef JWT_SECRET
 	$(error JWT_SECRET is undefined)
+endif
+ifndef POSTGRES_URI
+	$(error POSTGRES_URI is undefined)
 endif
 ifndef LLAMA_URL
 	$(error LLAMA_URL is undefined)
