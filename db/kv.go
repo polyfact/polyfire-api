@@ -1,5 +1,9 @@
 package db
 
+import (
+	"gorm.io/gorm/clause"
+)
+
 type KVStore struct {
 	ID        string `json:"id"`
 	UserID    string `json:"user_id"`
@@ -14,84 +18,51 @@ type KVStoreInsert struct {
 	Value  string `json:"value"`
 }
 
-func GetKV(userId string, key string) (*KVStore, error) {
-	client, err := CreateClient()
-	if err != nil {
-		return nil, err
-	}
-
-	var result *KVStore
-
-	_, err = client.From("kvs").
-		Select("*", "exact", false).
-		Single().
-		Eq("user_id", userId).
-		Eq("key", userId+"|"+key).
-		ExecuteTo(&result)
-
-	if err != nil || result == nil {
-		return nil, err
-	}
-
-	result.Key = key
-
-	return result, nil
+func (KVStore) TableName() string {
+	return "kvs"
 }
 
-func SetKV(userId string, key string, value string) error {
-	client, err := CreateClient()
-	if err != nil {
-		return err
-	}
-
-	_, _, err = client.From("kvs").Insert(KVStoreInsert{
-		UserID: userId,
-		Key:    userId + "|" + key,
-		Value:  value,
-	}, true, "key", "", "exact").Execute()
-
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (KVStoreInsert) TableName() string {
+	return "kvs"
 }
 
-func DeleteKV(userId string, key string) error {
-	client, err := CreateClient()
-	if err != nil {
-		return err
-	}
-
-	_, _, err = client.From("kvs").
-		Delete("", "").
-		Eq("user_id", userId).
-		Eq("key", userId+"|"+key).
-		Execute()
-
-	if err != nil {
-		return err
-	}
-
-	return nil
+func createCombinedKey(userID, key string) string {
+	return userID + "|" + key
 }
 
-func ListKV(userId string) ([]KVStore, error) {
-	client, err := CreateClient()
+func SetKV(userID, key, value string) error {
+	combinedKey := createCombinedKey(userID, key)
+
+	kv := KVStoreInsert{Key: combinedKey, UserID: userID, Value: value}
+
+	return DB.Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "key"}},
+		DoUpdates: clause.Assignments(map[string]interface{}{"value": value, "user_id": userID}),
+	}).Create(&kv).Error
+}
+
+func GetKV(userID, key string) (*KVStore, error) {
+	var result KVStore
+	err := DB.First(&result, "key = ?", createCombinedKey(userID, key)).Error
 	if err != nil {
 		return nil, err
 	}
+	return &result, nil
+}
 
-	var result []KVStore
+func DeleteKV(userID, key string) error {
+	combinedKey := createCombinedKey(userID, key)
 
-	_, err = client.From("kvs").
-		Select("*", "exact", false).
-		Eq("user_id", userId).
-		ExecuteTo(&result)
+	kv := KVStore{Key: combinedKey}
 
+	return DB.Where("key = ?", combinedKey).Delete(&kv).Error
+}
+
+func ListKV(userID string) ([]KVStore, error) {
+	var results []KVStore
+	err := DB.Where("user_id = ?", userID).Find(&results).Error
 	if err != nil {
 		return nil, err
 	}
-
-	return result, nil
+	return results, nil
 }

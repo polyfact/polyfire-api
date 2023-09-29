@@ -69,7 +69,6 @@ func main() {
 	router.PUT("/kv", middlewares.Auth(kv.Set))
 	router.DELETE("/kv", middlewares.Auth(kv.Delete))
 
-
 	// Prompt Routes
 	router.GET("/prompt/name/:name", middlewares.Auth(prompt.GetPromptByName))
 	router.GET("/prompt/id/:id", middlewares.Auth(prompt.GetPromptById))
