@@ -1,6 +1,7 @@
 package db
 
 import (
+	"fmt"
 	"os"
 
 	postgrest "github.com/supabase/postgrest-go"
