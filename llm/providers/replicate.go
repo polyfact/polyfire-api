@@ -46,8 +46,14 @@ func ReplicateStart(reqBody ReplicateRequestBody) (ReplicateStartResponse, error
 	req.Header.Set("Authorization", "Token "+os.Getenv("REPLICATE_API_KEY"))
 
 	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return ReplicateStartResponse{}, err
+	}
 
 	res, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return ReplicateStartResponse{}, err
+	}
 
 	var startResponse ReplicateStartResponse
 	err = json.Unmarshal(res, &startResponse)
@@ -169,6 +175,10 @@ func (m ReplicateProvider) Generate(task string, c ProviderCallback, opts *Provi
 		}
 
 		req, err := http.NewRequest("GET", startResponse.URLs.Stream, nil)
+		if err != nil {
+			fmt.Printf("%v\n", err)
+			return
+		}
 
 		req.Header.Set("Authorization", "Token "+os.Getenv("REPLICATE_API_KEY"))
 		req.Header.Set("Accept", "text/event-stream")
@@ -189,7 +199,7 @@ func (m ReplicateProvider) Generate(task string, c ProviderCallback, opts *Provi
 		for {
 			var eventString string
 			for {
-				if strings.Index(eventBuffer, "\n\n") != -1 {
+				if strings.Contains(eventBuffer, "\n\n") {
 					eventString = eventBuffer[:strings.Index(eventBuffer, "\n\n")+2]
 					eventBuffer = eventBuffer[strings.Index(eventBuffer, "\n\n")+2:]
 					break
@@ -232,7 +242,7 @@ func (m ReplicateProvider) Generate(task string, c ProviderCallback, opts *Provi
 		}
 
 		if c != nil {
-			(*c)("replicate", "TODO", tokenUsage.Input, tokenUsage.Output, totalCompletion)
+			(*c)("replicate", m.Model, tokenUsage.Input, tokenUsage.Output, totalCompletion)
 		}
 	}()
 
