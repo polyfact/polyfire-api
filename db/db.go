@@ -11,6 +11,7 @@ import (
 func createDB() gorm.DB {
 	db, err := gorm.Open(postgres.Open(os.Getenv("POSTGRES_URI")), &gorm.Config{})
 	if err != nil {
+		fmt.Println("POSTGRES_URI: ", os.Getenv("POSTGRES_URI"))
 		panic("failed to connect database")
 	}
 
