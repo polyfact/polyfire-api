@@ -3,6 +3,7 @@ package db
 import (
 	"errors"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -93,7 +94,7 @@ const (
 
 type SupabaseFilter struct {
 	Column    string
-	Operation FilterOperation
+	Operation string
 	Value     string
 }
 
@@ -107,18 +108,18 @@ func (PromptUpdate) TableName() string {
 	return "prompts"
 }
 
+func (PromptWithUses) TableName() string {
+	return "prompts"
+}
+
 func GetPromptById(id string) (*PromptWithUses, error) {
 	var prompt PromptWithUses
 
-	err := DB.Raw(`
-	SELECT prompts.*, array(
-		SELECT prompts_uses.created_at 
-		FROM prompts_uses 
-		WHERE prompts_uses.prompt_id = prompts.id 
-	)  as uses 
-	FROM prompts where prompts.id =?;
-	`, id).Scan(&prompt).Error
+	sqlQuery := DB.Model(&PromptWithUses{}).
+		Select(selectableFields).
+		Where("prompts.id = ?", id)
 
+	err := sqlQuery.Scan(&prompt).Error
 	if err != nil {
 		return nil, err
 	}
@@ -129,15 +130,11 @@ func GetPromptById(id string) (*PromptWithUses, error) {
 func GetPromptByName(name string) (*PromptWithUses, error) {
 	var prompt PromptWithUses
 
-	err := DB.Raw(`
-	SELECT prompts.*, array(
-		SELECT prompts_uses.created_at 
-		FROM prompts_uses 
-		WHERE prompts_uses.prompt_id = prompts.id 
-	) as uses FROM prompts 
-	WHERE prompts.name =?;
-	`, name).Scan(&prompt).Error
+	sqlQuery := DB.Model(&PromptWithUses{}).
+		Select(selectableFields).
+		Where("prompts.name = ?", name)
 
+	err := sqlQuery.Scan(&prompt).Error
 	if err != nil {
 		return nil, err
 	}
@@ -160,24 +157,23 @@ var AllowedColumns = map[string]bool{
 	"tags":        true,
 }
 
+var usesField = `array(SELECT prompts_uses.created_at FROM prompts_uses WHERE prompts_uses.prompt_id = prompts.id ) as uses`
+var minField = `prompts.id, prompts.name, prompts.description, prompts.use, prompts.tags, prompts.public, prompts.user_id`
+var maxField = `prompts.id, prompts.name, prompts.description, prompts.prompt, prompts.created_at, prompts.updated_at, prompts.tags, prompts.public, prompts.user_id`
+
+var selectableFields = fmt.Sprintf("%s, %s", maxField, usesField)
+var selectableMinFields = fmt.Sprintf("%s, %s", minField, usesField)
+
 func GetAllPrompts(filters SupabaseFilters, userId string) ([]PromptWithUses, error) {
 	var results []PromptWithUses
 
-	sqlQuery := `
-	SELECT prompts.id, prompts.name, prompts.description, prompts.updated_at, prompts.like, prompts.tags, prompts.public,
-    array(
-		SELECT prompts_uses.created_at 
-		FROM prompts_uses WHERE prompts_uses.prompt_id = prompts.id
-	) as uses 
-	FROM prompts
-	`
-	var args []interface{}
-
-	conditions := []string{}
+	sqlQuery := DB.Model(&PromptWithUses{}).
+		Select(selectableMinFields)
 
 	for _, filter := range filters {
-		columnFilter := filter.Column
-		if !AllowedColumns[columnFilter] {
+
+		_, ok := AllowedColumns[filter.Column]
+		if !ok {
 			return nil, fmt.Errorf("invalid_column")
 		}
 
@@ -187,34 +183,33 @@ func GetAllPrompts(filters SupabaseFilters, userId string) ([]PromptWithUses, er
 			return nil, fmt.Errorf("invalid_length_value")
 		}
 
-		if filter.Operation == Cs {
-			value = "{" + value + "}"
+		op, err := StringToFilterOperation(filter.Operation)
+		if err != nil {
+			return nil, err
 		}
 
-		if filter.Operation == Ilike || filter.Operation == Like {
+		switch op {
+		case Cs:
+			value = "{" + value + "}"
+		case Ilike, Like:
 			value = "%" + value + "%"
 		}
 
-		conditions = append(conditions, fmt.Sprintf("%s %s ?", columnFilter, string(filter.Operation)))
-		args = append(args, value)
+		sqlQuery = sqlQuery.Where(fmt.Sprintf("%s %s ?", filter.Column, op), value)
 	}
 
 	if userId != "" {
-		conditions = append(conditions, "user_id = ?")
-		args = append(args, userId)
+		sqlQuery = sqlQuery.Where("user_id = ?", userId)
 	} else {
-		conditions = append(conditions, "public = true")
+		sqlQuery = sqlQuery.Where("public = true")
 	}
 
-	if len(conditions) > 0 {
-		sqlQuery += " WHERE " + strings.Join(conditions, " AND ")
-	}
-
-	err := DB.Raw(sqlQuery, args...).Scan(&results).Error
-
+	err := sqlQuery.Scan(&results).Error
 	if err != nil {
 		return nil, err
 	}
+
+	log.Println(results)
 
 	return results, nil
 }
