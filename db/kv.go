@@ -56,3 +56,42 @@ func SetKV(userId string, key string, value string) error {
 
 	return nil
 }
+
+func DeleteKV(userId string, key string) error {
+	client, err := CreateClient()
+	if err != nil {
+		return err
+	}
+
+	_, _, err = client.From("kvs").
+		Delete("", "").
+		Eq("user_id", userId).
+		Eq("key", userId+"|"+key).
+		Execute()
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func ListKV(userId string) ([]KVStore, error) {
+	client, err := CreateClient()
+	if err != nil {
+		return nil, err
+	}
+
+	var result []KVStore
+
+	_, err = client.From("kvs").
+		Select("*", "exact", false).
+		Eq("user_id", userId).
+		ExecuteTo(&result)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
