@@ -32,6 +32,7 @@ app.yaml: app.dev.yaml check-env
 	| sed "s/{{COHERE_API_KEY}}/${COHERE_API_KEY}/" \
 	| sed "s/{{OPENAI_ORGANIZATION}}/${OPENAI_ORGANIZATION}/" \
 	| sed "s/{{POSTHOG_API_KEY}}/${POSTHOG_API_KEY}/" \
+	| sed "s/{{REPLICATE_API_KEY}}/${REPLICATE_API_KEY}/" \
 	| sed "s#{{LLAMA_URL}}#${LLAMA_URL}#" \
 	| sed "s#{{POSTGRES_URI}}#${POSTGRES_URI}#" \
 	| sed "s/{{JWT_SECRET}}/${JWT_SECRET}/" > app.yaml
@@ -54,6 +55,9 @@ ifndef OPENAI_ORGANIZATION
 endif
 ifndef POSTHOG_API_KEY
 	$(error POSTHOG_API_KEY is undefined)
+endif
+ifndef REPLICATE_API_KEY
+	$(error REPLICATE_API_KEY is undefined)
 endif
 ifndef JWT_SECRET
 	$(error JWT_SECRET is undefined)
