@@ -14,11 +14,19 @@ type ProjectUser struct {
 	MonthlyCreditRateLimit *int   `json:"monthly_credit_rate_limit"`
 }
 
+func (ProjectUser) TableName() string {
+	return "project_users"
+}
+
 type ProjectUserInsert struct {
 	AuthID                 string `json:"auth_id"`
 	ProjectID              string `json:"project_id"`
 	MonthlyTokenRateLimit  *int   `json:"monthly_token_rate_limit"` // Deprecated
 	MonthlyCreditRateLimit *int   `json:"monthly_credit_rate_limit"`
+}
+
+func (ProjectUserInsert) TableName() string {
+	return "project_users"
 }
 
 type Project struct {
@@ -31,6 +39,10 @@ type Project struct {
 	FirebaseProjectID             string `json:"firebase_project_id"`
 }
 
+func (Project) TableName() string {
+	return "projects"
+}
+
 func GetProjectByID(id string) (*Project, error) {
 	matchUUID, _ := regexp.MatchString("^[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$", id)
 
@@ -40,48 +52,21 @@ func GetProjectByID(id string) (*Project, error) {
 		return nil, fmt.Errorf("Invalid project id")
 	}
 
-	client, err := CreateClient()
-	if err != nil {
-		return nil, err
-	}
-
 	var result Project
 
-	var id_field string
 	if matchUUID {
-		id_field = "id"
+		DB.First(&result, "id = ?", id)
 	} else {
-		id_field = "slug"
-	}
-
-	_, err = client.From("projects").
-		Select("*", "exact", false).
-		Eq(id_field, id).
-		Single().
-		ExecuteTo(&result)
-	if err != nil {
-		return nil, err
+		DB.First(&result, "slug = ?", id)
 	}
 
 	return &result, nil
 }
 
 func GetProjectUserByID(id string) (*ProjectUser, error) {
-	client, err := CreateClient()
-	if err != nil {
-		return nil, err
-	}
-
 	var results []ProjectUser
 
-	_, err = client.From("project_users").
-		Select("*", "exact", false).
-		Eq("id", id).
-		ExecuteTo(&results)
-
-	if err != nil {
-		return nil, err
-	}
+	DB.Find(&results, "id = ?", id)
 
 	if len(results) == 0 {
 		return nil, nil
@@ -113,21 +98,9 @@ func UserReachedRateLimit(id string) (bool, error) {
 }
 
 func GetProjectForUserId(user_id string) (*string, error) {
-	client, err := CreateClient()
-	if err != nil {
-		return nil, err
-	}
-
 	var results []ProjectUser
 
-	_, err = client.From("project_users").
-		Select("*", "exact", false).
-		Eq("id", user_id).
-		ExecuteTo(&results)
-
-	if err != nil {
-		return nil, err
-	}
+	DB.Find(&results, "id = ?", user_id)
 
 	if len(results) == 0 {
 		return nil, nil
