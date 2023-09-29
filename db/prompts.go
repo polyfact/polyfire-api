@@ -164,6 +164,23 @@ var maxField = `prompts.id, prompts.name, prompts.description, prompts.prompt, p
 var selectableFields = fmt.Sprintf("%s, %s", maxField, usesField)
 var selectableMinFields = fmt.Sprintf("%s, %s", minField, usesField)
 
+func applyAndValidateFilter(sqlQuery *gorm.DB, filter SupabaseFilter, value string) error {
+	_, ok := AllowedColumns[filter.Column]
+	if !ok {
+		return fmt.Errorf("invalid_column")
+	}
+
+	op, err := StringToFilterOperation(filter.Operation)
+	if err != nil {
+		return err
+	}
+
+	sqlQuery.Where(fmt.Sprintf("%s %s ?", filter.Column, op), value)
+
+	return nil
+
+}
+
 func GetAllPrompts(filters SupabaseFilters, userId string) ([]PromptWithUses, error) {
 	var results []PromptWithUses
 
@@ -172,30 +189,24 @@ func GetAllPrompts(filters SupabaseFilters, userId string) ([]PromptWithUses, er
 
 	for _, filter := range filters {
 
-		_, ok := AllowedColumns[filter.Column]
-		if !ok {
-			return nil, fmt.Errorf("invalid_column")
-		}
-
 		value := filter.Value
 
 		if len(value) > 32 {
 			return nil, fmt.Errorf("invalid_length_value")
 		}
 
-		op, err := StringToFilterOperation(filter.Operation)
-		if err != nil {
-			return nil, err
-		}
-
-		switch op {
+		switch FilterOperation(filter.Operation) {
 		case Cs:
 			value = "{" + value + "}"
 		case Ilike, Like:
 			value = "%" + value + "%"
 		}
 
-		sqlQuery = sqlQuery.Where(fmt.Sprintf("%s %s ?", filter.Column, op), value)
+		err := applyAndValidateFilter(sqlQuery, filter, value)
+
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if userId != "" {
