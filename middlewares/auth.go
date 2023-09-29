@@ -32,15 +32,15 @@ func parseJWT(token string) (jwt.MapClaims, error) {
 	return claims, nil
 }
 
-func createUserContext(r *http.Request, userID string, user *db.AuthUser, rateLimitStatus db.RateLimitStatus) context.Context {
+func createUserContext(r *http.Request, userID string, user *db.UserInfos, rateLimitStatus db.RateLimitStatus) context.Context {
 	recordEventWithUserID := r.Context().Value(utils.ContextKeyRecordEventWithUserID).(utils.RecordWithUserIDFunc)
 	newCtx := context.WithValue(r.Context(), utils.ContextKeyUserID, userID)
 	newCtx = context.WithValue(newCtx, utils.ContextKeyRateLimitStatus, rateLimitStatus)
 	if user != nil {
-		if user.OpenAIToken != "" {
-			newCtx = context.WithValue(newCtx, utils.ContextKeyOpenAIToken, user.OpenAIToken)
-			if user.OpenAIOrg != "" {
-				newCtx = context.WithValue(newCtx, utils.ContextKeyOpenAIOrg, user.OpenAIOrg)
+		if user.OpenaiToken != "" {
+			newCtx = context.WithValue(newCtx, utils.ContextKeyOpenAIToken, user.OpenaiToken)
+			if user.OpenaiOrg != "" {
+				newCtx = context.WithValue(newCtx, utils.ContextKeyOpenAIOrg, user.OpenaiOrg)
 			}
 		}
 	}

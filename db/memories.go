@@ -9,6 +9,7 @@ type Memory struct {
 	UserId string `json:"user_id"`
 	Public bool   `json:"public"`
 }
+
 type MatchParams struct {
 	QueryEmbedding []float64 `json:"query_embedding"`
 	MatchTreshold  float64   `json:"match_threshold"`
@@ -31,30 +32,25 @@ type Embedding struct {
 }
 
 func CreateMemory(memoryId string, userId string, public bool) error {
-	client, err := CreateClient()
+	err := DB.Exec("INSERT INTO memories (id, user_id, public) VALUES (?, ?, ?)", memoryId, userId, public).Error
 	if err != nil {
 		return err
 	}
-
-	_, _, err = client.From("memories").
-		Insert(Memory{ID: memoryId, UserId: userId, Public: public}, false, "", "", "exact").
-		Execute()
 
 	return err
 }
 
 func AddMemory(userId string, memoryId string, content string, embedding []float64) error {
-	client, err := CreateClient()
+	err := DB.Exec(
+		"INSERT INTO embeddings (memory_id, user_id, content, embedding) VALUES (?, ?, ?, ?)",
+		memoryId,
+		userId,
+		content,
+		embedding,
+	).Error
 	if err != nil {
 		return err
 	}
-
-	_, _, err = client.From("embeddings").Insert(Embedding{
-		UserId:    userId,
-		MemoryId:  memoryId,
-		Content:   content,
-		Embedding: embedding,
-	}, false, "", "", "exact").Execute()
 
 	return err
 }
@@ -63,15 +59,14 @@ type MemoryRecord struct {
 	ID string `json:"id"`
 }
 
-func GetMemoryIds(userId string) ([]MemoryRecord, error) {
-	client, err := CreateClient()
-	if err != nil {
-		return nil, err
-	}
+func (MemoryRecord) TableName() string {
+	return "memories"
+}
 
+func GetMemoryIds(userId string) ([]MemoryRecord, error) {
 	var results []MemoryRecord
 
-	_, err = client.From("memories").Select("id", "exact", false).Eq("user_id", userId).ExecuteTo(&results)
+	err := DB.Find(&results, "user_id = ?", userId).Error
 	if err != nil {
 		return nil, err
 	}
