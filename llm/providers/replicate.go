@@ -1,6 +1,7 @@
 package providers
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,6 +12,7 @@ import (
 	"time"
 
 	"github.com/polyfact/api/tokens"
+	"github.com/polyfact/api/utils"
 )
 
 type ReplicateInput struct {
@@ -30,39 +32,6 @@ type ReplicateStartResponse struct {
 	URLs   struct {
 		Stream string `json:"stream"`
 	} `json:"urls"`
-}
-
-func ReplicateStart(reqBody ReplicateRequestBody) (ReplicateStartResponse, error) {
-	input, err := json.Marshal(reqBody)
-	if err != nil {
-		return ReplicateStartResponse{}, err
-	}
-
-	req, err := http.NewRequest("POST", "https://api.replicate.com/v1/predictions", strings.NewReader(string(input)))
-	if err != nil {
-		return ReplicateStartResponse{}, err
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Token "+os.Getenv("REPLICATE_API_KEY"))
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return ReplicateStartResponse{}, err
-	}
-
-	res, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return ReplicateStartResponse{}, err
-	}
-
-	var startResponse ReplicateStartResponse
-	err = json.Unmarshal(res, &startResponse)
-	if err != nil {
-		return ReplicateStartResponse{}, err
-	}
-
-	return startResponse, nil
 }
 
 type ReplicateEvent struct {
@@ -133,7 +102,21 @@ func ParseReplicateEvent(str string) (ReplicateEvent, error) {
 }
 
 type ReplicateProvider struct {
-	Model string
+	Model           string
+	ReplicateApiKey string
+}
+
+func NewReplicateProvider(ctx context.Context, model string) ReplicateProvider {
+	var apiKey string
+
+	customToken, ok := ctx.Value(utils.ContextKeyReplicateToken).(string)
+	if ok {
+		apiKey = customToken
+	} else {
+		apiKey = os.Getenv("REPLICATE_API_KEY")
+	}
+
+	return ReplicateProvider{Model: model, ReplicateApiKey: apiKey}
 }
 
 func (m ReplicateProvider) GetCreditsPerSecond() float64 {
@@ -157,6 +140,39 @@ func (m ReplicateProvider) GetVersion() (string, error) {
 	default:
 		return "", errors.New("Invalid model")
 	}
+}
+
+func (m ReplicateProvider) ReplicateStart(reqBody ReplicateRequestBody) (ReplicateStartResponse, error) {
+	input, err := json.Marshal(reqBody)
+	if err != nil {
+		return ReplicateStartResponse{}, err
+	}
+
+	req, err := http.NewRequest("POST", "https://api.replicate.com/v1/predictions", strings.NewReader(string(input)))
+	if err != nil {
+		return ReplicateStartResponse{}, err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Token "+m.ReplicateApiKey)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return ReplicateStartResponse{}, err
+	}
+
+	res, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return ReplicateStartResponse{}, err
+	}
+
+	var startResponse ReplicateStartResponse
+	err = json.Unmarshal(res, &startResponse)
+	if err != nil {
+		return ReplicateStartResponse{}, err
+	}
+
+	return startResponse, nil
 }
 
 func (m ReplicateProvider) Generate(task string, c ProviderCallback, opts *ProviderOptions) chan Result {
@@ -183,24 +199,24 @@ func (m ReplicateProvider) Generate(task string, c ProviderCallback, opts *Provi
 
 		replicateStartTime := time.Now()
 
-		startResponse, err := ReplicateStart(body)
+		startResponse, err := m.ReplicateStart(body)
 		if err != nil {
-			fmt.Printf("%v\n", err)
+			chan_res <- Result{Result: "{\"error\":\"generation_failed\"}", TokenUsage: tokenUsage, Err: err}
 			return
 		}
 
 		req, err := http.NewRequest("GET", startResponse.URLs.Stream, nil)
 		if err != nil {
-			fmt.Printf("%v\n", err)
+			chan_res <- Result{Result: "{\"error\":\"generation_failed\"}", TokenUsage: tokenUsage, Err: err}
 			return
 		}
 
-		req.Header.Set("Authorization", "Token "+os.Getenv("REPLICATE_API_KEY"))
+		req.Header.Set("Authorization", "Token "+m.ReplicateApiKey)
 		req.Header.Set("Accept", "text/event-stream")
 
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
-			fmt.Printf("%v\n", err)
+			chan_res <- Result{Result: "{\"error\":\"generation_failed\"}", TokenUsage: tokenUsage, Err: err}
 			return
 		}
 
