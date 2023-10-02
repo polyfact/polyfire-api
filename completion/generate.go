@@ -58,16 +58,20 @@ func GenerationStart(ctx context.Context, user_id string, input GenerateRequestB
 		}
 	}
 
-	callback := func(provider_name string, model_name string, input_count int, output_count int, _completion string) {
-		db.LogRequests(
-			user_id,
-			provider_name,
-			model_name,
-			input_count,
-			output_count,
-			"completion",
-			provider.DoesFollowRateLimit(),
-		)
+	callback := func(provider_name string, model_name string, input_count int, output_count int, _completion string, credit *int) {
+		if credit != nil {
+			db.LogRequestsCredits(user_id, provider_name, model_name, *credit, input_count, output_count, "completion")
+		} else {
+			db.LogRequests(
+				user_id,
+				provider_name,
+				model_name,
+				input_count,
+				output_count,
+				"completion",
+				provider.DoesFollowRateLimit(),
+			)
+		}
 	}
 
 	chan_memory_res := make(chan *MemoryProcessResult)
