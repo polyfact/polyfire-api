@@ -224,5 +224,5 @@ func Generate(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	response, _ := result.JSON()
 	record(string(response))
 
-	w.Write(response)
+	_, _ = w.Write(response)
 }
