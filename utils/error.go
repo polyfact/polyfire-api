@@ -321,6 +321,22 @@ var ErrorMessages = map[string]APIError{
 		StatusCode: http.StatusInternalServerError,
 	},
 
+	"replicate_invalid_version_or_forbidden": {
+		Code:       "replicate_invalid_version_or_forbidden",
+		Message:    "Replicate replied with \"Invalid version or not permitted\". It can happen if you're trying to use a private version without the right api key, if your api key is invalid or if the version/model you're trying to use doesn't exists.",
+		StatusCode: http.StatusForbidden,
+	},
+	"replicate_unauthenticated": {
+		Code:       "replicate_unauthenticated",
+		Message:    "Replicate replied with \"Unauthenticated\". If you're using a custom replicate API Key, please check it is valid.",
+		StatusCode: http.StatusForbidden,
+	},
+	"openai_invalid_api_key": {
+		Code:       "openai_invalid_api_key",
+		Message:    "OpenAI replied with \"Invalid API key\". Please check your custom API key is valid.",
+		StatusCode: http.StatusForbidden,
+	},
+
 	// Fallback error
 
 	"unknown_error": {Code: "unknown_error", Message: "An unknown error occurred.", StatusCode: http.StatusInternalServerError},

@@ -5,9 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"math"
 	"os"
+	"strings"
 
 	db "github.com/polyfact/api/db"
 	tokens "github.com/polyfact/api/tokens"
@@ -55,70 +55,70 @@ func (m OpenAIStreamProvider) Generate(
 	go func() {
 		defer close(chan_res)
 		tokenUsage := TokenUsage{Input: 0, Output: 0}
-		for i := 0; i < 5; i++ {
-			log.Printf("Trying generation %d/5\n", i+1)
+		ctx := context.Background()
 
-			ctx := context.Background()
+		if opts == nil {
+			opts = &ProviderOptions{}
+		}
 
-			if opts == nil {
-				opts = &ProviderOptions{}
-			}
-
-			req := goOpenai.ChatCompletionRequest{
-				Model: m.Model,
-				Messages: []goOpenai.ChatCompletionMessage{
-					{
-						Role:    goOpenai.ChatMessageRoleUser,
-						Content: task,
-					},
+		req := goOpenai.ChatCompletionRequest{
+			Model: m.Model,
+			Messages: []goOpenai.ChatCompletionMessage{
+				{
+					Role:    goOpenai.ChatMessageRoleUser,
+					Content: task,
 				},
-				Stream: true,
+			},
+			Stream: true,
+		}
+
+		if opts.StopWords != nil {
+			req.Stop = *opts.StopWords
+		}
+		if opts.Temperature != nil {
+			if *opts.Temperature == 0.0 {
+				var nearly_zero float32 = math.SmallestNonzeroFloat32
+				req.Temperature = nearly_zero // We need to do that bc openai-go omitempty on 0.0
+			} else {
+				req.Temperature = *opts.Temperature
+			}
+		}
+
+		fmt.Printf("%v\n", req.Temperature)
+
+		stream, err := m.client.CreateChatCompletionStream(ctx, req)
+		if err != nil {
+			if strings.Contains(err.Error(), "Incorrect API key provided") && m.IsCustomToken {
+				chan_res <- Result{Err: "openai_invalid_api_key"}
+			} else {
+				chan_res <- Result{Err: "generation_error"}
+			}
+			return
+		}
+
+		tokenUsage.Input += tokens.CountTokens(m.Model, task)
+
+		totalOutput := 0
+		totalCompletion := ""
+
+		for {
+			completion, err := stream.Recv()
+
+			if errors.Is(err, io.EOF) || err != nil {
+				break
 			}
 
-			if opts.StopWords != nil {
-				req.Stop = *opts.StopWords
-			}
-			if opts.Temperature != nil {
-				if *opts.Temperature == 0.0 {
-					var nearly_zero float32 = math.SmallestNonzeroFloat32
-					req.Temperature = nearly_zero // We need to do that bc openai-go omitempty on 0.0
-				} else {
-					req.Temperature = *opts.Temperature
-				}
-			}
+			tokenUsage.Output = tokens.CountTokens(m.Model, completion.Choices[0].Delta.Content)
 
-			fmt.Printf("%v\n", req.Temperature)
+			fmt.Printf("%v %v\n", completion.Choices[0].Delta.Content, tokenUsage.Output)
 
-			stream, err := m.client.CreateChatCompletionStream(ctx, req)
-			if err != nil {
-				fmt.Printf("%v\n", err)
-				continue
-			}
+			totalOutput += tokenUsage.Output
 
-			tokenUsage.Input += tokens.CountTokens(m.Model, task)
+			result := Result{Result: completion.Choices[0].Delta.Content, TokenUsage: tokenUsage}
 
-			totalOutput := 0
-			totalCompletion := ""
+			totalCompletion += completion.Choices[0].Delta.Content
 
-			for {
-				completion, err := stream.Recv()
-
-				if errors.Is(err, io.EOF) || err != nil {
-					break
-				}
-
-				tokenUsage.Output = tokens.CountTokens(m.Model, completion.Choices[0].Delta.Content)
-
-				fmt.Printf("%v %v\n", completion.Choices[0].Delta.Content, tokenUsage.Output)
-
-				totalOutput += tokenUsage.Output
-
-				result := Result{Result: completion.Choices[0].Delta.Content, TokenUsage: tokenUsage}
-
-				totalCompletion += completion.Choices[0].Delta.Content
-
-				chan_res <- result
-			}
+			chan_res <- result
 
 			if c != nil {
 				(*c)("openai", m.Model, tokenUsage.Input, totalOutput, totalCompletion, nil)
@@ -126,11 +126,9 @@ func (m OpenAIStreamProvider) Generate(
 			return
 		}
 		chan_res <- Result{
-			Result:     "{\"error\":\"generation_failed\"}",
+			Result:     "",
 			TokenUsage: tokenUsage,
-			Err: errors.New(
-				"Generation failed after 5 retries",
-			),
+			Err:        "generation_error",
 		}
 	}()
 

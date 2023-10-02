@@ -213,12 +213,16 @@ func Generate(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		if len(v.Resources) > 0 {
 			result.Resources = v.Resources
 		}
+
+		if v.Err != "" {
+			result.Err = v.Err
+		}
 	}
 
 	w.Header()["Content-Type"] = []string{"application/json"}
 
-	response, _ := json.Marshal(&result)
+	response, _ := result.JSON()
 	record(string(response))
 
-	_ = json.NewEncoder(w).Encode(result)
+	w.Write(response)
 }
