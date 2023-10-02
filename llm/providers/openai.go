@@ -119,16 +119,9 @@ func (m OpenAIStreamProvider) Generate(
 			totalCompletion += completion.Choices[0].Delta.Content
 
 			chan_res <- result
-
-			if c != nil {
-				(*c)("openai", m.Model, tokenUsage.Input, totalOutput, totalCompletion, nil)
-			}
-			return
 		}
-		chan_res <- Result{
-			Result:     "",
-			TokenUsage: tokenUsage,
-			Err:        "generation_error",
+		if c != nil {
+			(*c)("openai", m.Model, tokenUsage.Input, totalOutput, totalCompletion, nil)
 		}
 	}()
 

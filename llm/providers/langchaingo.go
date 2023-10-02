@@ -3,8 +3,6 @@ package providers
 import (
 	"context"
 	"errors"
-	"fmt"
-	"log"
 
 	db "github.com/polyfact/api/db"
 	"github.com/tmc/langchaingo/llms"
@@ -84,7 +82,6 @@ func (m LangchainProvider) Generate(
 		result := Result{Result: completion, TokenUsage: tokenUsage}
 
 		chan_res <- result
-		return
 	}(chan_res)
 
 	return chan_res
