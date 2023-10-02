@@ -1,7 +1,10 @@
 package providers
 
 import (
+	"encoding/json"
+
 	"github.com/polyfact/api/db"
+	"github.com/polyfact/api/utils"
 )
 
 type ProviderOptions struct {
@@ -18,7 +21,39 @@ type Result struct {
 	Result     string           `json:"result"`
 	TokenUsage TokenUsage       `json:"token_usage"`
 	Resources  []db.MatchResult `json:"ressources,omitempty"`
-	Err        error
+	Err        string           `json:"error,omitempty"`
 }
 
 type ProviderCallback *func(string, string, int, int, string, *int)
+
+type jsonableResult struct {
+	Result     string           `json:"result"`
+	TokenUsage TokenUsage       `json:"token_usage"`
+	Resources  []db.MatchResult `json:"ressources,omitempty"`
+	Error      *utils.APIError  `json:"error,omitempty"`
+}
+
+func (r Result) JSON() ([]byte, error) {
+	var apiError *utils.APIError
+
+	if r.Err != "" {
+		errorMessage, exists := utils.ErrorMessages[r.Err]
+
+		if !exists {
+			errorMessage = utils.ErrorMessages["unknown_error"]
+		}
+		apiError = &errorMessage
+	}
+
+	bytes, err := json.Marshal(jsonableResult{
+		Result:     r.Result,
+		TokenUsage: r.TokenUsage,
+		Resources:  r.Resources,
+		Error:      apiError,
+	})
+	if err != nil {
+		return []byte{}, err
+	}
+
+	return bytes, nil
+}
