@@ -84,13 +84,17 @@ func LogRequestsCredits(
 	provider_name string,
 	model_name string,
 	credits int,
+	input_token_count int,
+	output_token_count int,
 	kind Kind,
 ) {
 	err := DB.Exec(
-		"INSERT INTO request_logs (user_id, model_name, kind, credits) VALUES (?, ?, ?, ?)",
+		"INSERT INTO request_logs (user_id, model_name, kind, input_token_count, output_token_count, credits) VALUES (?, ?, ?, ?, ?, ?)",
 		user_id,
 		model_name,
 		kind,
+		input_token_count,
+		output_token_count,
 		credits,
 	).Error
 	if err != nil {

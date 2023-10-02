@@ -191,7 +191,7 @@ func Transcribe(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		fmt.Printf("Transcription %v/%v\n", i+1, len(files))
 	}
 
-	db.LogRequestsCredits(user_id, "openai", "whisper", duration*1000, "transcription")
+	db.LogRequestsCredits(user_id, "openai", "whisper", duration*1000, 0, 0, "transcription")
 
 	res := Result{Text: total_str}
 

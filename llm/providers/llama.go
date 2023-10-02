@@ -61,7 +61,7 @@ func (m LLaMaProvider) Generate(task string, c ProviderCallback, opts *ProviderO
 			chan_res <- Result{Result: string(p[:nb]), TokenUsage: tokenUsage}
 		}
 		if c != nil {
-			(*c)("llama", m.Model, tokenUsage.Input, totalOutput, totalCompletion)
+			(*c)("llama", m.Model, tokenUsage.Input, totalOutput, totalCompletion, nil)
 		}
 	}()
 

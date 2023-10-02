@@ -121,7 +121,7 @@ func (m OpenAIStreamProvider) Generate(
 			}
 
 			if c != nil {
-				(*c)("openai", m.Model, tokenUsage.Input, totalOutput, totalCompletion)
+				(*c)("openai", m.Model, tokenUsage.Input, totalOutput, totalCompletion, nil)
 			}
 			return
 		}

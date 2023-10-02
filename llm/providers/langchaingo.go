@@ -71,7 +71,7 @@ func (m LangchainProvider) Generate(
 			}
 
 			if c != nil {
-				(*c)("cohere", m.ModelName, m.Model.GetNumTokens(input_prompt), m.Model.GetNumTokens(completion), completion)
+				(*c)("cohere", m.ModelName, m.Model.GetNumTokens(input_prompt), m.Model.GetNumTokens(completion), completion, nil)
 			}
 
 			tokenUsage.Input += m.Model.GetNumTokens(input_prompt)

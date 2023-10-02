@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/polyfact/api/tokens"
 )
@@ -131,8 +132,24 @@ func ParseReplicateEvent(str string) (ReplicateEvent, error) {
 	return ReplicateEvent{}, errors.New("Invalid event \"" + str + "\"")
 }
 
-func GetVersion(model string) (string, error) {
-	switch model {
+type ReplicateProvider struct {
+	Model string
+}
+
+func (m ReplicateProvider) GetCreditsPerSecond() float64 {
+	switch m.Model {
+	case "llama-2-70b-chat":
+		return 14000.0
+	case "replit-code-v1-3b":
+		return 11500.0
+	default:
+		fmt.Printf("Invalid model: %v\n", m.Model)
+		return 0.0
+	}
+}
+
+func (m ReplicateProvider) GetVersion() (string, error) {
+	switch m.Model {
 	case "llama-2-70b-chat":
 		return "02e509c789964a7ea8736978a43525956ef40397be9033abf9fd2badfe68c9e3", nil
 	case "replit-code-v1-3b":
@@ -142,17 +159,13 @@ func GetVersion(model string) (string, error) {
 	}
 }
 
-type ReplicateProvider struct {
-	Model string
-}
-
 func (m ReplicateProvider) Generate(task string, c ProviderCallback, opts *ProviderOptions) chan Result {
 	chan_res := make(chan Result)
 
 	go func() {
 		defer close(chan_res)
 		tokenUsage := TokenUsage{Input: 0, Output: 0}
-		version, err := GetVersion(m.Model)
+		version, err := m.GetVersion()
 		if err != nil {
 			fmt.Printf("%v\n", err)
 			return
@@ -167,6 +180,8 @@ func (m ReplicateProvider) Generate(task string, c ProviderCallback, opts *Provi
 		if opts != nil && opts.Temperature != nil {
 			body.Input.Temperature = opts.Temperature
 		}
+
+		replicateStartTime := time.Now()
 
 		startResponse, err := ReplicateStart(body)
 		if err != nil {
@@ -215,7 +230,7 @@ func (m ReplicateProvider) Generate(task string, c ProviderCallback, opts *Provi
 			event, err := ParseReplicateEvent(eventString)
 			if err != nil {
 				fmt.Printf("%v\n", err)
-				return
+				continue
 			}
 
 			if event.Event == "" {
@@ -235,14 +250,19 @@ func (m ReplicateProvider) Generate(task string, c ProviderCallback, opts *Provi
 
 				totalCompletion += result
 
-				tokenUsage.Output = tokens.CountTokens("gpt-2", result)
+				tokenUsage.Output += tokens.CountTokens("gpt-2", result)
 
 				chan_res <- Result{Result: result, TokenUsage: tokenUsage}
 			}
 		}
 
+		replicateEndTime := time.Now()
+
+		duration := replicateEndTime.Sub(replicateStartTime)
+
+		credits := int(duration.Seconds()*m.GetCreditsPerSecond()) + 1
 		if c != nil {
-			(*c)("replicate", m.Model, tokenUsage.Input, tokenUsage.Output, totalCompletion)
+			(*c)("replicate", m.Model, tokenUsage.Input, tokenUsage.Output, totalCompletion, &credits)
 		}
 	}()
 
@@ -258,5 +278,5 @@ func (m ReplicateProvider) Name() string {
 }
 
 func (m ReplicateProvider) DoesFollowRateLimit() bool {
-	return false
+	return true
 }
