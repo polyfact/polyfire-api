@@ -110,9 +110,7 @@ func NewProvider(ctx context.Context, provider string, model *string) (Provider,
 			return nil, ErrUnknownModel
 		}
 
-		llm := providers.ReplicateProvider{
-			Model: m,
-		}
+		llm := providers.NewReplicateProvider(ctx, m)
 		return llm, nil
 	default:
 		return nil, ErrUnknownModel
