@@ -12,4 +12,4 @@ RUN go get
 
 RUN make build/server_start
 
-ENTRYPOINT /go/src/github.com/polyfact/api/build/server_start
+ENTRYPOINT go run .
