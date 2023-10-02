@@ -9,17 +9,17 @@ import (
 	"gorm.io/gorm"
 )
 
-func createDB() gorm.DB {
+var DB gorm.DB
+
+func InitDB() {
 	db, err := gorm.Open(postgres.Open(os.Getenv("POSTGRES_URI")), &gorm.Config{})
 	if err != nil {
 		fmt.Println("POSTGRES_URI: ", os.Getenv("POSTGRES_URI"))
 		panic("POSTGRES_URI: " + os.Getenv("POSTGRES_URI"))
 	}
 
-	return *db
+	DB = *db
 }
-
-var DB gorm.DB = createDB()
 
 func CreateClient() (*postgrest.Client, error) {
 	supabaseUrl := os.Getenv("SUPABASE_URL")
