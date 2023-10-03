@@ -21,4 +21,4 @@ type Result struct {
 	Err        error
 }
 
-type ProviderCallback *func(string, string, int, int, string)
+type ProviderCallback *func(string, string, int, int, string, *int)

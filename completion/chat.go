@@ -113,10 +113,10 @@ func chatContext(
 	}
 
 	old_callback := *callback
-	*callback = func(provider_name string, model_name string, input_count int, output_count int, completion string) {
+	*callback = func(provider_name string, model_name string, input_count int, output_count int, completion string, credit *int) {
 		if old_callback != nil {
 			log.Println("Old callback")
-			old_callback(provider_name, model_name, input_count, output_count, completion)
+			old_callback(provider_name, model_name, input_count, output_count, completion, credit)
 		}
 		log.Println("Add Chat Message Callback")
 		_ = db.AddChatMessage(chat.ID, false, completion)
