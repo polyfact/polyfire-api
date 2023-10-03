@@ -57,3 +57,41 @@ func Set(w http.ResponseWriter, r *http.Request, _ router.Params) {
 
 	w.WriteHeader(http.StatusCreated)
 }
+
+func Delete(w http.ResponseWriter, r *http.Request, _ router.Params) {
+	user_id := r.Context().Value(utils.ContextKeyUserID).(string)
+	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
+
+	id := r.URL.Query().Get("key")
+
+	if id == "" {
+		utils.RespondError(w, record, "missing_id")
+		return
+	}
+
+	err := db.DeleteKV(user_id, id)
+	if err != nil {
+		utils.RespondError(w, record, "database_error")
+		return
+	}
+
+	record("[Empty Response]")
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func List(w http.ResponseWriter, r *http.Request, _ router.Params) {
+	user_id := r.Context().Value(utils.ContextKeyUserID).(string)
+	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
+
+	result, err := db.ListKV(user_id)
+	if err != nil {
+		utils.RespondError(w, record, "database_error")
+		return
+	}
+
+	response, _ := json.Marshal(result)
+	record(string(response))
+
+	_ = json.NewEncoder(w).Encode(result)
+}
