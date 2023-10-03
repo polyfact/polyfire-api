@@ -32,6 +32,7 @@ jobs:
         COHERE_API_KEY: '${{ secrets.COHERE_API_KEY }}'
         OPENAI_ORGANIZATION: '${{ secrets.OPENAI_ORGANIZATION }}'
         POSTHOG_API_KEY: '${{ vars.POSTHOG_API_KEY }}'
+        REPLICATE_API_KEY: '${{ secrets.REPLICATE_API_KEY }}'
         POSTGRES_URI: '${{ secrets.POSTGRES_URI }}'
         JWT_SECRET: '${{ secrets.JWT_SECRET }}'
         LLAMA_URL: '${{ secrets.LLAMA_URL }}'

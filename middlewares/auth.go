@@ -43,6 +43,9 @@ func createUserContext(r *http.Request, userID string, user *db.UserInfos, rateL
 				newCtx = context.WithValue(newCtx, utils.ContextKeyOpenAIOrg, user.OpenaiOrg)
 			}
 		}
+		if user.ReplicateToken != "" {
+			newCtx = context.WithValue(newCtx, utils.ContextKeyReplicateToken, user.ReplicateToken)
+		}
 	}
 
 	var recordEvent utils.RecordFunc = func(response string, props ...utils.KeyValue) {

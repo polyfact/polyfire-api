@@ -59,15 +59,19 @@ func NewProvider(ctx context.Context, provider string, model *string) (Provider,
 	case "openai":
 		fmt.Println("Using OpenAI")
 		var m string
+
 		if model == nil {
 			m = "gpt-3.5-turbo"
 		} else {
 			m = *model
 		}
+
 		if m != "gpt-3.5-turbo" && m != "gpt-3.5-turbo-16k" && m != "gpt-4" {
 			return nil, ErrUnknownModel
 		}
+
 		llm := providers.NewOpenAIStreamProvider(ctx, m)
+
 		return llm, nil
 	case "cohere":
 		fmt.Println("Using Cohere")
@@ -79,17 +83,35 @@ func NewProvider(ctx context.Context, provider string, model *string) (Provider,
 	case "llama":
 		fmt.Println("Using LLama")
 		var m string
+
 		if model == nil {
 			m = "llama"
 		} else {
 			m = *model
 		}
+
 		if m != "llama" && m != "llama2" && m != "codellama" {
 			return nil, ErrUnknownModel
 		}
+
 		return providers.LLaMaProvider{
 			Model: m,
 		}, nil
+	case "replicate":
+		fmt.Println("Using Replicate")
+		var m string
+		if model == nil {
+			m = "llama-2-70b-chat"
+		} else {
+			m = *model
+		}
+
+		if m != "llama-2-70b-chat" && m != "replit-code-v1-3b" {
+			return nil, ErrUnknownModel
+		}
+
+		llm := providers.NewReplicateProvider(ctx, m)
+		return llm, nil
 	default:
 		return nil, ErrUnknownModel
 	}
