@@ -322,5 +322,5 @@ func (m ReplicateProvider) Name() string {
 }
 
 func (m ReplicateProvider) DoesFollowRateLimit() bool {
-	return true
+	return !m.IsCustomApiKey
 }
