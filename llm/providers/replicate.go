@@ -104,6 +104,7 @@ func ParseReplicateEvent(str string) (ReplicateEvent, error) {
 type ReplicateProvider struct {
 	Model           string
 	ReplicateApiKey string
+	IsCustomApiKey  bool
 }
 
 func NewReplicateProvider(ctx context.Context, model string) ReplicateProvider {
@@ -116,7 +117,7 @@ func NewReplicateProvider(ctx context.Context, model string) ReplicateProvider {
 		apiKey = os.Getenv("REPLICATE_API_KEY")
 	}
 
-	return ReplicateProvider{Model: model, ReplicateApiKey: apiKey}
+	return ReplicateProvider{Model: model, ReplicateApiKey: apiKey, IsCustomApiKey: ok}
 }
 
 func (m ReplicateProvider) GetCreditsPerSecond() float64 {
