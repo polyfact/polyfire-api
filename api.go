@@ -8,6 +8,7 @@ import (
 
 	auth "github.com/polyfact/api/auth"
 	completion "github.com/polyfact/api/completion"
+	db "github.com/polyfact/api/db"
 	imageGeneration "github.com/polyfact/api/image_generation"
 	kv "github.com/polyfact/api/kv"
 	memory "github.com/polyfact/api/memory"
@@ -38,6 +39,8 @@ func GlobalMiddleware(router *httprouter.Router) http.Handler {
 func main() {
 	log.Print("Starting the server on :8080")
 
+	db.InitDB()
+
 	router := httprouter.New()
 
 	// Auth Routes
@@ -65,7 +68,9 @@ func main() {
 
 	// KV Routes
 	router.GET("/kv", middlewares.Auth(kv.Get))
+	router.GET("/kvs", middlewares.Auth(kv.List))
 	router.PUT("/kv", middlewares.Auth(kv.Set))
+	router.DELETE("/kv", middlewares.Auth(kv.Delete))
 
 	// Prompt Routes
 	router.GET("/prompt/name/:name", middlewares.Auth(prompt.GetPromptByName))
