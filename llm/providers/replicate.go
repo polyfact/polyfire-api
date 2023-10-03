@@ -143,15 +143,21 @@ func (m ReplicateProvider) GetVersion() (string, error) {
 	}
 }
 
-func (m ReplicateProvider) ReplicateStart(reqBody ReplicateRequestBody) (ReplicateStartResponse, error) {
+type ReplicateStartErrorResponse struct {
+	Title  string `json:"title"`
+	Detail string `json:"detail"`
+	Status int    `json:"status"`
+}
+
+func (m ReplicateProvider) ReplicateStart(reqBody ReplicateRequestBody) (ReplicateStartResponse, string) {
 	input, err := json.Marshal(reqBody)
 	if err != nil {
-		return ReplicateStartResponse{}, err
+		return ReplicateStartResponse{}, "generation_error"
 	}
 
 	req, err := http.NewRequest("POST", "https://api.replicate.com/v1/predictions", strings.NewReader(string(input)))
 	if err != nil {
-		return ReplicateStartResponse{}, err
+		return ReplicateStartResponse{}, "generation_error"
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -159,21 +165,39 @@ func (m ReplicateProvider) ReplicateStart(reqBody ReplicateRequestBody) (Replica
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return ReplicateStartResponse{}, err
+		return ReplicateStartResponse{}, "generation_error"
 	}
 
 	res, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return ReplicateStartResponse{}, err
+		return ReplicateStartResponse{}, "generation_error"
 	}
+
+	fmt.Printf("%v\n", string(res))
 
 	var startResponse ReplicateStartResponse
 	err = json.Unmarshal(res, &startResponse)
 	if err != nil {
-		return ReplicateStartResponse{}, err
+		var errorResponse ReplicateStartErrorResponse
+		err = json.Unmarshal(res, &errorResponse)
+		if err != nil {
+			return ReplicateStartResponse{}, "generation_error"
+		}
+
+		if errorResponse.Title == "Unauthenticated" && m.IsCustomApiKey {
+			return ReplicateStartResponse{}, "replicate_unauthenticated"
+		}
+
+		if errorResponse.Title == "Invalid version or not permitted" && m.IsCustomApiKey {
+			return ReplicateStartResponse{}, "replicate_invalid_version_or_forbidden"
+		}
+
+		fmt.Printf("%v\n", errorResponse)
+
+		return ReplicateStartResponse{}, "generation_error"
 	}
 
-	return startResponse, nil
+	return startResponse, ""
 }
 
 func (m ReplicateProvider) Generate(task string, c ProviderCallback, opts *ProviderOptions) chan Result {
@@ -200,15 +224,15 @@ func (m ReplicateProvider) Generate(task string, c ProviderCallback, opts *Provi
 
 		replicateStartTime := time.Now()
 
-		startResponse, err := m.ReplicateStart(body)
-		if err != nil {
-			chan_res <- Result{Result: "{\"error\":\"generation_failed\"}", TokenUsage: tokenUsage, Err: err}
+		startResponse, errorCode := m.ReplicateStart(body)
+		if errorCode != "" {
+			chan_res <- Result{Err: errorCode}
 			return
 		}
 
 		req, err := http.NewRequest("GET", startResponse.URLs.Stream, nil)
 		if err != nil {
-			chan_res <- Result{Result: "{\"error\":\"generation_failed\"}", TokenUsage: tokenUsage, Err: err}
+			chan_res <- Result{Err: "generation_error"}
 			return
 		}
 
@@ -217,7 +241,7 @@ func (m ReplicateProvider) Generate(task string, c ProviderCallback, opts *Provi
 
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
-			chan_res <- Result{Result: "{\"error\":\"generation_failed\"}", TokenUsage: tokenUsage, Err: err}
+			chan_res <- Result{Err: "generation_error"}
 			return
 		}
 

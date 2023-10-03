@@ -3,8 +3,6 @@ package providers
 import (
 	"context"
 	"errors"
-	"fmt"
-	"log"
 
 	db "github.com/polyfact/api/db"
 	"github.com/tmc/langchaingo/llms"
@@ -60,35 +58,30 @@ func (m LangchainProvider) Generate(
 	go func(chan_res chan Result) {
 		defer close(chan_res)
 		tokenUsage := TokenUsage{Input: 0, Output: 0}
-		for i := 0; i < 5; i++ {
-			log.Printf("Trying generation %d/5\n", i+1)
-
-			input_prompt := task
-			completion, err := m.Call(input_prompt, opts)
-			if err != nil {
-				fmt.Printf("%v\n", err)
-				continue
-			}
-
-			if c != nil {
-				(*c)("cohere", m.ModelName, m.Model.GetNumTokens(input_prompt), m.Model.GetNumTokens(completion), completion, nil)
-			}
-
-			tokenUsage.Input += m.Model.GetNumTokens(input_prompt)
-			tokenUsage.Output += m.Model.GetNumTokens(completion)
-
-			result := Result{Result: completion, TokenUsage: tokenUsage}
-
-			chan_res <- result
+		input_prompt := task
+		completion, err := m.Call(input_prompt, opts)
+		if err != nil {
+			chan_res <- Result{Err: "generation_error"}
 			return
 		}
-		chan_res <- Result{
-			Result:     "{\"error\":\"generation_failed\"}",
-			TokenUsage: tokenUsage,
-			Err: errors.New(
-				"Generation failed after 5 retries",
-			),
+
+		if c != nil {
+			(*c)(
+				"cohere",
+				m.ModelName,
+				m.Model.GetNumTokens(input_prompt),
+				m.Model.GetNumTokens(completion),
+				completion,
+				nil,
+			)
 		}
+
+		tokenUsage.Input += m.Model.GetNumTokens(input_prompt)
+		tokenUsage.Output += m.Model.GetNumTokens(completion)
+
+		result := Result{Result: completion, TokenUsage: tokenUsage}
+
+		chan_res <- result
 	}(chan_res)
 
 	return chan_res
