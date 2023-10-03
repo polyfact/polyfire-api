@@ -2,6 +2,8 @@ package db
 
 import (
 	"encoding/json"
+	"strconv"
+	"strings"
 )
 
 type Memory struct {
@@ -41,12 +43,18 @@ func CreateMemory(memoryId string, userId string, public bool) error {
 }
 
 func AddMemory(userId string, memoryId string, content string, embedding []float64) error {
+	embeddingstr := ""
+	for _, v := range embedding {
+		embeddingstr += strconv.FormatFloat(v, 'f', 6, 64) + ","
+	}
+	embeddingstr = strings.TrimRight(embeddingstr, ",")
+
 	err := DB.Exec(
-		"INSERT INTO embeddings (memory_id, user_id, content, embedding) VALUES (?, ?, ?, ?)",
+		"INSERT INTO embeddings (memory_id, user_id, content, embedding) VALUES (?, ?, ?, string_to_array(?, ',')::float[])",
 		memoryId,
 		userId,
 		content,
-		embedding,
+		embeddingstr,
 	).Error
 	if err != nil {
 		return err
