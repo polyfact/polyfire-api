@@ -36,14 +36,14 @@ func (m LLaMaProvider) Generate(task string, c ProviderCallback, opts *ProviderO
 		input, err := json.Marshal(body)
 		tokenUsage.Input += tokens.CountTokens("gpt-2", task)
 		if err != nil {
-			fmt.Printf("%v\n", err)
+			chan_res <- Result{Err: "generation_error"}
 			return
 		}
 		reqBody := string(input)
 		fmt.Println(reqBody)
 		resp, err := http.Post(os.Getenv("LLAMA_URL"), "application/json", strings.NewReader(reqBody))
 		if err != nil {
-			fmt.Printf("%v\n", err)
+			chan_res <- Result{Err: "generation_error"}
 			return
 		}
 		defer resp.Body.Close()

@@ -140,7 +140,7 @@ generation_loop:
 	}
 
 	if input.MemoryId != nil {
-		infosJSON, err := json.Marshal(result)
+		infosJSON, err := result.JSON()
 		if err != nil {
 			utils.RespondErrorStream(conn, record, "invalid_json")
 			return
