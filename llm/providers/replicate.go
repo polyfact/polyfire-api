@@ -109,18 +109,15 @@ type ReplicateProvider struct {
 
 func NewReplicateProvider(ctx context.Context, model string) ReplicateProvider {
 	var apiKey string
-	var isCustomApiKey bool
 
 	customToken, ok := ctx.Value(utils.ContextKeyReplicateToken).(string)
 	if ok {
 		apiKey = customToken
-		isCustomApiKey = true
 	} else {
 		apiKey = os.Getenv("REPLICATE_API_KEY")
-		isCustomApiKey = false
 	}
 
-	return ReplicateProvider{Model: model, ReplicateApiKey: apiKey, IsCustomApiKey: isCustomApiKey}
+	return ReplicateProvider{Model: model, ReplicateApiKey: apiKey, IsCustomApiKey: ok}
 }
 
 func (m ReplicateProvider) GetCreditsPerSecond() float64 {
