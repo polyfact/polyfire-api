@@ -46,6 +46,7 @@ func main() {
 	// Auth Routes
 	router.GET("/project/:id/auth/token", auth.ManagedSupabaseTokenExchangeHandler)
 	router.GET("/project/:id/auth/firebase", auth.ExternalFirebaseTokenExchangeHandler)
+	router.GET("/project/:id/auth/custom/token", auth.ExternalCustomTokenExchangeHandler)
 	router.GET("/auth/id", middlewares.Auth(auth.GetAuthId))
 	router.GET("/usage", middlewares.Auth(auth.UserRateLimit))
 

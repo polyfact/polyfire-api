@@ -37,6 +37,7 @@ type Project struct {
 	DefaultMonthlyTokenRateLimit  *int   `json:"default_monthly_token_rate_limit"` // Deprecated
 	DefaultMonthlyCreditRateLimit *int   `json:"default_monthly_credit_rate_limit"`
 	FirebaseProjectID             string `json:"firebase_project_id"`
+	CustomAuthPublicKey           string `json:"custom_auth_public_key"`
 }
 
 func (Project) TableName() string {
