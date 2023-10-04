@@ -32,21 +32,20 @@ type Prompt struct {
 	Prompt      string      `json:"prompt"`
 	CreatedAt   time.Time   `json:"created_at"`
 	UpdatedAt   time.Time   `json:"updated_at,omitempty"`
-	Like        int64       `json:"like,omitempty"`
-	Use         int64       `json:"use,omitempty"`
 	Tags        StringArray `json:"tags,omitempty"`
 	Public      bool        `json:"public"`
 	UserId      string      `json:"user_id"`
 }
 
-type PromptWithUses struct {
+type PromptWithJoin struct {
 	ID          string      `json:"id"`
 	Name        string      `json:"name"`
 	Description string      `json:"description"`
 	Prompt      string      `json:"prompt"`
 	CreatedAt   time.Time   `json:"created_at"`
 	UpdatedAt   time.Time   `json:"updated_at,omitempty"`
-	Like        int64       `json:"like,omitempty"`
+	Likes       int64       `json:"likes"`
+	IsLiked     bool        `json:"is_liked"`
 	Uses        StringArray `json:"uses,omitempty"`
 	Tags        StringArray `json:"tags,omitempty"`
 	Public      bool        `json:"public"`
@@ -108,38 +107,8 @@ func (PromptUpdate) TableName() string {
 	return "prompts"
 }
 
-func (PromptWithUses) TableName() string {
+func (PromptWithJoin) TableName() string {
 	return "prompts"
-}
-
-func GetPromptById(id string) (*PromptWithUses, error) {
-	var prompt PromptWithUses
-
-	sqlQuery := DB.Model(&PromptWithUses{}).
-		Select(selectableFields).
-		Where("prompts.id = ?", id)
-
-	err := sqlQuery.Scan(&prompt).Error
-	if err != nil {
-		return nil, err
-	}
-
-	return &prompt, nil
-}
-
-func GetPromptByName(name string) (*PromptWithUses, error) {
-	var prompt PromptWithUses
-
-	sqlQuery := DB.Model(&PromptWithUses{}).
-		Select(selectableFields).
-		Where("prompts.name = ?", name)
-
-	err := sqlQuery.Scan(&prompt).Error
-	if err != nil {
-		return nil, err
-	}
-
-	return &prompt, nil
 }
 
 func StringToFilterOperation(op string) (FilterOperation, error) {
@@ -158,11 +127,56 @@ var AllowedColumns = map[string]bool{
 }
 
 var usesField = `array(SELECT prompts_uses.created_at FROM prompts_uses WHERE prompts_uses.prompt_id = prompts.id ) as uses`
+var likesField = `(SELECT COUNT(*) FROM prompts_likes WHERE prompts_likes.prompt_id = prompts.id) as likes`
+
 var minField = `prompts.id, prompts.name, prompts.description, prompts.use, prompts.tags, prompts.public, prompts.user_id`
 var maxField = `prompts.id, prompts.name, prompts.description, prompts.prompt, prompts.created_at, prompts.updated_at, prompts.tags, prompts.public, prompts.user_id`
 
-var selectableFields = fmt.Sprintf("%s, %s", maxField, usesField)
-var selectableMinFields = fmt.Sprintf("%s, %s", minField, usesField)
+func GetPromptByIdOrSlug(id string) (*Prompt, error) {
+	fieldMappings := map[string]string{
+		"uuid": "id",
+		"slug": "name",
+	}
+
+	query, err := PrepareQueryByStringIdentifier(id, fieldMappings)
+	if err != nil {
+		return nil, err
+	}
+
+	prompt := &Prompt{}
+
+	DB.First(prompt, query, id)
+
+	if DB.Error != nil {
+		return nil, DB.Error
+	}
+
+	return prompt, nil
+}
+
+func getIsLikeField(userId string) string {
+	if userId == "" {
+		return ""
+	}
+	return fmt.Sprintf(`EXISTS (SELECT 1 FROM prompts_likes WHERE prompts_likes.prompt_id = prompts.id AND prompts_likes.user_id = '%s') as is_liked`, userId)
+}
+
+func buildFields(baseFields []string, userId string) string {
+	fields := append([]string(nil), baseFields...)
+
+	if islikeField := getIsLikeField(userId); islikeField != "" {
+		fields = append(fields, islikeField)
+	}
+	return strings.Join(fields, ", ")
+}
+
+func getSelectableFields(userId string) string {
+	return buildFields([]string{maxField, usesField, likesField}, userId)
+}
+
+func getSelectableMinFields(userId string) string {
+	return buildFields([]string{minField, usesField, likesField}, userId)
+}
 
 func applyAndValidateFilter(sqlQuery *gorm.DB, filter SupabaseFilter, value string) error {
 	_, ok := AllowedColumns[filter.Column]
@@ -181,11 +195,16 @@ func applyAndValidateFilter(sqlQuery *gorm.DB, filter SupabaseFilter, value stri
 
 }
 
-func GetAllPrompts(filters SupabaseFilters, userId string) ([]PromptWithUses, error) {
-	var results []PromptWithUses
+func GetAllPrompts(filters SupabaseFilters, userId string, public bool, onlyLiked bool) ([]PromptWithJoin, error) {
+	var results []PromptWithJoin
 
-	sqlQuery := DB.Model(&PromptWithUses{}).
-		Select(selectableMinFields)
+	sqlQuery := DB.Model(&PromptWithJoin{}).
+		Select(getSelectableMinFields(userId))
+
+	if onlyLiked {
+		sqlQuery = sqlQuery.Joins("INNER JOIN prompts_likes ON prompts_likes.prompt_id = prompts.id").
+			Where("prompts_likes.user_id = ? AND prompts.user_id != ?", userId, userId)
+	}
 
 	for _, filter := range filters {
 
@@ -209,7 +228,7 @@ func GetAllPrompts(filters SupabaseFilters, userId string) ([]PromptWithUses, er
 		}
 	}
 
-	if userId != "" {
+	if public == false {
 		sqlQuery = sqlQuery.Where("user_id = ?", userId)
 	} else {
 		sqlQuery = sqlQuery.Where("public = true")
@@ -223,6 +242,36 @@ func GetAllPrompts(filters SupabaseFilters, userId string) ([]PromptWithUses, er
 	log.Println(results)
 
 	return results, nil
+}
+
+func GetPromptById(id string, userId string) (*PromptWithJoin, error) {
+	var prompt PromptWithJoin
+
+	sqlQuery := DB.Model(&PromptWithJoin{}).
+		Select(getSelectableFields(userId)).
+		Where("prompts.id = ?", id)
+
+	err := sqlQuery.Scan(&prompt).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return &prompt, nil
+}
+
+func GetPromptByName(name string, userId string) (*PromptWithJoin, error) {
+	var prompt PromptWithJoin
+
+	sqlQuery := DB.Model(&PromptWithJoin{}).
+		Select(getSelectableFields(userId)).
+		Where("prompts.name = ?", name)
+
+	err := sqlQuery.Scan(&prompt).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return &prompt, nil
 }
 
 func CreatePrompt(input PromptInsert) (*Prompt, error) {

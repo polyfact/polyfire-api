@@ -12,7 +12,7 @@ func getSystemPrompt(user_id string, system_prompt_id *string, system_prompt *st
 	}
 
 	if system_prompt_id != nil && len(*system_prompt_id) > 0 {
-		p, err := db.GetPromptById(*system_prompt_id)
+		p, err := db.GetPromptByIdOrSlug(*system_prompt_id)
 		if err != nil || p == nil {
 			return "", NotFound
 		}
