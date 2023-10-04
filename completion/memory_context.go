@@ -1,6 +1,8 @@
 package completion
 
 import (
+	"context"
+
 	"github.com/polyfact/api/db"
 	"github.com/polyfact/api/memory"
 	"github.com/polyfact/api/utils"
@@ -26,13 +28,13 @@ type MemoryProcessResult struct {
 	ContextCompletion string
 }
 
-func getMemory(user_id string, memoryId interface{}, task string) (*MemoryProcessResult, error) {
+func getMemory(ctx context.Context, user_id string, memoryId interface{}, task string) (*MemoryProcessResult, error) {
 	memoryIdArray := parseMemoryIdArray(memoryId)
 	if memoryIdArray == nil {
 		return nil, nil
 	}
 
-	results, err := memory.Embedder(user_id, memoryIdArray, task)
+	results, err := memory.Embedder(ctx, user_id, memoryIdArray, task)
 	if err != nil {
 		return nil, InternalServerError
 	}

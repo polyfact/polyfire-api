@@ -13,7 +13,7 @@ type Memory struct {
 }
 
 type MatchParams struct {
-	QueryEmbedding []float64 `json:"query_embedding"`
+	QueryEmbedding []float32 `json:"query_embedding"`
 	MatchTreshold  float64   `json:"match_threshold"`
 	MatchCount     int16     `json:"match_count"`
 	MemoryID       []string  `json:"memoryid"`
@@ -30,7 +30,7 @@ type Embedding struct {
 	MemoryId  string    `json:"memory_id"`
 	UserId    string    `json:"user_id"`
 	Content   string    `json:"content"`
-	Embedding []float64 `json:"embedding"`
+	Embedding []float32 `json:"embedding"`
 }
 
 func CreateMemory(memoryId string, userId string, public bool) error {
@@ -42,10 +42,10 @@ func CreateMemory(memoryId string, userId string, public bool) error {
 	return err
 }
 
-func AddMemory(userId string, memoryId string, content string, embedding []float64) error {
+func AddMemory(userId string, memoryId string, content string, embedding []float32) error {
 	embeddingstr := ""
 	for _, v := range embedding {
-		embeddingstr += strconv.FormatFloat(v, 'f', 6, 64) + ","
+		embeddingstr += strconv.FormatFloat(float64(v), 'f', 6, 64) + ","
 	}
 	embeddingstr = strings.TrimRight(embeddingstr, ",")
 
@@ -82,7 +82,7 @@ func GetMemoryIds(userId string) ([]MemoryRecord, error) {
 	return results, nil
 }
 
-func MatchEmbeddings(memoryIds []string, userId string, embedding []float64) ([]MatchResult, error) {
+func MatchEmbeddings(memoryIds []string, userId string, embedding []float32) ([]MatchResult, error) {
 	params := MatchParams{
 		QueryEmbedding: embedding,
 		MatchTreshold:  0.70,
