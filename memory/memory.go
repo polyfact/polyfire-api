@@ -1,6 +1,7 @@
 package memory
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 
@@ -92,13 +93,13 @@ func Add(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	}
 
 	for _, chunk := range chunks {
-		embedding, err := llm.Embed(chunk, &callback)
+		embeddings, err := llm.Embed(r.Context(), chunk, &callback)
 		if err != nil {
 			utils.RespondError(w, record, "embedding_error")
 			return
 		}
 
-		err = db.AddMemory(userId, requestBody.ID, chunk, embedding[0])
+		err = db.AddMemory(userId, requestBody.ID, chunk, embeddings)
 
 		if err != nil {
 			utils.RespondError(w, record, "db_insert_error")
@@ -145,17 +146,17 @@ func Get(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	_ = json.NewEncoder(w).Encode(response)
 }
 
-func Embedder(userId string, memoryId []string, task string) ([]db.MatchResult, error) {
+func Embedder(ctx context.Context, userId string, memoryId []string, task string) ([]db.MatchResult, error) {
 	callback := func(model_name string, input_count int) {
 		db.LogRequests(userId, "openai", model_name, input_count, 0, "embedding", true)
 	}
 
-	embeddings, err := llm.Embed(task, &callback)
+	embeddings, err := llm.Embed(ctx, task, &callback)
 	if err != nil {
 		return nil, err
 	}
 
-	results, err := db.MatchEmbeddings(memoryId, userId, embeddings[0])
+	results, err := db.MatchEmbeddings(memoryId, userId, embeddings)
 	if err != nil {
 		return nil, err
 	}

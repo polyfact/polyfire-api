@@ -6,15 +6,26 @@ import (
 	"os"
 	"time"
 
+	utils "github.com/polyfact/api/utils"
 	openai "github.com/rakyll/openai-go"
 	audio "github.com/rakyll/openai-go/audio"
 )
 
-func Transcribe(reader io.Reader, format string) (*audio.CreateTranscriptionResponse, error) {
-	session := openai.NewSession(os.Getenv("OPENAI_API_KEY"))
+func Transcribe(ctx context.Context, reader io.Reader, format string) (*audio.CreateTranscriptionResponse, error) {
+	var session *openai.Session
+	customToken, ok := ctx.Value(utils.ContextKeyOpenAIToken).(string)
+	if ok {
+		session = openai.NewSession(customToken)
+		customOrg, ok := ctx.Value(utils.ContextKeyOpenAIOrg).(string)
+		if ok {
+			(*session).OrganizationID = customOrg
+		}
+	} else {
+		session = openai.NewSession(os.Getenv("OPENAI_API_KEY"))
+		(*session).OrganizationID = os.Getenv("OPENAI_ORGANIZATION")
+	}
 
 	(*((*session).HTTPClient)).Timeout = 600 * time.Second
-	(*session).OrganizationID = os.Getenv("OPENAI_ORGANIZATION")
 
 	client := audio.NewClient(session, "whisper-1")
 
@@ -23,9 +34,9 @@ func Transcribe(reader io.Reader, format string) (*audio.CreateTranscriptionResp
 		AudioFormat: format,
 	}
 
-	ctx := context.Background()
+	transcriptionCtx := context.Background()
 
-	response, err := client.CreateTranscription(ctx, &params)
+	response, err := client.CreateTranscription(transcriptionCtx, &params)
 	if err != nil {
 		return nil, err
 	}

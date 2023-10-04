@@ -6,15 +6,26 @@ import (
 	"os"
 	"time"
 
+	"github.com/polyfact/api/utils"
 	openai "github.com/rakyll/openai-go"
 	image "github.com/rakyll/openai-go/image"
 )
 
-func DALLEGenerate(prompt string) (io.Reader, error) {
-	session := openai.NewSession(os.Getenv("OPENAI_API_KEY"))
+func DALLEGenerate(ctx context.Context, prompt string) (io.Reader, error) {
+	var session *openai.Session
+	customToken, ok := ctx.Value(utils.ContextKeyOpenAIToken).(string)
+	if ok {
+		session = openai.NewSession(customToken)
+		customOrg, ok := ctx.Value(utils.ContextKeyOpenAIOrg).(string)
+		if ok {
+			(*session).OrganizationID = customOrg
+		}
+	} else {
+		session = openai.NewSession(os.Getenv("OPENAI_API_KEY"))
+		(*session).OrganizationID = os.Getenv("OPENAI_ORGANIZATION")
+	}
 
 	(*((*session).HTTPClient)).Timeout = 600 * time.Second
-	(*session).OrganizationID = os.Getenv("OPENAI_ORGANIZATION")
 
 	client := image.NewClient(session)
 
@@ -22,9 +33,9 @@ func DALLEGenerate(prompt string) (io.Reader, error) {
 		Prompt: prompt,
 	}
 
-	ctx := context.Background()
+	imageGenerationCtx := context.Background()
 
-	response, err := client.Create(ctx, &params)
+	response, err := client.Create(imageGenerationCtx, &params)
 	if err != nil {
 		return nil, err
 	}
