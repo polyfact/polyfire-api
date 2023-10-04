@@ -121,10 +121,11 @@ type Result struct {
 }
 
 func Transcribe(w http.ResponseWriter, r *http.Request, _ router.Params) {
-	user_id := r.Context().Value(utils.ContextKeyUserID).(string)
-	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
+	ctx := r.Context()
+	user_id := ctx.Value(utils.ContextKeyUserID).(string)
+	record := ctx.Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
 
-	rateLimitStatus := r.Context().Value(utils.ContextKeyRateLimitStatus)
+	rateLimitStatus := ctx.Value(utils.ContextKeyRateLimitStatus)
 
 	if rateLimitStatus == db.RateLimitStatusReached {
 		utils.RespondError(w, record, "rate_limit_reached")
@@ -181,7 +182,7 @@ func Transcribe(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	}
 	defer close_func()
 	for i, r := range files {
-		res, err := stt.Transcribe(r, "mpeg")
+		res, err := stt.Transcribe(ctx, r, "mpeg")
 		if err != nil {
 			fmt.Printf("%v\n", err)
 			utils.RespondError(w, record, "transcription_error")

@@ -77,7 +77,7 @@ func GenerationStart(ctx context.Context, user_id string, input GenerateRequestB
 	chan_memory_res := make(chan *MemoryProcessResult)
 	go func() {
 		defer close(chan_memory_res)
-		memoryResult, err := getMemory(user_id, input.MemoryId, input.Task)
+		memoryResult, err := getMemory(ctx, user_id, input.MemoryId, input.Task)
 		if err != nil {
 			panic(err)
 		}
