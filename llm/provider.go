@@ -40,6 +40,10 @@ func defaultModel(model string) (string, string) {
 		return "llama", "llama"
 	case "llama2":
 		return "llama", "llama2"
+	case "llama-2-70b-chat":
+		return "replicate", "llama-2-70b-chat"
+	case "replit-code-v1-3b":
+		return "replicate", "replit-code-v1-3b"
 	}
 	return "", ""
 }
