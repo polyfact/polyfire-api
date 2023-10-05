@@ -1,12 +1,13 @@
 package db
 
 import (
+	"database/sql/driver"
 	"errors"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
+	"github.com/gosimple/slug"
 	"gorm.io/gorm"
 )
 
@@ -19,6 +20,17 @@ func (o *StringArray) Scan(src any) error {
 	}
 	*o = strings.Split(strings.Trim(str, "{}"), ",")
 	return nil
+}
+
+func (o StringArray) Value() (driver.Value, error) {
+	if len(o) == 0 {
+		return "{}", nil
+	}
+	var output string
+	for _, val := range o {
+		output += fmt.Sprintf("\"%s\",", val)
+	}
+	return fmt.Sprintf("{%s}", strings.TrimRight(output, ",")), nil
 }
 
 func (StringArray) GormDataType() string {
@@ -35,6 +47,7 @@ type Prompt struct {
 	Tags        StringArray `json:"tags,omitempty"`
 	Public      bool        `json:"public"`
 	UserId      string      `json:"user_id"`
+	Slug        string      `json:"slug"`
 }
 
 type PromptWithJoin struct {
@@ -50,24 +63,28 @@ type PromptWithJoin struct {
 	Tags        StringArray `json:"tags,omitempty"`
 	Public      bool        `json:"public"`
 	UserId      string      `json:"user_id"`
+	Slug        string      `json:"slug"`
 }
 
 type PromptInsert struct {
-	Name        string   `json:"name"`
-	Description string   `json:"description"`
-	Prompt      string   `json:"prompt"`
-	Tags        []string `json:"tags,omitempty"`
-	UserId      string   `json:"user_id"`
-	Public      bool     `json:"public"`
+	ID          string      `gorm:"type:uuid;default:uuid_generate_v4();" json:"id"`
+	Name        string      `json:"name"`
+	Description string      `json:"description"`
+	Prompt      string      `json:"prompt"`
+	Tags        StringArray `json:"tags,omitempty"`
+	UserId      string      `json:"user_id"`
+	Public      bool        `json:"public"`
+	Slug        string      `json:"slug"`
 }
 
 type PromptUpdate struct {
-	UpdatedAt   time.Time `json:"updated_at,omitempty"`
-	Name        string    `json:"name,omitempty"`
-	Description string    `json:"description,omitempty"`
-	Prompt      string    `json:"prompt,omitempty"`
-	Tags        []string  `json:"tags,omitempty"`
-	Public      bool      `json:"public"`
+	UpdatedAt   time.Time   `json:"updated_at,omitempty"`
+	Name        string      `json:"name,omitempty"`
+	Description string      `json:"description,omitempty"`
+	Prompt      string      `json:"prompt,omitempty"`
+	Tags        StringArray `json:"tags,omitempty"`
+	Public      bool        `json:"public"`
+	Slug        string      `json:"slug"`
 }
 
 type FilterOperation string
@@ -103,6 +120,10 @@ func (Prompt) TableName() string {
 	return "prompts"
 }
 
+func (PromptInsert) TableName() string {
+	return "prompts"
+}
+
 func (PromptUpdate) TableName() string {
 	return "prompts"
 }
@@ -129,13 +150,13 @@ var AllowedColumns = map[string]bool{
 var usesField = `array(SELECT prompts_uses.created_at FROM prompts_uses WHERE prompts_uses.prompt_id = prompts.id ) as uses`
 var likesField = `(SELECT COUNT(*) FROM prompts_likes WHERE prompts_likes.prompt_id = prompts.id) as likes`
 
-var minField = `prompts.id, prompts.name, prompts.description, prompts.use, prompts.tags, prompts.public, prompts.user_id`
-var maxField = `prompts.id, prompts.name, prompts.description, prompts.prompt, prompts.created_at, prompts.updated_at, prompts.tags, prompts.public, prompts.user_id`
+var minField = `prompts.id, prompts.name, prompts.description, prompts.use, prompts.tags, prompts.public, prompts.user_id, prompts.slug`
+var maxField = `prompts.id, prompts.name, prompts.description, prompts.prompt, prompts.created_at, prompts.updated_at, prompts.tags, prompts.public, prompts.user_id, prompts.slug`
 
 func GetPromptByIdOrSlug(id string) (*Prompt, error) {
 	fieldMappings := map[string]string{
 		"uuid": "id",
-		"slug": "name",
+		"slug": "slug",
 	}
 
 	query, err := PrepareQueryByStringIdentifier(id, fieldMappings)
@@ -145,10 +166,10 @@ func GetPromptByIdOrSlug(id string) (*Prompt, error) {
 
 	prompt := &Prompt{}
 
-	DB.First(prompt, query, id)
+	result := DB.First(prompt, query, id)
 
-	if DB.Error != nil {
-		return nil, DB.Error
+	if result.Error != nil {
+		return nil, result.Error
 	}
 
 	return prompt, nil
@@ -239,8 +260,6 @@ func GetAllPrompts(filters SupabaseFilters, userId string, public bool, onlyLike
 		return nil, err
 	}
 
-	log.Println(results)
-
 	return results, nil
 }
 
@@ -274,15 +293,29 @@ func GetPromptByName(name string, userId string) (*PromptWithJoin, error) {
 	return &prompt, nil
 }
 
-func CreatePrompt(input PromptInsert) (*Prompt, error) {
-	var result Prompt
+func CreatePrompt(input PromptInsert) (*PromptInsert, error) {
 
-	err := DB.Create(&result).Error
+	if input.Name == "" {
+		return nil, errors.New("Name is missing")
+	}
+	if input.Description == "" {
+		return nil, errors.New("Description is missing")
+	}
+	if input.Prompt == "" {
+		return nil, errors.New("Prompt is missing")
+	}
+	if len(input.Tags) == 0 {
+		return nil, errors.New("Tags are missing")
+	}
+	input.Slug = slug.MakeLang(input.Name, "en")
+
+	err := DB.Create(&input).Error
+
 	if err != nil {
 		return nil, err
 	}
 
-	return &result, nil
+	return &input, nil
 }
 
 func UpdatePrompt(id string, input PromptUpdate, user_id string) (*Prompt, error) {
