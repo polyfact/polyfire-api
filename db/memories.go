@@ -2,6 +2,7 @@ package db
 
 import (
 	"encoding/json"
+	"errors"
 	"strconv"
 	"strings"
 )
@@ -26,11 +27,38 @@ type MatchResult struct {
 	Similarity float64 `json:"similarity"`
 }
 
+type FloatArray []float32
+
+func (o *FloatArray) Scan(src any) error {
+	res := make([]float32, 0)
+	str, ok := src.(string)
+	if !ok {
+		return errors.New("src value cannot cast to string")
+	}
+	stringArray := strings.Split(strings.Trim(str, "[]{}"), ",")
+
+	for _, v := range stringArray {
+		f, err := strconv.ParseFloat(v, 32)
+		if err != nil {
+			return err
+		}
+		res = append(res, float32(f))
+	}
+
+	*o = res
+
+	return nil
+}
+
+func (FloatArray) GormDataType() string {
+	return "float[]"
+}
+
 type Embedding struct {
-	MemoryId  string    `json:"memory_id"`
-	UserId    string    `json:"user_id"`
-	Content   string    `json:"content"`
-	Embedding []float32 `json:"embedding"`
+	MemoryId  string     `json:"memory_id"`
+	UserId    string     `json:"user_id"`
+	Content   string     `json:"content"`
+	Embedding FloatArray `json:"embedding"`
 }
 
 func CreateMemory(memoryId string, userId string, public bool) error {
@@ -61,6 +89,21 @@ func AddMemory(userId string, memoryId string, content string, embedding []float
 	}
 
 	return err
+}
+
+func GetExistingEmbeddingFromContent(content string) (*[]float32, error) {
+	var embeddings []Embedding
+	err := DB.Find(&embeddings, "content = ?", content).Error
+	if err != nil {
+		return nil, err
+	}
+
+	if len(embeddings) == 0 {
+		return nil, nil
+	}
+
+	res := []float32(embeddings[0].Embedding)
+	return &res, nil
 }
 
 type MemoryRecord struct {

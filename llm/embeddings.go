@@ -5,11 +5,22 @@ import (
 	"os"
 
 	llmTokens "github.com/polyfact/api/tokens"
-	"github.com/polyfact/api/utils"
 	goOpenai "github.com/sashabaranov/go-openai"
+
+	"github.com/polyfact/api/db"
+	"github.com/polyfact/api/utils"
 )
 
 func Embed(ctx context.Context, content string, c *func(string, int)) ([]float32, error) {
+	alreadyExistingEmbedding, err := db.GetExistingEmbeddingFromContent(content)
+	if err != nil {
+		return nil, err
+	}
+
+	if alreadyExistingEmbedding != nil {
+		return *alreadyExistingEmbedding, nil
+	}
+
 	var config goOpenai.ClientConfig
 
 	userId := ctx.Value(utils.ContextKeyUserID).(string)
