@@ -249,7 +249,7 @@ func GetAllPrompts(filters SupabaseFilters, userId string, public bool, onlyLike
 		}
 	}
 
-	if public == false {
+	if !public {
 		sqlQuery = sqlQuery.Where("user_id = ?", userId)
 	} else {
 		sqlQuery = sqlQuery.Where("public = true")
