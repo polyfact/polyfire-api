@@ -4,6 +4,7 @@ import (
 	"database/sql/driver"
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -68,13 +69,13 @@ type PromptWithJoin struct {
 
 type PromptInsert struct {
 	ID          string      `gorm:"type:uuid;default:uuid_generate_v4();" json:"id"`
-	Name        string      `json:"name"`
-	Description string      `json:"description"`
-	Prompt      string      `json:"prompt"`
-	Tags        StringArray `json:"tags,omitempty"`
-	UserId      string      `json:"user_id"`
-	Public      bool        `json:"public"`
-	Slug        string      `json:"slug"`
+	Name        string      `                                             json:"name"`
+	Description string      `                                             json:"description"`
+	Prompt      string      `                                             json:"prompt"`
+	Tags        StringArray `                                             json:"tags,omitempty"`
+	UserId      string      `                                             json:"user_id"`
+	Public      bool        `                                             json:"public"`
+	Slug        string      `                                             json:"slug"`
 }
 
 type PromptUpdate struct {
@@ -147,56 +148,37 @@ var AllowedColumns = map[string]bool{
 	"tags":        true,
 }
 
-var usesField = `array(SELECT prompts_uses.created_at FROM prompts_uses WHERE prompts_uses.prompt_id = prompts.id ) as uses`
-var likesField = `(SELECT COUNT(*) FROM prompts_likes WHERE prompts_likes.prompt_id = prompts.id) as likes`
-
-var minField = `prompts.id, prompts.name, prompts.description, prompts.use, prompts.tags, prompts.public, prompts.user_id, prompts.slug`
-var maxField = `prompts.id, prompts.name, prompts.description, prompts.prompt, prompts.created_at, prompts.updated_at, prompts.tags, prompts.public, prompts.user_id, prompts.slug`
+const (
+	usesField  = `array(SELECT prompts_uses.created_at FROM prompts_uses WHERE prompts_uses.prompt_id = prompts.id ) as uses`
+	likesField = `(SELECT COUNT(*) FROM prompts_likes WHERE prompts_likes.prompt_id = prompts.id) as likes`
+	userField  = `EXISTS (SELECT 1 FROM prompts_likes WHERE prompts_likes.prompt_id = prompts.id AND prompts_likes.user_id = ?) as is_liked`
+	minField   = `prompts.id, prompts.name, prompts.description, prompts.use, prompts.tags, prompts.public, prompts.user_id, prompts.slug` + "," + usesField + "," + likesField + "," + userField
+	maxField   = `prompts.id, prompts.name, prompts.description, prompts.prompt, prompts.created_at, prompts.updated_at, prompts.tags, prompts.public, prompts.user_id, prompts.slug` + "," + usesField + "," + likesField + "," + userField
+)
 
 func GetPromptByIdOrSlug(id string) (*Prompt, error) {
-	fieldMappings := map[string]string{
-		"uuid": "id",
-		"slug": "slug",
+	prompt := &Prompt{}
+
+	matchUUID, _ := regexp.MatchString(UUIDRegexp, id)
+	matchSlug, _ := regexp.MatchString(SlugRegexp, id)
+
+	if !matchUUID && !matchSlug {
+		return nil, fmt.Errorf("Invalid identifier")
 	}
 
-	query, err := PrepareQueryByStringIdentifier(id, fieldMappings)
+	var err error
+
+	if matchUUID {
+		err = DB.First(prompt, "id = ?", id).Error
+	} else {
+		err = DB.First(prompt, "slug = ?", id).Error
+	}
+
 	if err != nil {
 		return nil, err
 	}
 
-	prompt := &Prompt{}
-
-	result := DB.First(prompt, query, id)
-
-	if result.Error != nil {
-		return nil, result.Error
-	}
-
 	return prompt, nil
-}
-
-func getIsLikeField(userId string) string {
-	if userId == "" {
-		return ""
-	}
-	return fmt.Sprintf(`EXISTS (SELECT 1 FROM prompts_likes WHERE prompts_likes.prompt_id = prompts.id AND prompts_likes.user_id = '%s') as is_liked`, userId)
-}
-
-func buildFields(baseFields []string, userId string) string {
-	fields := append([]string(nil), baseFields...)
-
-	if islikeField := getIsLikeField(userId); islikeField != "" {
-		fields = append(fields, islikeField)
-	}
-	return strings.Join(fields, ", ")
-}
-
-func getSelectableFields(userId string) string {
-	return buildFields([]string{maxField, usesField, likesField}, userId)
-}
-
-func getSelectableMinFields(userId string) string {
-	return buildFields([]string{minField, usesField, likesField}, userId)
 }
 
 func applyAndValidateFilter(sqlQuery *gorm.DB, filter SupabaseFilter, value string) error {
@@ -213,14 +195,12 @@ func applyAndValidateFilter(sqlQuery *gorm.DB, filter SupabaseFilter, value stri
 	sqlQuery.Where(fmt.Sprintf("%s %s ?", filter.Column, op), value)
 
 	return nil
-
 }
 
 func GetAllPrompts(filters SupabaseFilters, userId string, public bool, onlyLiked bool) ([]PromptWithJoin, error) {
 	var results []PromptWithJoin
-
 	sqlQuery := DB.Model(&PromptWithJoin{}).
-		Select(getSelectableMinFields(userId))
+		Select(minField, userId)
 
 	if onlyLiked {
 		sqlQuery = sqlQuery.Joins("INNER JOIN prompts_likes ON prompts_likes.prompt_id = prompts.id").
@@ -243,7 +223,6 @@ func GetAllPrompts(filters SupabaseFilters, userId string, public bool, onlyLike
 		}
 
 		err := applyAndValidateFilter(sqlQuery, filter, value)
-
 		if err != nil {
 			return nil, err
 		}
@@ -267,7 +246,7 @@ func GetPromptById(id string, userId string) (*PromptWithJoin, error) {
 	var prompt PromptWithJoin
 
 	sqlQuery := DB.Model(&PromptWithJoin{}).
-		Select(getSelectableFields(userId)).
+		Select(maxField, userId).
 		Where("prompts.id = ?", id)
 
 	err := sqlQuery.Scan(&prompt).Error
@@ -282,7 +261,7 @@ func GetPromptByName(name string, userId string) (*PromptWithJoin, error) {
 	var prompt PromptWithJoin
 
 	sqlQuery := DB.Model(&PromptWithJoin{}).
-		Select(getSelectableFields(userId)).
+		Select(maxField, userId).
 		Where("prompts.name = ?", name)
 
 	err := sqlQuery.Scan(&prompt).Error
@@ -294,7 +273,6 @@ func GetPromptByName(name string, userId string) (*PromptWithJoin, error) {
 }
 
 func CreatePrompt(input PromptInsert) (*PromptInsert, error) {
-
 	if input.Name == "" {
 		return nil, errors.New("Name is missing")
 	}
@@ -310,7 +288,6 @@ func CreatePrompt(input PromptInsert) (*PromptInsert, error) {
 	input.Slug = slug.MakeLang(input.Name, "en")
 
 	err := DB.Create(&input).Error
-
 	if err != nil {
 		return nil, err
 	}
@@ -324,7 +301,6 @@ func UpdatePrompt(id string, input PromptUpdate, user_id string) (*Prompt, error
 	input.UpdatedAt = time.Now()
 
 	err := DB.Table("prompts").Where("id = ? AND user_id = ?", id, user_id).Updates(input).First(&result).Error
-
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, fmt.Errorf("failed to find prompt with id: %s", id)
