@@ -12,8 +12,10 @@ import (
 
 func GetPromptById(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
+	userId := r.Context().Value(utils.ContextKeyUserID).(string)
+
 	id := ps.ByName("id")
-	result, err := db.GetPromptById(id)
+	result, err := db.GetPromptById(id, userId)
 	if err != nil {
 		utils.RespondError(w, record, "db_fetch_prompt_error", err.Error())
 		return
@@ -27,8 +29,10 @@ func GetPromptById(w http.ResponseWriter, r *http.Request, ps httprouter.Params)
 
 func GetPromptByName(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
+	userId := r.Context().Value(utils.ContextKeyUserID).(string)
+
 	name := ps.ByName("name")
-	result, err := db.GetPromptByName(name)
+	result, err := db.GetPromptByName(name, userId)
 	if err != nil {
 		utils.RespondError(w, record, "db_fetch_prompt_error", err.Error())
 		return
@@ -43,7 +47,10 @@ func GetPromptByName(w http.ResponseWriter, r *http.Request, ps httprouter.Param
 func GetAllPrompts(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
 	queryParams := r.URL.Query()
-	userId := ""
+	userId := r.Context().Value(utils.ContextKeyUserID).(string)
+
+	public := true
+	onlyLiked := false
 
 	var filters db.SupabaseFilters
 
@@ -66,14 +73,16 @@ func GetAllPrompts(w http.ResponseWriter, r *http.Request, _ httprouter.Params) 
 		}
 
 		if column == "userid" && values[0] == r.Context().Value(utils.ContextKeyUserID).(string) {
-			userId = r.Context().Value(utils.ContextKeyUserID).(string)
+			public = false
+		} else if column == "like" {
+			onlyLiked = true
 		} else {
 			filters = append(filters, filter)
 		}
 
 	}
 
-	result, err := db.GetAllPrompts(filters, userId)
+	result, err := db.GetAllPrompts(filters, userId, public, onlyLiked)
 	if err != nil {
 		switch err.Error() {
 		case "invalid_column":
