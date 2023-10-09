@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	utils "github.com/polyfact/api/utils"
+	utils "github.com/polyfire/api/utils"
 	openai "github.com/rakyll/openai-go"
 	audio "github.com/rakyll/openai-go/audio"
 )

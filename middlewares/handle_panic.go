@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"os"
 
-	db "github.com/polyfact/api/db"
-	posthog "github.com/polyfact/api/posthog"
-	"github.com/polyfact/api/utils"
+	db "github.com/polyfire/api/db"
+	posthog "github.com/polyfire/api/posthog"
+	"github.com/polyfire/api/utils"
 )
 
 var isDevelopment = os.Getenv("APP_MODE") == "development"

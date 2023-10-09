@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	jwt "github.com/golang-jwt/jwt/v5"
-	db "github.com/polyfact/api/db"
+	db "github.com/polyfire/api/db"
 )
 
 //go:embed firebase_public-keys.json
