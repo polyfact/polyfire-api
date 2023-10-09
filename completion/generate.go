@@ -180,7 +180,7 @@ func GenerationStart(ctx context.Context, user_id string, input GenerateRequestB
 		}
 		result <- providers.Result{Resources: resources}
 		if input.Cache {
-			db.AddCompletionCache(embeddings, totalCompletion, provider_name, model_name)
+			_ := db.AddCompletionCache(embeddings, totalCompletion, provider_name, model_name)
 		}
 	}()
 	return &result, nil
