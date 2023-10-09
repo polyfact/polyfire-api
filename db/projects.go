@@ -2,8 +2,8 @@ package db
 
 import (
 	"encoding/json"
-	"fmt"
 	"regexp"
+	"fmt"
 )
 
 type ProjectUser struct {
@@ -46,23 +46,28 @@ func (Project) TableName() string {
 }
 
 func GetProjectByID(id string) (*Project, error) {
-	matchUUID, _ := regexp.MatchString("^[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$", id)
+	project := &Project{}
 
-	matchSlug, _ := regexp.MatchString("^[a-z0-9-_]*$", id)
+	matchUUID, _ := regexp.MatchString(UUIDRegexp, id)
+	matchSlug, _ := regexp.MatchString(SlugRegexp, id)
 
 	if !matchUUID && !matchSlug {
-		return nil, fmt.Errorf("Invalid project id")
+		return nil, fmt.Errorf("Invalid identifier")
 	}
 
-	var result Project
+	var err error
 
 	if matchUUID {
-		DB.First(&result, "id = ?", id)
+		err = DB.First(project, "id = ?", id).Error
 	} else {
-		DB.First(&result, "slug = ?", id)
+		err = DB.First(project, "slug = ?", id).Error
 	}
 
-	return &result, nil
+	if err != nil {
+		return nil, err
+	}
+
+	return project, nil
 }
 
 func GetProjectUserByID(id string) (*ProjectUser, error) {
