@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	router "github.com/julienschmidt/httprouter"
-	db "github.com/polyfact/api/db"
-	"github.com/polyfact/api/utils"
+	db "github.com/polyfire/api/db"
+	"github.com/polyfire/api/utils"
 )
 
 type UserRateLimitResponse struct {

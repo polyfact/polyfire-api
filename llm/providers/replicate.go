@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/polyfact/api/tokens"
-	"github.com/polyfact/api/utils"
+	"github.com/polyfire/api/tokens"
+	"github.com/polyfire/api/utils"
 )
 
 type ReplicateInput struct {

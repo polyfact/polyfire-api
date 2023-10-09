@@ -6,15 +6,15 @@ import (
 
 	httprouter "github.com/julienschmidt/httprouter"
 
-	auth "github.com/polyfact/api/auth"
-	completion "github.com/polyfact/api/completion"
-	db "github.com/polyfact/api/db"
-	imageGeneration "github.com/polyfact/api/image_generation"
-	kv "github.com/polyfact/api/kv"
-	memory "github.com/polyfact/api/memory"
-	middlewares "github.com/polyfact/api/middlewares"
-	prompt "github.com/polyfact/api/prompt"
-	transcription "github.com/polyfact/api/transcription"
+	auth "github.com/polyfire/api/auth"
+	completion "github.com/polyfire/api/completion"
+	db "github.com/polyfire/api/db"
+	imageGeneration "github.com/polyfire/api/image_generation"
+	kv "github.com/polyfire/api/kv"
+	memory "github.com/polyfire/api/memory"
+	middlewares "github.com/polyfire/api/middlewares"
+	prompt "github.com/polyfire/api/prompt"
+	transcription "github.com/polyfire/api/transcription"
 )
 
 type CORSRouter struct {

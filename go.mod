@@ -1,4 +1,4 @@
-module github.com/polyfact/api
+module github.com/polyfire/api
 
 go 1.20
 
