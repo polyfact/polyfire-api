@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"slices"
 
 	jwt "github.com/golang-jwt/jwt/v5"
 	router "github.com/julienschmidt/httprouter"
@@ -116,7 +115,7 @@ func authenticateAndHandle(
 			origin = origin + ":" + u.Port()
 		}
 
-		if !slices.Contains(user.AuthorizedDomains, origin) {
+		if !utils.ContainsString(user.AuthorizedDomains, origin) {
 			utils.RespondError(w, record, "invalid_origin")
 			return
 		}
