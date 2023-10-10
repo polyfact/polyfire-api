@@ -75,6 +75,11 @@ var ErrorMessages = map[string]APIError{
 		Message:    "This model can only be accessed by premium projects",
 		StatusCode: http.StatusForbidden,
 	},
+	"invalid_origin": {
+		Code:       "invalid_origin",
+		Message:    "The origin of the request is not allowed for this project",
+		StatusCode: http.StatusForbidden,
+	},
 
 	// Bad Request Errors (Communication, Content, Decoding, Generation, Model, and Methods)
 	"communication_error": {
