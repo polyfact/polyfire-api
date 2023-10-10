@@ -21,14 +21,15 @@ var (
 )
 
 type UserInfos struct {
-	AuthId         string `json:"auth_id"`
-	DevRateLimit   int    `json:"dev_rate_limit"`
-	DevUsage       int    `json:"dev_usage"`
-	Version        int    `json:"version"`
-	DevAuthId      string `json:"dev_auth_id"`
-	OpenaiToken    string `json:"openai_token"` // Somehow this is case sensitive, don't change to OpenAI
-	OpenaiOrg      string `json:"openai_org"`
-	ReplicateToken string `json:"replicate_token"`
+	AuthId            string      `json:"auth_id"`
+	DevRateLimit      int         `json:"dev_rate_limit"`
+	DevUsage          int         `json:"dev_usage"`
+	Version           int         `json:"version"`
+	DevAuthId         string      `json:"dev_auth_id"`
+	OpenaiToken       string      `json:"openai_token"` // Somehow this is case sensitive, don't change to OpenAI
+	OpenaiOrg         string      `json:"openai_org"`
+	ReplicateToken    string      `json:"replicate_token"`
+	AuthorizedDomains StringArray `json:"authorized_domains"`
 }
 
 func getUserInfos(user_id string) (*UserInfos, error) {
@@ -43,7 +44,8 @@ func getUserInfos(user_id string) (*UserInfos, error) {
 			dev_users.id as dev_auth_id,
 			dev_users.openai_token as openai_token,
 			dev_users.openai_org as openai_org,
-			dev_users.replicate_token as replicate_token
+			dev_users.replicate_token as replicate_token,
+			projects.authorized_domains as authorized_domains
 		FROM
 			project_users
 		JOIN projects ON project_users.project_id = projects.id
