@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 
 	jwt "github.com/golang-jwt/jwt/v5"
@@ -99,6 +100,25 @@ func authenticateAndHandle(
 	if err != nil {
 		utils.RespondError(w, record, "database_error")
 		return
+	}
+
+	if len(user.AuthorizedDomains) != 0 {
+		originHeader := r.Header.Get("Origin")
+
+		u, err := url.Parse(originHeader)
+		if err != nil {
+			utils.RespondError(w, record, "invalid_origin")
+			return
+		}
+		origin := u.Hostname()
+		if u.Port() != "" {
+			origin = origin + ":" + u.Port()
+		}
+
+		if !utils.ContainsString(user.AuthorizedDomains, origin) {
+			utils.RespondError(w, record, "invalid_origin")
+			return
+		}
 	}
 
 	ctx := createUserContext(r, userID, user, rateLimitStatus)
