@@ -47,6 +47,16 @@ func CutChatHistory(chat_messages []db.ChatMessage, max_token int) []db.ChatMess
 	return res
 }
 
+func ContainsString(list []string, item string) bool {
+	for _, i := range list {
+		if i == item {
+			return true
+		}
+	}
+
+	return false
+}
+
 type ContextKey string
 
 const (
