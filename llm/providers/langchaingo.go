@@ -96,6 +96,10 @@ func (m LangchainProvider) Name() string {
 	return m.ModelName
 }
 
+func (m LangchainProvider) ProviderModel() (string, string) {
+	return m.ModelName, m.ModelName
+}
+
 func (m LangchainProvider) DoesFollowRateLimit() bool {
 	return true
 }

@@ -318,6 +318,10 @@ func (m ReplicateProvider) Name() string {
 	return "replicate"
 }
 
+func (m ReplicateProvider) ProviderModel() (string, string) {
+	return "replicate", m.Model
+}
+
 func (m ReplicateProvider) DoesFollowRateLimit() bool {
 	return !m.IsCustomApiKey
 }
