@@ -27,6 +27,7 @@ type GenerateRequestBody struct {
 	SystemPrompt   *string     `json:"system_prompt,omitempty"`
 	WebRequest     bool        `json:"web,omitempty"`
 	Language       *string     `json:"language,omitempty"`
+	Cache          bool        `json:"cache,omitempty"`
 }
 
 func getLanguageCompletion(language *string) string {
@@ -49,6 +50,8 @@ func GenerationStart(ctx context.Context, user_id string, input GenerateRequestB
 	if err != nil {
 		return nil, InternalServerError
 	}
+
+	provider_name, model_name := provider.ProviderModel()
 
 	if provider.DoesFollowRateLimit() {
 		log.Println("Check Rate Limit")
@@ -137,6 +140,32 @@ func GenerationStart(ctx context.Context, user_id string, input GenerateRequestB
 
 	prompt = context_completion + "\n" + system_prompt + "\n" + getLanguageCompletion(input.Language) + "\n" + prompt
 
+	var embeddings []float32
+
+	if input.Cache {
+		embeddings, err = llm.Embed(ctx, prompt, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		cache, err := db.GetCompletionCacheByInput(provider_name, model_name, embeddings)
+		if err != nil {
+			return nil, err
+		}
+
+		if cache != nil {
+			log.Println("Cache hit")
+
+			result := make(chan providers.Result)
+			go func() {
+				defer close(result)
+				result <- providers.Result{Resources: resources}
+				result <- providers.Result{Result: cache.Result}
+			}()
+			return &result, nil
+		}
+	}
+
 	log.Println("Generate")
 	res_chan := provider.Generate(prompt, &callback, &opts)
 
@@ -144,10 +173,15 @@ func GenerationStart(ctx context.Context, user_id string, input GenerateRequestB
 
 	go func() {
 		defer close(result)
+		totalCompletion := ""
 		for res := range res_chan {
 			result <- res
+			totalCompletion += res.Result
 		}
 		result <- providers.Result{Resources: resources}
+		if input.Cache {
+			_ = db.AddCompletionCache(embeddings, totalCompletion, provider_name, model_name)
+		}
 	}()
 	return &result, nil
 }
@@ -205,9 +239,14 @@ func Generate(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		TokenUsage: providers.TokenUsage{Input: 0, Output: 0},
 	}
 
+	inputTokens := 0
+
 	for v := range *res_chan {
 		result.Result += v.Result
-		result.TokenUsage.Input = v.TokenUsage.Input
+		if inputTokens == 0 && v.TokenUsage.Input > 0 {
+			inputTokens = v.TokenUsage.Input
+			result.TokenUsage.Input = v.TokenUsage.Input
+		}
 		result.TokenUsage.Output += v.TokenUsage.Output
 
 		if len(v.Resources) > 0 {

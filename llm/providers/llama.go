@@ -76,6 +76,10 @@ func (m LLaMaProvider) Name() string {
 	return "llama"
 }
 
+func (m LLaMaProvider) ProviderModel() (string, string) {
+	return "llama", m.Model
+}
+
 func (m LLaMaProvider) DoesFollowRateLimit() bool {
 	return false
 }

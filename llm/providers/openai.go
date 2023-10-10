@@ -141,6 +141,10 @@ func (m OpenAIStreamProvider) Name() string {
 	return "openai"
 }
 
+func (m OpenAIStreamProvider) ProviderModel() (string, string) {
+	return "openai", m.Model
+}
+
 func (m OpenAIStreamProvider) DoesFollowRateLimit() bool {
 	return !m.IsCustomToken
 }
