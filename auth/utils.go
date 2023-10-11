@@ -70,6 +70,50 @@ func CreateProjectUser(
 	return &result.ID, nil
 }
 
+func ExchangeToken(
+	token string,
+	project db.Project,
+	getUserFromToken func(token string, project_id string) (string, string, error),
+) (string, error) {
+	auth_id, email, err := getUserFromToken(token, project.ID)
+	if err != nil {
+		return "", err
+	}
+
+	user_id, err := GetUserIdFromProjectAuthId(project.ID, auth_id, email)
+	if err != nil {
+		return "", err
+	}
+
+	if user_id == nil {
+
+		if !project.FreeUserInit {
+			return "", fmt.Errorf("free_user_init_disabled")
+		}
+		user_id, err = CreateProjectUser(
+			auth_id,
+			email,
+			project.ID,
+			project.DefaultMonthlyTokenRateLimit,
+			project.DefaultMonthlyCreditRateLimit,
+		)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	unsigned_user_token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"user_id": *user_id,
+	})
+
+	user_token, err := unsigned_user_token.SignedString([]byte(os.Getenv("JWT_SECRET")))
+	if err != nil {
+		return "", err
+	}
+
+	return user_token, nil
+}
+
 func TokenExchangeHandler(
 	getUserFromToken func(token string, project_id string) (string, string, error),
 ) func(w http.ResponseWriter, r *http.Request, ps router.Params) {
@@ -77,7 +121,7 @@ func TokenExchangeHandler(
 		record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
 		project_id := ps.ByName("id")
 		project, err := db.GetProjectByID(project_id)
-		if err != nil {
+		if err != nil || project == nil {
 			utils.RespondError(w, record, "project_retrieval_error")
 			return
 		}
@@ -95,46 +139,9 @@ func TokenExchangeHandler(
 
 		token := auth_header[1]
 
-		auth_id, email, err := getUserFromToken(token, project.ID)
+		user_token, err := ExchangeToken(token, *project, getUserFromToken)
 		if err != nil {
-			fmt.Println(err)
 			utils.RespondError(w, record, "token_exchange_failed")
-			return
-		}
-
-		user_id, err := GetUserIdFromProjectAuthId(project.ID, auth_id, email)
-		if err != nil {
-			fmt.Println(err)
-			utils.RespondError(w, record, "token_exchange_failed")
-			return
-		}
-
-		if user_id == nil {
-
-			if !project.FreeUserInit {
-				utils.RespondError(w, record, "free_user_init_disabled")
-				return
-			}
-			user_id, err = CreateProjectUser(
-				auth_id,
-				email,
-				project.ID,
-				project.DefaultMonthlyTokenRateLimit,
-				project.DefaultMonthlyCreditRateLimit,
-			)
-			if err != nil {
-				utils.RespondError(w, record, "project_user_creation_failed")
-				return
-			}
-		}
-
-		unsigned_user_token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-			"user_id": *user_id,
-		})
-
-		user_token, err := unsigned_user_token.SignedString([]byte(os.Getenv("JWT_SECRET")))
-		if err != nil {
-			utils.RespondError(w, record, "token_signature_error")
 			return
 		}
 

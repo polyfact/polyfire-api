@@ -81,3 +81,21 @@ func CheckDBVersionRateLimit(user_id string, version int) (*UserInfos, RateLimit
 
 	return userInfos, RateLimitStatusOk, nil
 }
+
+type RefreshToken struct {
+	RefreshToken         string `json:"refresh_token"`
+	RefreshTokenSupabase string `json:"refresh_token_supabase"`
+	ProjectId            string `json:"project_id"`
+}
+
+func CreateRefreshToken(refreshToken string, refreshTokenSupabase string, project_id string) error {
+	err := DB.Exec(`
+		INSERT INTO refresh_tokens (refresh_token, refresh_token_supabase, project_id)
+		VALUES (@refresh_token, @refresh_token_supabase, @project_id)
+	`, sql.Named("refresh_token", refreshToken), sql.Named("refresh_token_supabase", refreshTokenSupabase), sql.Named("project_id", project_id)).Error
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
