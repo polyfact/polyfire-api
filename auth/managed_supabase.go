@@ -7,7 +7,7 @@ import (
 	supa "github.com/nedpals/supabase-go"
 )
 
-func getUserFromSupabaseToken(token string, _project_id string) (string, string, error) {
+func GetUserFromSupabaseToken(token string, _project_id string) (string, string, error) {
 	supabaseUrl := os.Getenv("SUPABASE_URL")
 	supabaseKey := os.Getenv("SUPABASE_KEY")
 
@@ -24,5 +24,3 @@ func getUserFromSupabaseToken(token string, _project_id string) (string, string,
 
 	return user.ID, user.Email, nil
 }
-
-var ManagedSupabaseTokenExchangeHandler = TokenExchangeHandler(getUserFromSupabaseToken)
