@@ -1,9 +1,5 @@
 package db
 
-import (
-	"log"
-)
-
 type PromptUses struct {
 	UserId   string `json:"user_id"`
 	PromptId string `json:"prompt_id"`
@@ -17,8 +13,6 @@ func AddPromptUse(user_id string, prompt_id string) (*PromptUses, error) {
 	var result *PromptUses
 
 	err := DB.Create(&PromptUses{UserId: user_id, PromptId: prompt_id}).Error
-
-	log.Println(err)
 
 	if err != nil {
 		return nil, err
