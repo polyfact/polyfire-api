@@ -3,8 +3,8 @@ package providers
 import (
 	"encoding/json"
 
-	"github.com/polyfact/api/db"
-	"github.com/polyfact/api/utils"
+	"github.com/polyfire/api/db"
+	"github.com/polyfire/api/utils"
 )
 
 type ProviderOptions struct {

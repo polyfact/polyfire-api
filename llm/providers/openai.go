@@ -9,9 +9,9 @@ import (
 	"os"
 	"strings"
 
-	db "github.com/polyfact/api/db"
-	tokens "github.com/polyfact/api/tokens"
-	utils "github.com/polyfact/api/utils"
+	db "github.com/polyfire/api/db"
+	tokens "github.com/polyfire/api/tokens"
+	utils "github.com/polyfire/api/utils"
 	goOpenai "github.com/sashabaranov/go-openai"
 )
 

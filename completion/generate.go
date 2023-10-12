@@ -7,11 +7,11 @@ import (
 	"net/http"
 
 	router "github.com/julienschmidt/httprouter"
-	db "github.com/polyfact/api/db"
-	llm "github.com/polyfact/api/llm"
-	providers "github.com/polyfact/api/llm/providers"
-	utils "github.com/polyfact/api/utils"
-	webrequest "github.com/polyfact/api/web_request"
+	db "github.com/polyfire/api/db"
+	llm "github.com/polyfire/api/llm"
+	providers "github.com/polyfire/api/llm/providers"
+	utils "github.com/polyfire/api/utils"
+	webrequest "github.com/polyfire/api/web_request"
 )
 
 type GenerateRequestBody struct {

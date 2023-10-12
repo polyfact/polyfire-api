@@ -10,9 +10,9 @@ import (
 	router "github.com/julienschmidt/httprouter"
 	textsplitter "github.com/tmc/langchaingo/textsplitter"
 
-	db "github.com/polyfact/api/db"
-	"github.com/polyfact/api/llm"
-	"github.com/polyfact/api/utils"
+	db "github.com/polyfire/api/db"
+	"github.com/polyfire/api/llm"
+	"github.com/polyfire/api/utils"
 )
 
 const BatchSize int = 512

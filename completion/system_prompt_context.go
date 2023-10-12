@@ -1,7 +1,7 @@
 package completion
 
 import (
-	"github.com/polyfact/api/db"
+	"github.com/polyfire/api/db"
 )
 
 func getSystemPrompt(user_id string, system_prompt_id *string, system_prompt *string) (string, error) {
