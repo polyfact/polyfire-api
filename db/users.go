@@ -99,3 +99,22 @@ func CreateRefreshToken(refreshToken string, refreshTokenSupabase string, projec
 
 	return nil
 }
+
+func GetAndDeleteRefreshToken(refreshToken string) (*RefreshToken, error) {
+	var refreshTokenStruct []RefreshToken
+
+	err := DB.Raw(`
+		DELETE FROM refresh_tokens
+		WHERE refresh_token = @refresh_token
+		RETURNING refresh_token, refresh_token_supabase, project_id
+	`, sql.Named("refresh_token", refreshToken)).Scan(&refreshTokenStruct).Error
+	if err != nil {
+		return nil, err
+	}
+
+	if len(refreshTokenStruct) == 0 {
+		return nil, errors.New("Invalid refresh token")
+	}
+
+	return &refreshTokenStruct[0], nil
+}

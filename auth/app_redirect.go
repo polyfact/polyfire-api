@@ -1,9 +1,12 @@
 package auth
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -33,6 +36,25 @@ func RedirectAuth(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 	)
 
 	http.Redirect(w, r, url, http.StatusFound)
+}
+
+func WrapSupabaseRefreshToken(refreshToken string, projectId string) (string, error) {
+	wrappedRefreshToken := make([]byte, 32)
+	_, err := rand.Read(wrappedRefreshToken)
+	if err != nil {
+		return "", err
+	}
+
+	wrappedRefreshTokenString := strings.ReplaceAll(base64.StdEncoding.EncodeToString(wrappedRefreshToken), "/", "_")
+	wrappedRefreshTokenString = strings.ReplaceAll(wrappedRefreshTokenString, "+", "-")
+	wrappedRefreshTokenString = strings.ReplaceAll(wrappedRefreshTokenString, "=", "")
+
+	err = db.CreateRefreshToken(wrappedRefreshTokenString, refreshToken, projectId)
+	if err != nil {
+		return "", err
+	}
+
+	return wrappedRefreshTokenString, nil
 }
 
 func CallbackAuth(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -67,11 +89,6 @@ func CallbackAuth(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 		return
 	}
 
-	fmt.Println("Project ID:", projectID)
-	fmt.Println("Access Token:", accessToken)
-	fmt.Println("Refresh Token:", refreshToken)
-	fmt.Println("Redirect To:", redirectTo)
-
 	project, err := db.GetProjectByID(projectID)
 	if err != nil || project == nil {
 		http.Error(w, "project_retrieval_error", http.StatusInternalServerError)
@@ -84,26 +101,99 @@ func CallbackAuth(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 		return
 	}
 
-	fmt.Println("Token:", token)
-
-	projectRefreshToken := make([]byte, 32)
-	_, err = rand.Read(projectRefreshToken)
+	wrappedRefreshToken, err := WrapSupabaseRefreshToken(refreshToken, project.ID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	projectRefreshTokenString := strings.ReplaceAll(base64.StdEncoding.EncodeToString(projectRefreshToken), "/", "_")
-	projectRefreshTokenString = strings.ReplaceAll(projectRefreshTokenString, "+", "-")
-	projectRefreshTokenString = strings.ReplaceAll(projectRefreshTokenString, "=", "")
+	http.Redirect(w, r, redirectTo+"#access_token="+token+"&refresh_token="+wrappedRefreshToken, http.StatusFound)
+}
 
-	fmt.Println("Project Refresh Token:", projectRefreshTokenString)
+type RefreshTokenRequest struct {
+	RefreshToken string `json:"refresh_token"`
+}
 
-	err = db.CreateRefreshToken(projectRefreshTokenString, refreshToken, project.ID)
+type RefreshTokenSupabaseResponse struct {
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
+}
+
+func RefreshToken(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	projectID := ps.ByName("id")
+
+	var refreshTokenRequest RefreshTokenRequest
+
+	err := json.NewDecoder(r.Body).Decode(&refreshTokenRequest)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	project, err := db.GetProjectByID(projectID)
+	if err != nil || project == nil {
+		http.Error(w, "project_retrieval_error", http.StatusInternalServerError)
+		return
+	}
+
+	refreshTokenFromDB, err := db.GetAndDeleteRefreshToken(refreshTokenRequest.RefreshToken)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	http.Redirect(w, r, redirectTo+"#access_token="+token+"&refresh_token="+projectRefreshTokenString, http.StatusFound)
+	if (*refreshTokenFromDB).ProjectId != project.ID {
+		http.Error(w, "refresh_token_project_mismatch", http.StatusBadRequest)
+		return
+	}
+
+	ctx := context.Background()
+
+	reqURL := os.Getenv("SUPABASE_URL") + "/auth/v1/token?grant_type=refresh_token"
+	reqBody, err := json.Marshal(map[string]string{
+		"refresh_token": refreshTokenFromDB.RefreshTokenSupabase,
+	})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "POST", reqURL, strings.NewReader(string(reqBody)))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("apiKey", os.Getenv("SUPABASE_KEY"))
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	var refreshTokenResponse RefreshTokenSupabaseResponse
+	err := json.NewDecoder(res.Body).Decode(&refreshTokenResponse)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	wrappedRefreshToken, err := WrapSupabaseRefreshToken(refreshTokenResponse.RefreshToken, project.ID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	token, err := ExchangeToken(refreshTokenResponse.AccessToken, *project, GetUserFromSupabaseToken)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(map[string]string{
+		"refresh_token": wrappedRefreshToken,
+		"access_token":  token,
+	})
 }
