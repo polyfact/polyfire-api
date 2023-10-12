@@ -2,8 +2,8 @@ package db
 
 import (
 	"encoding/json"
-	"regexp"
 	"fmt"
+	"regexp"
 )
 
 type ProjectUser struct {
@@ -30,15 +30,16 @@ func (ProjectUserInsert) TableName() string {
 }
 
 type Project struct {
-	ID                            string `json:"id"`
-	Name                          string `json:"name"`
-	AuthID                        string `json:"auth_id"`
-	FreeUserInit                  bool   `json:"free_user_init"`
-	DefaultMonthlyTokenRateLimit  *int   `json:"default_monthly_token_rate_limit"` // Deprecated
-	DefaultMonthlyCreditRateLimit *int   `json:"default_monthly_credit_rate_limit"`
-	FirebaseProjectID             string `json:"firebase_project_id"`
-	CustomAuthPublicKey           string `json:"custom_auth_public_key"`
-	AllowAnonymousAuth            bool   `json:"allow_anonymous_auth"`
+	ID                            string      `json:"id"`
+	Name                          string      `json:"name"`
+	AuthID                        string      `json:"auth_id"`
+	FreeUserInit                  bool        `json:"free_user_init"`
+	DefaultMonthlyTokenRateLimit  *int        `json:"default_monthly_token_rate_limit"` // Deprecated
+	DefaultMonthlyCreditRateLimit *int        `json:"default_monthly_credit_rate_limit"`
+	FirebaseProjectID             string      `json:"firebase_project_id"`
+	CustomAuthPublicKey           string      `json:"custom_auth_public_key"`
+	AllowAnonymousAuth            bool        `json:"allow_anonymous_auth"`
+	AuthorizedDomains             StringArray `json:"authorized_domains"`
 }
 
 func (Project) TableName() string {
