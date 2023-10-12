@@ -12,7 +12,7 @@ import (
 	"strings"
 
 	httprouter "github.com/julienschmidt/httprouter"
-	"github.com/polyfact/api/db"
+	"github.com/polyfire/api/db"
 )
 
 func checkAuthorizedDomains(project *db.Project, redirectURI string) bool {
