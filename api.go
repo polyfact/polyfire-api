@@ -50,7 +50,9 @@ func main() {
 	router.GET("/project/:id/auth/anonymous", auth.AnonymousTokenExchangeHandler)
 	router.GET("/project/:id/auth/provider/redirect", auth.RedirectAuth)
 	router.GET("/project/:id/auth/provider/callback", auth.CallbackAuth)
+	router.POST("/project/:id/auth/provider/refresh", auth.RefreshToken)
 	router.GET("/auth/id", middlewares.Auth(auth.GetAuthId))
+
 	router.GET("/usage", middlewares.Auth(auth.UserRateLimit))
 
 	// Completion Routes
