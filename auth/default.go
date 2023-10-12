@@ -6,7 +6,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -16,10 +15,46 @@ import (
 	"github.com/polyfact/api/db"
 )
 
+func checkAuthorizedDomains(project *db.Project, redirectURI string) bool {
+	if len(project.AuthorizedDomains) == 0 {
+		return true
+	}
+
+	redirectURL, err := url.Parse(redirectURI)
+	if err != nil {
+		return false
+	}
+	origin := redirectURL.Hostname()
+
+	if redirectURL.Port() != "" {
+		origin = origin + ":" + redirectURL.Port()
+	}
+
+	fmt.Println(project.AuthorizedDomains)
+	for _, domain := range project.AuthorizedDomains {
+		if domain == origin {
+			return true
+		}
+	}
+
+	return false
+}
+
 func RedirectAuth(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	projectID := ps.ByName("id")
 	provider := r.URL.Query().Get("provider")
 	redirectToFinal := r.URL.Query().Get("redirect_to")
+
+	project, err := db.GetProjectByID(projectID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if !checkAuthorizedDomains(project, redirectToFinal) {
+		http.Error(w, "Unauthorized redirect URI", http.StatusUnauthorized)
+		return
+	}
 
 	redirectToAPI := fmt.Sprintf(
 		"%s/project/%s/auth/provider/callback?provider=%s&redirect_to=%s",
@@ -38,7 +73,7 @@ func RedirectAuth(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 	http.Redirect(w, r, url, http.StatusFound)
 }
 
-func WrapSupabaseRefreshToken(refreshToken string, projectId string) (string, error) {
+func wrapSupabaseRefreshToken(refreshToken string, projectId string) (string, error) {
 	wrappedRefreshToken := make([]byte, 32)
 	_, err := rand.Read(wrappedRefreshToken)
 	if err != nil {
@@ -95,13 +130,18 @@ func CallbackAuth(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 		return
 	}
 
+	if !checkAuthorizedDomains(project, redirectTo) {
+		http.Error(w, "Unauthorized redirect URI", http.StatusUnauthorized)
+		return
+	}
+
 	token, err := ExchangeToken(accessToken, *project, GetUserFromSupabaseToken)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	wrappedRefreshToken, err := WrapSupabaseRefreshToken(refreshToken, project.ID)
+	wrappedRefreshToken, err := wrapSupabaseRefreshToken(refreshToken, project.ID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -174,13 +214,13 @@ func RefreshToken(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 	}
 
 	var refreshTokenResponse RefreshTokenSupabaseResponse
-	err := json.NewDecoder(res.Body).Decode(&refreshTokenResponse)
+	err = json.NewDecoder(res.Body).Decode(&refreshTokenResponse)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	wrappedRefreshToken, err := WrapSupabaseRefreshToken(refreshTokenResponse.RefreshToken, project.ID)
+	wrappedRefreshToken, err := wrapSupabaseRefreshToken(refreshTokenResponse.RefreshToken, project.ID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
