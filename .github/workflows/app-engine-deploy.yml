@@ -36,3 +36,4 @@ jobs:
         POSTGRES_URI: '${{ secrets.POSTGRES_URI }}'
         JWT_SECRET: '${{ secrets.JWT_SECRET }}'
         LLAMA_URL: '${{ secrets.LLAMA_URL }}'
+        API_URL: '${{vars.API_URL}}'
