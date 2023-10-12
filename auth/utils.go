@@ -8,9 +8,9 @@ import (
 
 	jwt "github.com/golang-jwt/jwt/v5"
 	router "github.com/julienschmidt/httprouter"
-	db "github.com/polyfact/api/db"
-	posthog "github.com/polyfact/api/posthog"
-	"github.com/polyfact/api/utils"
+	db "github.com/polyfire/api/db"
+	posthog "github.com/polyfire/api/posthog"
+	"github.com/polyfire/api/utils"
 )
 
 func GetUserIdFromProjectAuthId(project string, auth_id string, email string) (*string, error) {

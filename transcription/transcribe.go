@@ -18,9 +18,9 @@ import (
 	router "github.com/julienschmidt/httprouter"
 	supa "github.com/nedpals/supabase-go"
 
-	db "github.com/polyfact/api/db"
-	stt "github.com/polyfact/api/stt"
-	"github.com/polyfact/api/utils"
+	db "github.com/polyfire/api/db"
+	stt "github.com/polyfire/api/stt"
+	"github.com/polyfire/api/utils"
 )
 
 func SplitFile(file io.Reader) ([]io.Reader, int, func(), error) {

@@ -10,8 +10,8 @@ import (
 
 	jwt "github.com/golang-jwt/jwt/v5"
 	router "github.com/julienschmidt/httprouter"
-	"github.com/polyfact/api/db"
-	"github.com/polyfact/api/utils"
+	"github.com/polyfire/api/db"
+	"github.com/polyfire/api/utils"
 )
 
 func parseJWT(token string) (jwt.MapClaims, error) {

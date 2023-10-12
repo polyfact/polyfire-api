@@ -4,9 +4,9 @@ FROM alpine:3
 RUN apk add go make git g++ ffmpeg
 
 # And we finally build the app
-WORKDIR /go/src/github.com/polyfact/api
+WORKDIR /go/src/github.com/polyfire/api
 
-COPY . /go/src/github.com/polyfact/api/
+COPY . /go/src/github.com/polyfire/api/
 
 RUN go get
 

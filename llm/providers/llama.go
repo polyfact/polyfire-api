@@ -9,7 +9,7 @@ import (
 	"os"
 	"strings"
 
-	tokens "github.com/polyfact/api/tokens"
+	tokens "github.com/polyfire/api/tokens"
 )
 
 type LLaMaInputBody struct {

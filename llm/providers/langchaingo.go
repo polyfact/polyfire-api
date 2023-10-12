@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	db "github.com/polyfact/api/db"
+	db "github.com/polyfire/api/db"
 	"github.com/tmc/langchaingo/llms"
 	"github.com/tmc/langchaingo/schema"
 )

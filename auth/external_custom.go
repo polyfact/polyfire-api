@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	jwt "github.com/golang-jwt/jwt/v5"
-	db "github.com/polyfact/api/db"
+	db "github.com/polyfire/api/db"
 )
 
 func getUserFromCustomSignature(custom_token string, project_id string) (string, string, error) {
@@ -36,7 +36,7 @@ func getUserFromCustomSignature(custom_token string, project_id string) (string,
 		aud := claims["aud"].(string)
 		user_id := claims["sub"].(string)
 
-		if aud != "polyfact_custom_auth_api" {
+		if aud != "polyfire_custom_auth_api" {
 			return "", "", fmt.Errorf("Invalid audience")
 		}
 

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/polyfact/api/llm/providers"
+	"github.com/polyfire/api/llm/providers"
 	"github.com/tmc/langchaingo/llms/cohere"
 )
 
