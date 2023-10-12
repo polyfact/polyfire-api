@@ -2,6 +2,8 @@ package db
 
 import (
 	"time"
+
+	"gorm.io/gorm"
 )
 
 type PromptLikeInput struct {
@@ -18,55 +20,39 @@ type PromptLikeOutput struct {
 type PromptLike struct {
 	UserId    string    `json:"user_id"`
 	PromptId  string    `json:"prompt_id"`
-	UpdatedAt time.Time `json:"updated_at"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+func (PromptLike) TableName() string {
+	return "prompts_likes"
 }
 
 func GetPromptLikeByUserId(input PromptLikeInput) (*PromptLike, error) {
-	client, err := CreateClient()
-
-	if err != nil {
+	var promptLike PromptLike
+	if err := DB.Where("user_id = ? AND prompt_id = ?", input.UserId, input.PromptId).First(&promptLike).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
 		return nil, err
 	}
-
-	var result []PromptLike
-	_, err = client.From("prompts_likes").Select("*", "exact", false).Eq("prompt_id", input.PromptId).Eq("user_id", input.UserId).Limit(1, "").ExecuteTo(&result)
-
-	if len(result) == 0 {
-		return nil, nil
-	}
-
-	return &result[0], err
+	return &promptLike, nil
 }
 
 func AddPromptLike(input PromptLikeInput) (*PromptLike, error) {
-	client, err := CreateClient()
+	promptLike := PromptLike{
+		UserId:   input.UserId,
+		PromptId: input.PromptId,
+	}
 
-	if err != nil {
+	if err := DB.Create(&promptLike).Error; err != nil {
 		return nil, err
 	}
-
-	var result []PromptLike
-	_, err = client.From("prompts_likes").Insert(input, false, "", "", "exact").ExecuteTo(&result)
-
-	if len(result) == 0 {
-		return nil, nil
-	}
-	return &result[0], err
+	return &promptLike, nil
 }
 
 func RemovePromptLike(input PromptLikeInput) error {
-	client, err := CreateClient()
-	if err != nil {
+	if err := DB.Where("user_id = ? AND prompt_id = ?", input.UserId, input.PromptId).Delete(&PromptLike{}).Error; err != nil {
 		return err
 	}
-
-	var result []PromptLike
-	_, err = client.From("prompts_likes").Delete("", "").Eq("user_id", input.UserId).Eq("prompt_id", input.PromptId).ExecuteTo(&result)
-
-	if err != nil {
-		return err
-	}
-
 	return nil
-
 }

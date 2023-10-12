@@ -39,7 +39,7 @@ func getUserInfos(user_id string) (*UserInfos, error) {
 			user_users.id as auth_id,
 			COALESCE(dev_users.rate_limit, 50000000) as dev_rate_limit,
 			COALESCE((SELECT SUM(credits) FROM get_logs_per_projects(dev_users.id, now()::timestamp, (now() - interval '1' month)::timestamp)), 0) as dev_usage,
-			user_users.version,
+			CASE WHEN project_users.id = @id THEN project_users.version ELSE user_users.version END as version,
 			dev_users.id as dev_auth_id,
 			dev_users.openai_token as openai_token,
 			dev_users.openai_org as openai_org,
