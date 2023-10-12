@@ -6,9 +6,9 @@ import (
 	"net/http"
 
 	router "github.com/julienschmidt/httprouter"
-	"github.com/polyfact/api/db"
-	"github.com/polyfact/api/llm/providers"
-	"github.com/polyfact/api/utils"
+	"github.com/polyfire/api/db"
+	"github.com/polyfire/api/llm/providers"
+	"github.com/polyfire/api/utils"
 )
 
 func FormatPrompt(chatHistory []db.ChatMessage, userPrompt string) string {

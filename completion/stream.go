@@ -6,9 +6,9 @@ import (
 
 	"github.com/gorilla/websocket"
 	router "github.com/julienschmidt/httprouter"
-	providers "github.com/polyfact/api/llm/providers"
-	utils "github.com/polyfact/api/utils"
-	webrequest "github.com/polyfact/api/web_request"
+	providers "github.com/polyfire/api/llm/providers"
+	utils "github.com/polyfire/api/utils"
+	webrequest "github.com/polyfire/api/web_request"
 )
 
 var upgrader = websocket.Upgrader{

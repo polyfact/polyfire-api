@@ -6,7 +6,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/polyfact/api/web_request"
+	"github.com/polyfire/api/web_request"
 )
 
 func webContext(task string, model *string) (string, error) {

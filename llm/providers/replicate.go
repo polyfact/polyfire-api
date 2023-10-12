@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/polyfact/api/tokens"
-	"github.com/polyfact/api/utils"
+	"github.com/polyfire/api/tokens"
+	"github.com/polyfire/api/utils"
 )
 
 type ReplicateInput struct {
@@ -316,6 +316,10 @@ func (m ReplicateProvider) UserAllowed(_user_id string) bool {
 
 func (m ReplicateProvider) Name() string {
 	return "replicate"
+}
+
+func (m ReplicateProvider) ProviderModel() (string, string) {
+	return "replicate", m.Model
 }
 
 func (m ReplicateProvider) DoesFollowRateLimit() bool {

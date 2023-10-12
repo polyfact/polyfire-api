@@ -9,7 +9,7 @@ import (
 	"os"
 	"strings"
 
-	tokens "github.com/polyfact/api/tokens"
+	tokens "github.com/polyfire/api/tokens"
 )
 
 type LLaMaInputBody struct {
@@ -74,6 +74,10 @@ func (m LLaMaProvider) UserAllowed(_user_id string) bool {
 
 func (m LLaMaProvider) Name() string {
 	return "llama"
+}
+
+func (m LLaMaProvider) ProviderModel() (string, string) {
+	return "llama", m.Model
 }
 
 func (m LLaMaProvider) DoesFollowRateLimit() bool {

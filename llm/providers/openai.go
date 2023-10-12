@@ -9,9 +9,9 @@ import (
 	"os"
 	"strings"
 
-	db "github.com/polyfact/api/db"
-	tokens "github.com/polyfact/api/tokens"
-	utils "github.com/polyfact/api/utils"
+	db "github.com/polyfire/api/db"
+	tokens "github.com/polyfire/api/tokens"
+	utils "github.com/polyfire/api/utils"
 	goOpenai "github.com/sashabaranov/go-openai"
 )
 
@@ -139,6 +139,10 @@ func (m OpenAIStreamProvider) UserAllowed(user_id string) bool {
 
 func (m OpenAIStreamProvider) Name() string {
 	return "openai"
+}
+
+func (m OpenAIStreamProvider) ProviderModel() (string, string) {
+	return "openai", m.Model
 }
 
 func (m OpenAIStreamProvider) DoesFollowRateLimit() bool {
