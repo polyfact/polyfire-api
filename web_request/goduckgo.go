@@ -10,7 +10,7 @@ import (
 
 	"github.com/cixtor/readability"
 	"github.com/gocolly/colly/v2"
-	tokens "github.com/polyfact/api/tokens"
+	tokens "github.com/polyfire/api/tokens"
 	"github.com/tmc/langchaingo/llms"
 )
 

@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	db "github.com/polyfact/api/db"
+	db "github.com/polyfire/api/db"
 	"github.com/tmc/langchaingo/llms"
 	"github.com/tmc/langchaingo/schema"
 )
@@ -94,6 +94,10 @@ func (m LangchainProvider) UserAllowed(user_id string) bool {
 
 func (m LangchainProvider) Name() string {
 	return m.ModelName
+}
+
+func (m LangchainProvider) ProviderModel() (string, string) {
+	return m.ModelName, m.ModelName
 }
 
 func (m LangchainProvider) DoesFollowRateLimit() bool {

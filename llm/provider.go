@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/polyfact/api/llm/providers"
+	"github.com/polyfire/api/llm/providers"
 	"github.com/tmc/langchaingo/llms/cohere"
 )
 
@@ -13,6 +13,7 @@ var ErrUnknownModel = errors.New("Unknown model")
 
 type Provider interface {
 	Name() string
+	ProviderModel() (string, string)
 	Generate(prompt string, c providers.ProviderCallback, opts *providers.ProviderOptions) chan providers.Result
 	UserAllowed(user_id string) bool
 	DoesFollowRateLimit() bool

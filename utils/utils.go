@@ -1,8 +1,8 @@
 package utils
 
 import (
-	db "github.com/polyfact/api/db"
-	llmTokens "github.com/polyfact/api/tokens"
+	db "github.com/polyfire/api/db"
+	llmTokens "github.com/polyfire/api/tokens"
 )
 
 func FillContext(embeddings []db.MatchResult) (string, error) {
