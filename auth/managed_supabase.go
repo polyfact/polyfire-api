@@ -24,5 +24,3 @@ func GetUserFromSupabaseToken(token string, _project_id string) (string, string,
 
 	return user.ID, user.Email, nil
 }
-
-var ManagedSupabaseTokenExchangeHandler = TokenExchangeHandler(GetUserFromSupabaseToken)

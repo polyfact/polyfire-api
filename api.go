@@ -44,7 +44,6 @@ func main() {
 	router := httprouter.New()
 
 	// Auth Routes
-	router.GET("/project/:id/auth/token", auth.ManagedSupabaseTokenExchangeHandler)
 	router.GET("/project/:id/auth/firebase", auth.ExternalFirebaseTokenExchangeHandler)
 	router.GET("/project/:id/auth/custom", auth.ExternalCustomTokenExchangeHandler)
 	router.GET("/project/:id/auth/anonymous", auth.AnonymousTokenExchangeHandler)
