@@ -6,7 +6,7 @@ import (
 	"net/mail"
 	"strings"
 
-	db "github.com/polyfact/api/db"
+	db "github.com/polyfire/api/db"
 )
 
 func getUserFromAnonymousToken(token string, project_id string) (string, string, error) {
