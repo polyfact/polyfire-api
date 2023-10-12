@@ -110,7 +110,7 @@ func CallbackAuth(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 		w.Header().Set("Content-Type", "text/html")
 		// TODO: Add a no-js fallback/a message in case the user get stuck on this page
 		// 			 for unexpected reasons
-		w.Write(
+		_, _ = w.Write(
 			[]byte(
 				"<script>l=document.location;a=l.hash.slice(1);history.replaceState(null,null,' ');l.search+=(l.search?\"&\":\"\")+(a?a:\"error=unknown_error\")</script>",
 			),
@@ -232,7 +232,7 @@ func RefreshToken(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 		return
 	}
 
-	json.NewEncoder(w).Encode(map[string]string{
+	_ = json.NewEncoder(w).Encode(map[string]string{
 		"refresh_token": wrappedRefreshToken,
 		"access_token":  token,
 	})
