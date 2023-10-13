@@ -81,3 +81,40 @@ func CheckDBVersionRateLimit(user_id string, version int) (*UserInfos, RateLimit
 
 	return userInfos, RateLimitStatusOk, nil
 }
+
+type RefreshToken struct {
+	RefreshToken         string `json:"refresh_token"`
+	RefreshTokenSupabase string `json:"refresh_token_supabase"`
+	ProjectId            string `json:"project_id"`
+}
+
+func CreateRefreshToken(refreshToken string, refreshTokenSupabase string, project_id string) error {
+	err := DB.Exec(`
+		INSERT INTO refresh_tokens (refresh_token, refresh_token_supabase, project_id)
+		VALUES (@refresh_token, @refresh_token_supabase, @project_id)
+	`, sql.Named("refresh_token", refreshToken), sql.Named("refresh_token_supabase", refreshTokenSupabase), sql.Named("project_id", project_id)).Error
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func GetAndDeleteRefreshToken(refreshToken string) (*RefreshToken, error) {
+	var refreshTokenStruct []RefreshToken
+
+	err := DB.Raw(`
+		DELETE FROM refresh_tokens
+		WHERE refresh_token = @refresh_token
+		RETURNING refresh_token, refresh_token_supabase, project_id
+	`, sql.Named("refresh_token", refreshToken)).Scan(&refreshTokenStruct).Error
+	if err != nil {
+		return nil, err
+	}
+
+	if len(refreshTokenStruct) == 0 {
+		return nil, errors.New("Invalid refresh token")
+	}
+
+	return &refreshTokenStruct[0], nil
+}
