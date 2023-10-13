@@ -35,6 +35,7 @@ app.yaml: app.dev.yaml check-env
 	| sed "s/{{REPLICATE_API_KEY}}/${REPLICATE_API_KEY}/" \
 	| sed "s#{{LLAMA_URL}}#${LLAMA_URL}#" \
 	| sed "s#{{POSTGRES_URI}}#${POSTGRES_URI}#" \
+	| sed "s#{{API_URL}}#${API_URL}#" \
 	| sed "s/{{JWT_SECRET}}/${JWT_SECRET}/" > app.yaml
 
 check-env:
@@ -67,6 +68,9 @@ ifndef POSTGRES_URI
 endif
 ifndef LLAMA_URL
 	$(error LLAMA_URL is undefined)
+endif
+ifndef API_URL
+	$(error API_URL is undefined)
 endif
 
 deploy: app.yaml
