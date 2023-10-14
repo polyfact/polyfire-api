@@ -79,7 +79,7 @@ func GenerationStart(ctx context.Context, user_id string, input GenerateRequestB
 		defer close(chan_memory_res)
 		memoryResult, err := getMemory(ctx, user_id, input.MemoryId, input.Task)
 		if err != nil {
-			panic(err)
+			return
 		}
 
 		chan_memory_res <- memoryResult
@@ -90,7 +90,7 @@ func GenerationStart(ctx context.Context, user_id string, input GenerateRequestB
 		defer close(chan_system_prompt)
 		system_prompt, err := getSystemPrompt(user_id, input.SystemPromptId, input.SystemPrompt)
 		if err != nil {
-			panic(err)
+			return
 		}
 
 		chan_system_prompt <- system_prompt
