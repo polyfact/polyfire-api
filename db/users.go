@@ -76,7 +76,7 @@ func CheckDBVersionRateLimit(user_id string, version int) (*UserInfos, RateLimit
 	}
 
 	if userInfos.DevUsage >= userInfos.DevRateLimit {
-		return nil, RateLimitStatusProjectReached, nil
+		return userInfos, RateLimitStatusProjectReached, nil
 	}
 
 	return userInfos, RateLimitStatusOk, nil
