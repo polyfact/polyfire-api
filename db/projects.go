@@ -2,8 +2,8 @@ package db
 
 import (
 	"encoding/json"
-	"regexp"
 	"fmt"
+	"regexp"
 )
 
 type ProjectUser struct {
