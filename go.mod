@@ -9,6 +9,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/websocket v1.5.0
 	github.com/gosimple/slug v1.13.1
+	github.com/haguro/elevenlabs-go v0.2.2
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/nedpals/supabase-go v0.3.0
 	github.com/pkoukk/tiktoken-go v0.1.6
