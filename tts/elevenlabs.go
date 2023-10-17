@@ -3,15 +3,18 @@ package tts
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"os"
 	"time"
 
 	"github.com/haguro/elevenlabs-go"
 	router "github.com/julienschmidt/httprouter"
+
+	"github.com/polyfire/api/db"
 )
 
-func TextToSpeech(text string, voiceID string) ([]byte, error) {
+func TextToSpeech(w io.Writer, text string, voiceID string) error {
 	client := elevenlabs.NewClient(context.Background(), os.Getenv("ELEVENLABS_API_KEY"), 30*time.Second)
 
 	ttsReq := elevenlabs.TextToSpeechRequest{
@@ -19,16 +22,12 @@ func TextToSpeech(text string, voiceID string) ([]byte, error) {
 		ModelID: "eleven_multilingual_v2",
 	}
 
-	audio, err := client.TextToSpeech(voiceID, ttsReq)
-	if err != nil {
-		return nil, err
-	}
-
-	return audio, nil
+	return client.TextToSpeechStream(w, voiceID, ttsReq)
 }
 
 type TTSRequestBody struct {
-	Text string `json:"text"`
+	Text  string  `json:"text"`
+	Voice *string `json:"voice"`
 }
 
 func TTSHandler(w http.ResponseWriter, r *http.Request, _ router.Params) {
@@ -39,13 +38,24 @@ func TTSHandler(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		return
 	}
 
-	audio, err := TextToSpeech(reqBody.Text, "GBv7mTt0atIp3Br8iCZE")
+	var voiceSlug string
+	if (reqBody.Voice == nil) || (*reqBody.Voice == "") {
+		voiceSlug = "default"
+	} else {
+		voiceSlug = *reqBody.Voice
+	}
+
+	voice, err := db.GetTTSVoice(voiceSlug)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	w.Header().Set("Content-Type", "audio/mp3")
 
-	w.Write(audio)
+	err = TextToSpeech(w, reqBody.Text, voice.ProviderVoiceID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
