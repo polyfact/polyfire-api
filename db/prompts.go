@@ -20,6 +20,11 @@ func (o *StringArray) Scan(src any) error {
 		return errors.New("src value cannot cast to string")
 	}
 	*o = strings.Split(strings.Trim(str, "{}"), ",")
+
+	if len(*o) == 1 && (*o)[0] == "" {
+		*o = []string{}
+	}
+
 	return nil
 }
 
