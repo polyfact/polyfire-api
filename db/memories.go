@@ -62,7 +62,7 @@ type Embedding struct {
 }
 
 func CreateMemory(memoryId string, userId string, public bool) error {
-	err := DB.Exec("INSERT INTO memories (id, user_id, public) VALUES (?, ?, ?)", memoryId, userId, public).Error
+	err := DB.Exec("INSERT INTO memories (id, user_id, public) VALUES (?, ?::uuid, ?)", memoryId, userId, public).Error
 	if err != nil {
 		return err
 	}
@@ -78,7 +78,7 @@ func AddMemory(userId string, memoryId string, content string, embedding []float
 	embeddingstr = strings.TrimRight(embeddingstr, ",")
 
 	err := DB.Exec(
-		"INSERT INTO embeddings (memory_id, user_id, content, embedding) VALUES (?, ?, ?, string_to_array(?, ',')::float[])",
+		"INSERT INTO embeddings (memory_id, user_id, content, embedding) VALUES (?, ?::uuid, ?, string_to_array(?, ',')::float[])",
 		memoryId,
 		userId,
 		content,
