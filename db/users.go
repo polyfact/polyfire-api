@@ -40,18 +40,17 @@ func getUserInfos(user_id string) (*UserInfos, error) {
 			user_users.id as auth_id,
 			COALESCE(dev_users.rate_limit, 50000000) as dev_rate_limit,
 			COALESCE((SELECT SUM(credits) FROM get_logs_per_projects(dev_users.id, now()::timestamp, (now() - interval '1' month)::timestamp)), 0) as dev_usage,
-			CASE WHEN project_users.id = @id THEN project_users.version ELSE user_users.version END as version,
+			project_users.version as version,
 			dev_users.id as dev_auth_id,
 			dev_users.openai_token as openai_token,
 			dev_users.openai_org as openai_org,
 			dev_users.replicate_token as replicate_token,
 			projects.authorized_domains as authorized_domains
-		FROM
-			project_users
+		FROM project_users
 		JOIN projects ON project_users.project_id = projects.id
-		JOIN auth_users as dev_users ON (project_users.id = @id AND dev_users.id = projects.auth_id::text) OR (project_users.id != @id AND dev_users.id = @id)
-		FULL JOIN auth_users as user_users ON user_users.id = project_users.auth_id
-		WHERE project_users.id = @id OR user_users.id = @id
+		JOIN auth_users as dev_users ON dev_users.id = projects.auth_id::text
+		JOIN auth_users as user_users ON user_users.id = project_users.auth_id
+		WHERE project_users.id = @id
 		LIMIT 1
 	`, sql.Named("id", user_id)).Scan(&userInfos).Error
 	if err != nil {
