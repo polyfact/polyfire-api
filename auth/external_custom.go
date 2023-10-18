@@ -34,6 +34,9 @@ func getUserFromCustomSignature(custom_token string, project_id string) (string,
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 		project_id := claims["iss"].(string)
 		tokenProject, err := db.GetProjectByID(project_id)
+		if err != nil {
+			return "", "", err
+		}
 
 		aud := claims["aud"].(string)
 		user_id := claims["sub"].(string)
