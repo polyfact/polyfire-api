@@ -48,7 +48,7 @@ func getUserInfos(user_id string) (*UserInfos, error) {
 			projects.authorized_domains as authorized_domains
 		FROM project_users
 		JOIN projects ON project_users.project_id = projects.id
-		JOIN auth_users as dev_users ON dev_users.id = projects.auth_id::text
+		JOIN auth_users as dev_users ON dev_users.id::text = projects.auth_id::text
 		JOIN auth_users as user_users ON user_users.id = project_users.auth_id
 		WHERE project_users.id = @id
 		LIMIT 1

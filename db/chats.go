@@ -37,7 +37,7 @@ func GetChatById(id string) (*Chat, error) {
 func CreateChat(userId string, systemPrompt *string, SystemPromptId *string) (*Chat, error) {
 	var result *Chat
 
-	err := DB.Raw("INSERT INTO chats (user_id, system_prompt, system_prompt_id) VALUES (?, ?, ?) RETURNING *", userId, systemPrompt, SystemPromptId).
+	err := DB.Raw("INSERT INTO chats (user_id, system_prompt, system_prompt_id) VALUES (?::uuid, ?, ?) RETURNING *", userId, systemPrompt, SystemPromptId).
 		Scan(&result).
 		Error
 	if err != nil {
