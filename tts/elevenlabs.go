@@ -12,6 +12,7 @@ import (
 	router "github.com/julienschmidt/httprouter"
 
 	"github.com/polyfire/api/db"
+	"github.com/polyfire/api/utils"
 )
 
 func TextToSpeech(w io.Writer, text string, voiceID string) error {
@@ -31,6 +32,8 @@ type TTSRequestBody struct {
 }
 
 func TTSHandler(w http.ResponseWriter, r *http.Request, _ router.Params) {
+	userId := r.Context().Value(utils.ContextKeyUserID).(string)
+
 	var reqBody TTSRequestBody
 	err := json.NewDecoder(r.Body).Decode(&reqBody)
 	if err != nil {
@@ -53,6 +56,7 @@ func TTSHandler(w http.ResponseWriter, r *http.Request, _ router.Params) {
 
 	w.Header().Set("Content-Type", "audio/mp3")
 
+	db.LogRequestsCredits(userId, "elevenlabs", "elevenlabs", len(reqBody.Text)*3000, len(reqBody.Text), 0, "tts")
 	err = TextToSpeech(w, reqBody.Text, voice.ProviderVoiceID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
