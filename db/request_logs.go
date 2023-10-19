@@ -169,14 +169,17 @@ func LogEvents(
 	projectId string,
 	requestBody string,
 	responseBody string,
+	error bool,
 ) {
 	err := DB.Exec(
-		"INSERT INTO events (path, user_id, project_id, request_body, response_body) VALUES (?, ?::uuid, ?, ?, ?)",
+		"INSERT INTO events (path, user_id, project_id, request_body, response_body, error) VALUES (?, (CASE WHEN ? = '' THEN NULL ELSE ? END)::uuid, ?, ?, ?, ?)",
 		path,
+		userId,
 		userId,
 		projectId,
 		requestBody,
 		responseBody,
+		error,
 	).Error
 	if err != nil {
 		panic(err)
