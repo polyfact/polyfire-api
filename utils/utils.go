@@ -68,4 +68,5 @@ const (
 	ContextKeyOpenAIToken           ContextKey = "openAIToken"
 	ContextKeyOpenAIOrg             ContextKey = "openAIOrg"
 	ContextKeyReplicateToken        ContextKey = "replicateToken"
+	ContextKeyProjectID             ContextKey = "projectID"
 )

@@ -5,7 +5,9 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/polyfire/api/db"
 	"github.com/polyfire/api/llm/providers"
+	"github.com/polyfire/api/utils"
 	"github.com/tmc/langchaingo/llms/cohere"
 )
 
@@ -19,7 +21,7 @@ type Provider interface {
 	DoesFollowRateLimit() bool
 }
 
-func defaultModel(model string) (string, string) {
+func getAvailableModels(model string) (string, string) {
 	switch model {
 	case "cheap":
 		return "llama", "llama2"
@@ -35,12 +37,6 @@ func defaultModel(model string) (string, string) {
 		return "openai", "gpt-4"
 	case "cohere":
 		return "cohere", "cohere_command"
-	case "codellama":
-		return "llama", "codellama"
-	case "llama":
-		return "llama", "llama"
-	case "llama2":
-		return "llama", "llama2"
 	case "llama-2-70b-chat":
 		return "replicate", "llama-2-70b-chat"
 	case "replit-code-v1-3b":
@@ -49,16 +45,37 @@ func defaultModel(model string) (string, string) {
 	return "", ""
 }
 
+func getModelWithAliases(modelAlias string, projectId string) (string, string) {
+	provider, model := getAvailableModels(modelAlias)
+
+	fmt.Println("Project ID: ", projectId)
+	if model == "" {
+		newModel, err := db.GetModelByAliasAndProjectId(modelAlias, projectId, "completion")
+		if err != nil {
+			return "", ""
+		}
+
+		model = newModel.Model
+		provider = newModel.Provider
+	}
+
+	return provider, model
+}
+
 func NewProvider(ctx context.Context, provider string, model *string) (Provider, error) {
 	if provider == "" && model == nil {
 		provider = "openai"
 	}
 
 	if provider == "" && model != nil {
+		projectId, _ := ctx.Value(utils.ContextKeyProjectID).(string)
+
 		var newModel string
-		provider, newModel = defaultModel(*model)
+		provider, newModel = getModelWithAliases(*model, projectId)
 		model = &newModel
 	}
+
+	fmt.Println("Provider: ", provider)
 
 	switch provider {
 	case "openai":
