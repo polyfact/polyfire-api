@@ -38,6 +38,7 @@ func createUserContext(r *http.Request, userID string, user *db.UserInfos, rateL
 	newCtx := context.WithValue(r.Context(), utils.ContextKeyUserID, userID)
 	newCtx = context.WithValue(newCtx, utils.ContextKeyRateLimitStatus, rateLimitStatus)
 	if user != nil {
+		newCtx = context.WithValue(newCtx, utils.ContextKeyProjectID, user.ProjectId)
 		if user.OpenaiToken != "" {
 			newCtx = context.WithValue(newCtx, utils.ContextKeyOpenAIToken, user.OpenaiToken)
 			if user.OpenaiOrg != "" {

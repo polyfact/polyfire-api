@@ -67,7 +67,7 @@ func LogRequests(
 	}
 
 	err := DB.Exec(
-		"INSERT INTO request_logs (user_id, model_name, kind, input_token_count, output_token_count, credits) VALUES (?, ?, ?, ?, ?, ?)",
+		"INSERT INTO request_logs (user_id, model_name, kind, input_token_count, output_token_count, credits) VALUES (?::uuid, ?, ?, ?, ?, ?)",
 		user_id,
 		model_name,
 		kind,
@@ -90,7 +90,7 @@ func LogRequestsCredits(
 	kind Kind,
 ) {
 	err := DB.Exec(
-		"INSERT INTO request_logs (user_id, model_name, kind, input_token_count, output_token_count, credits) VALUES (?, ?, ?, ?, ?, ?)",
+		"INSERT INTO request_logs (user_id, model_name, kind, input_token_count, output_token_count, credits) VALUES (?::uuid, ?, ?, ?, ?, ?)",
 		user_id,
 		model_name,
 		kind,
@@ -170,14 +170,17 @@ func LogEvents(
 	projectId string,
 	requestBody string,
 	responseBody string,
+	error bool,
 ) {
 	err := DB.Exec(
-		"INSERT INTO events (path, user_id, project_id, request_body, response_body) VALUES (?, ?, ?, ?, ?)",
+		"INSERT INTO events (path, user_id, project_id, request_body, response_body, error) VALUES (?, (CASE WHEN ? = '' THEN NULL ELSE ? END)::uuid, ?, ?, ?, ?)",
 		path,
+		userId,
 		userId,
 		projectId,
 		requestBody,
 		responseBody,
+		error,
 	).Error
 	if err != nil {
 		panic(err)

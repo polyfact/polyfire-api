@@ -149,3 +149,29 @@ func ProjectIsPremium(user_id string) (bool, error) {
 
 	return auth_users.Premium, nil
 }
+
+type Model struct {
+	ID       int    `json:"id"`
+	Model    string `json:"model"`
+	Provider string `json:"provider"`
+}
+
+func (Model) TableName() string {
+	return "models"
+}
+
+func GetModelByAliasAndProjectId(alias string, project_id string, modelType string) (*Model, error) {
+	model := &Model{}
+
+	err := DB.Raw(
+		"SELECT models.* FROM models JOIN model_aliases ON model_aliases.model_id = models.id WHERE model_aliases.alias = ? AND model_aliases.project_id = ? AND models.type = ?",
+		alias,
+		project_id,
+		modelType,
+	).Scan(model).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return model, nil
+}
