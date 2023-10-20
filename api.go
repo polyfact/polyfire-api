@@ -15,6 +15,7 @@ import (
 	middlewares "github.com/polyfire/api/middlewares"
 	prompt "github.com/polyfire/api/prompt"
 	transcription "github.com/polyfire/api/transcription"
+	tts "github.com/polyfire/api/tts"
 )
 
 type CORSRouter struct {
@@ -62,6 +63,9 @@ func main() {
 
 	// Transcription Routes
 	router.POST("/transcribe", middlewares.Auth(transcription.Transcribe))
+
+	// TTS Routes
+	router.POST("/tts", middlewares.Auth(tts.TTSHandler))
 
 	// Image Generation Routes
 	router.GET("/image/generate", middlewares.Auth(imageGeneration.ImageGeneration))
