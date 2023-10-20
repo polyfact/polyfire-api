@@ -72,6 +72,7 @@ func main() {
 
 	// Memory Routes
 	router.GET("/memories", middlewares.Auth(memory.Get))
+	router.POST("/memory/:id/search", middlewares.Auth(memory.Search))
 	router.POST("/memory", middlewares.Auth(memory.Create))
 	router.PUT("/memory", middlewares.Auth(memory.Add))
 
