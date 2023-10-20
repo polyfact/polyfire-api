@@ -156,7 +156,11 @@ generation_loop:
 		}
 	}
 
-	record(total_result)
+	var recordProps []utils.KeyValue = make([]utils.KeyValue, 0)
+	if input.SystemPromptId != nil {
+		recordProps = append(recordProps, utils.KeyValue{"PromptID", *input.SystemPromptId})
+	}
+	record(total_result, recordProps...)
 
 	err = conn.WriteMessage(websocket.TextMessage, []byte(""))
 	if err != nil {

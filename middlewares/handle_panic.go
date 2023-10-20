@@ -52,14 +52,18 @@ func AddRecord(r *http.Request) {
 			properties["requestBody"] = request
 			properties["responseBody"] = response
 			var error bool = false
+			var promptID string = ""
 			for _, element := range props {
 				if element.Key == "Error" {
 					error = true
 				}
+				if element.Key == "PromptID" {
+					promptID = element.Value
+				}
 				properties[element.Key] = element.Value
 			}
 			posthog.Event("API Request", userID, properties)
-			db.LogEvents(string(r.URL.Path), userID, projectId, request, response, error)
+			db.LogEvents(string(r.URL.Path), userID, projectId, request, response, error, promptID)
 		}()
 	}
 
