@@ -36,6 +36,7 @@ app.yaml: app.dev.yaml check-env
 	| sed "s#{{LLAMA_URL}}#${LLAMA_URL}#" \
 	| sed "s#{{POSTGRES_URI}}#${POSTGRES_URI}#" \
 	| sed "s#{{API_URL}}#${API_URL}#" \
+	| sed 's/{{ELEVENLABS_API_KEY}}/${ELEVENLABS_API_KEY}/' \
 	| sed "s/{{JWT_SECRET}}/${JWT_SECRET}/" > app.yaml
 
 check-env:
@@ -71,6 +72,9 @@ ifndef LLAMA_URL
 endif
 ifndef API_URL
 	$(error API_URL is undefined)
+endif
+ifndef ELEVENLABS_API_KEY
+	$(error ELEVENLABS_API_KEY is undefined)
 endif
 
 deploy: app.yaml
