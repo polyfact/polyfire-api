@@ -30,6 +30,7 @@ type UserInfos struct {
 	OpenaiOrg         string      `json:"openai_org"`
 	ReplicateToken    string      `json:"replicate_token"`
 	AuthorizedDomains StringArray `json:"authorized_domains"`
+	ProjectId         string      `json:"project_id"`
 }
 
 func getUserInfos(user_id string) (*UserInfos, error) {
@@ -45,7 +46,8 @@ func getUserInfos(user_id string) (*UserInfos, error) {
 			dev_users.openai_token as openai_token,
 			dev_users.openai_org as openai_org,
 			dev_users.replicate_token as replicate_token,
-			projects.authorized_domains as authorized_domains
+			projects.authorized_domains as authorized_domains,
+			projects.id as project_id
 		FROM project_users
 		JOIN projects ON project_users.project_id = projects.id
 		JOIN auth_users as dev_users ON dev_users.id::text = projects.auth_id::text

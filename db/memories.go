@@ -70,14 +70,33 @@ func CreateMemory(memoryId string, userId string, public bool) error {
 	return err
 }
 
+func GetMemory(memoryId string) (*Memory, error) {
+	var memory Memory
+	err := DB.First(&memory, "id = ?", memoryId).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return &memory, nil
+}
+
 func AddMemory(userId string, memoryId string, content string, embedding []float32) error {
+	memory, err := GetMemory(memoryId)
+	if err != nil {
+		return err
+	}
+
+	if memory == nil || memory.UserId != userId {
+		return errors.New("memory not found")
+	}
+
 	embeddingstr := ""
 	for _, v := range embedding {
 		embeddingstr += strconv.FormatFloat(float64(v), 'f', 6, 64) + ","
 	}
 	embeddingstr = strings.TrimRight(embeddingstr, ",")
 
-	err := DB.Exec(
+	err = DB.Exec(
 		"INSERT INTO embeddings (memory_id, user_id, content, embedding) VALUES (?, ?::uuid, ?, string_to_array(?, ',')::float[])",
 		memoryId,
 		userId,
