@@ -48,6 +48,9 @@ func createUserContext(r *http.Request, userID string, user *db.UserInfos, rateL
 		if user.ReplicateToken != "" {
 			newCtx = context.WithValue(newCtx, utils.ContextKeyReplicateToken, user.ReplicateToken)
 		}
+		if user.ElevenlabsToken != "" {
+			newCtx = context.WithValue(newCtx, utils.ContextKeyElevenlabsToken, user.ElevenlabsToken)
+		}
 	}
 
 	var recordEvent utils.RecordFunc = func(response string, props ...utils.KeyValue) {

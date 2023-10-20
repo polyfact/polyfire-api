@@ -28,6 +28,7 @@ type UserInfos struct {
 	DevAuthId         string      `json:"dev_auth_id"`
 	OpenaiToken       string      `json:"openai_token"` // Somehow this is case sensitive, don't change to OpenAI
 	OpenaiOrg         string      `json:"openai_org"`
+	ElevenlabsToken   string      `json:"elevenlabs_token"` // Same here, don't change to ElevenLabs
 	ReplicateToken    string      `json:"replicate_token"`
 	AuthorizedDomains StringArray `json:"authorized_domains"`
 	ProjectId         string      `json:"project_id"`
@@ -46,6 +47,7 @@ func getUserInfos(user_id string) (*UserInfos, error) {
 			dev_users.openai_token as openai_token,
 			dev_users.openai_org as openai_org,
 			dev_users.replicate_token as replicate_token,
+			dev_users.elevenlabs_token as elevenlabs_token,
 			projects.authorized_domains as authorized_domains,
 			projects.id as project_id
 		FROM project_users

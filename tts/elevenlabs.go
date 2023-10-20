@@ -3,6 +3,7 @@ package tts
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"os"
@@ -15,8 +16,23 @@ import (
 	"github.com/polyfire/api/utils"
 )
 
-func TextToSpeech(w io.Writer, text string, voiceID string) error {
-	client := elevenlabs.NewClient(context.Background(), os.Getenv("ELEVENLABS_API_KEY"), 30*time.Second)
+var (
+	RateLimitReached        = errors.New("Rate limit reached")
+	ProjectRateLimitReached = errors.New("Project rate limit reached")
+	UnknownError            = errors.New("Unknown error")
+)
+
+func TextToSpeech(ctx context.Context, w io.Writer, text string, voiceID string) error {
+	customToken, ok := ctx.Value(utils.ContextKeyElevenlabsToken).(string)
+	if !ok {
+		customToken = os.Getenv("ELEVENLABS_API_KEY")
+		rateLimitStatus := ctx.Value(utils.ContextKeyRateLimitStatus)
+		if rateLimitStatus != db.RateLimitStatusOk {
+			return RateLimitReached
+		}
+	}
+
+	client := elevenlabs.NewClient(context.Background(), customToken, 30*time.Second)
 
 	ttsReq := elevenlabs.TextToSpeechRequest{
 		Text:    text,
@@ -57,7 +73,7 @@ func TTSHandler(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	w.Header().Set("Content-Type", "audio/mp3")
 
 	db.LogRequestsCredits(userId, "elevenlabs", "elevenlabs", len(reqBody.Text)*3000, len(reqBody.Text), 0, "tts")
-	err = TextToSpeech(w, reqBody.Text, voice.ProviderVoiceID)
+	err = TextToSpeech(r.Context(), w, reqBody.Text, voice.ProviderVoiceID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
