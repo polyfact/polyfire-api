@@ -158,7 +158,7 @@ generation_loop:
 
 	var recordProps []utils.KeyValue = make([]utils.KeyValue, 0)
 	if input.SystemPromptId != nil {
-		recordProps = append(recordProps, utils.KeyValue{"PromptID", *input.SystemPromptId})
+		recordProps = append(recordProps, utils.KeyValue{Key: "PromptID", Value: *input.SystemPromptId})
 	}
 	record(total_result, recordProps...)
 
