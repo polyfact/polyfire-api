@@ -37,3 +37,4 @@ jobs:
         JWT_SECRET: '${{ secrets.JWT_SECRET }}'
         LLAMA_URL: '${{ secrets.LLAMA_URL }}'
         API_URL: '${{vars.API_URL}}'
+        ELEVENLABS_API_KEY: '${{ secrets.ELEVENLABS_API_KEY }}'

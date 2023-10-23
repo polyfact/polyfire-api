@@ -35,7 +35,7 @@ func Create(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	}
 
 	if requestBody.Public == nil {
-		defaultVal := true
+		defaultVal := false
 		requestBody.Public = &defaultVal
 	}
 
@@ -162,4 +162,36 @@ func Embedder(ctx context.Context, userId string, memoryId []string, task string
 	}
 
 	return results, nil
+}
+
+func Search(w http.ResponseWriter, r *http.Request, p router.Params) {
+	id := p.ByName("id")
+	decoder := json.NewDecoder(r.Body)
+	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
+	userId := r.Context().Value(utils.ContextKeyUserID).(string)
+
+	var requestBody struct {
+		Input string `json:"input"`
+	}
+
+	err := decoder.Decode(&requestBody)
+	if err != nil {
+		utils.RespondError(w, record, "decode_error")
+		return
+	}
+
+	results, err := Embedder(r.Context(), userId, []string{id}, requestBody.Input)
+	if err != nil {
+		utils.RespondError(w, record, "embedding_error")
+		return
+	}
+
+	response := map[string][]db.MatchResult{"results": results}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	response_str, _ := json.Marshal(&response)
+	record(string(response_str))
+
+	_ = json.NewEncoder(w).Encode(response)
 }
