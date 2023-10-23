@@ -9,6 +9,7 @@ type Kind string
 const (
 	Completion Kind = "completion"
 	Embed      Kind = "embedding"
+	TTS        Kind = "tts"
 )
 
 type RequestLog struct {
