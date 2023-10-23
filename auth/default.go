@@ -47,7 +47,7 @@ func RedirectAuth(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 
 	project, err := db.GetProjectByID(projectID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "This project was not found", http.StatusBadRequest)
 		return
 	}
 
