@@ -162,6 +162,7 @@ type Event struct {
 	ProjectID    string `json:"project_id"`
 	RequestBody  string `json:"request_body"`
 	ResponseBody string `json:"response_body"`
+	PromptID     string `json:"prompt_id"`
 }
 
 func LogEvents(
@@ -171,9 +172,10 @@ func LogEvents(
 	requestBody string,
 	responseBody string,
 	error bool,
+	promptID string,
 ) {
 	err := DB.Exec(
-		"INSERT INTO events (path, user_id, project_id, request_body, response_body, error) VALUES (?, (CASE WHEN ? = '' THEN NULL ELSE ? END)::uuid, ?, ?, ?, ?)",
+		"INSERT INTO events (path, user_id, project_id, request_body, response_body, error, prompt_id) VALUES (?, (CASE WHEN ? = '' THEN NULL ELSE ? END)::uuid, ?, ?, ?, ?, (CASE WHEN ? = '' THEN NULL ELSE ? END)::uuid)",
 		path,
 		userId,
 		userId,
@@ -181,6 +183,8 @@ func LogEvents(
 		requestBody,
 		responseBody,
 		error,
+		promptID,
+		promptID,
 	).Error
 	if err != nil {
 		panic(err)

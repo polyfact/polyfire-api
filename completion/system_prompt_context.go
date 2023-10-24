@@ -17,10 +17,6 @@ func getSystemPrompt(user_id string, system_prompt_id *string, system_prompt *st
 			return "", NotFound
 		}
 
-		_, err = db.AddPromptUse(user_id, p.ID)
-		if err != nil {
-			return "", NotFound
-		}
 		result = p.Prompt
 	}
 
