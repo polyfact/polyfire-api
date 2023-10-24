@@ -117,7 +117,9 @@ func Stream(w http.ResponseWriter, r *http.Request, _ router.Params) {
 generation_loop:
 	for v := range *chan_res {
 		result.Result += v.Result
-		result.TokenUsage.Input += v.TokenUsage.Input
+		if v.TokenUsage.Input != 0 {
+			result.TokenUsage.Input = v.TokenUsage.Input
+		}
 		result.TokenUsage.Output += v.TokenUsage.Output
 
 		if len(v.Resources) > 0 {
@@ -139,7 +141,7 @@ generation_loop:
 		}
 	}
 
-	if input.MemoryId != nil {
+	if input.Infos {
 		infosJSON, err := result.JSON()
 		if err != nil {
 			utils.RespondErrorStream(conn, record, "invalid_json")
