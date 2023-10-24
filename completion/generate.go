@@ -28,6 +28,7 @@ type GenerateRequestBody struct {
 	WebRequest     bool        `json:"web,omitempty"`
 	Language       *string     `json:"language,omitempty"`
 	Cache          bool        `json:"cache,omitempty"`
+	Infos          bool        `json:"infos,omitempty"`
 }
 
 func getLanguageCompletion(language *string) string {
