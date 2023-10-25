@@ -35,6 +35,8 @@ func getAvailableModels(model string) (string, string) {
 		return "openai", "gpt-3.5-turbo-16k"
 	case "gpt-4":
 		return "openai", "gpt-4"
+	case "gpt-4-32k":
+		return "openai", "gpt-4-32k"
 	case "cohere":
 		return "cohere", "cohere_command"
 	case "llama-2-70b-chat":
@@ -88,7 +90,7 @@ func NewProvider(ctx context.Context, provider string, model *string) (Provider,
 			m = *model
 		}
 
-		if m != "gpt-3.5-turbo" && m != "gpt-3.5-turbo-16k" && m != "gpt-4" {
+		if m != "gpt-3.5-turbo" && m != "gpt-3.5-turbo-16k" && m != "gpt-4" && m != "gpt-4-32k" {
 			return nil, ErrUnknownModel
 		}
 
