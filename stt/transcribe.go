@@ -1,4 +1,4 @@
-package transcription
+package stt
 
 import (
 	"bufio"
@@ -19,7 +19,7 @@ import (
 	supa "github.com/nedpals/supabase-go"
 
 	db "github.com/polyfire/api/db"
-	stt "github.com/polyfire/api/stt"
+	providers "github.com/polyfire/api/stt/providers"
 	"github.com/polyfire/api/utils"
 )
 
@@ -181,20 +181,23 @@ func Transcribe(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		utils.RespondError(w, record, "splitting_error")
 	}
 	defer close_func()
+	var res providers.TranscriptionResult
+	res.Words = make([]providers.Word, 0)
 	for i, r := range files {
-		res, err := stt.Transcribe(ctx, r, "mpeg")
+		resTmp, err := providers.DeepgramTranscribe(ctx, r, "mpeg")
 		if err != nil {
 			fmt.Printf("%v\n", err)
 			utils.RespondError(w, record, "transcription_error")
 			return
 		}
-		total_str += " " + res.Text
+		total_str += " " + resTmp.Text
+		res.Text += " " + resTmp.Text
+		res.Words = append(res.Words, resTmp.Words...)
 		fmt.Printf("Transcription %v/%v\n", i+1, len(files))
 	}
 
+	res.Text = strings.Trim(total_str, " \t\n")
 	db.LogRequestsCredits(user_id, "openai", "whisper", duration*1000, 0, 0, "transcription")
-
-	res := Result{Text: total_str}
 
 	response, _ := json.Marshal(&res)
 	record(string(response))

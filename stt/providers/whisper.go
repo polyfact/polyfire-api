@@ -1,4 +1,4 @@
-package stt
+package providers
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 	audio "github.com/rakyll/openai-go/audio"
 )
 
-func Transcribe(ctx context.Context, reader io.Reader, format string) (*audio.CreateTranscriptionResponse, error) {
+func WhisperTranscribe(ctx context.Context, reader io.Reader, format string) (*TranscriptionResult, error) {
 	var session *openai.Session
 	customToken, ok := ctx.Value(utils.ContextKeyOpenAIToken).(string)
 	if ok {
@@ -41,5 +41,8 @@ func Transcribe(ctx context.Context, reader io.Reader, format string) (*audio.Cr
 		return nil, err
 	}
 
-	return response, nil
+	res := TranscriptionResult{
+		Text: response.Text,
+	}
+	return &res, nil
 }
