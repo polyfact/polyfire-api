@@ -18,7 +18,7 @@ type Word struct {
 
 type TranscriptionResult struct {
 	Text  string `json:"text"`
-	Words []Word `json:"words",omitempty`
+	Words []Word `json:"words,omitempty"`
 }
 
 type Provider interface {
