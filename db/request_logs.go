@@ -1,6 +1,7 @@
 package db
 
 import (
+	"database/sql"
 	"strconv"
 )
 
@@ -175,16 +176,23 @@ func LogEvents(
 	promptID string,
 ) {
 	err := DB.Exec(
-		"INSERT INTO events (path, user_id, project_id, request_body, response_body, error, prompt_id) VALUES (?, (CASE WHEN ? = '' THEN NULL ELSE ? END)::uuid, ?, ?, ?, ?, (CASE WHEN ? = '' THEN NULL ELSE ? END)::uuid)",
-		path,
-		userId,
-		userId,
-		projectId,
-		requestBody,
-		responseBody,
-		error,
-		promptID,
-		promptID,
+		`INSERT INTO events (path, user_id, project_id, request_body, response_body, error, prompt_id)
+		VALUES (
+			@path,
+			(CASE WHEN @user_id = '' THEN NULL ELSE @user_id END)::uuid,
+			@project_id,
+			@request_body,
+			@response_body,
+			@error,
+			(SELECT id FROM prompts WHERE id = try_cast_uuid(@prompt_id) OR slug = @prompt_id)::uuid
+		)`,
+		sql.Named("path", path),
+		sql.Named("user_id", userId),
+		sql.Named("project_id", projectId),
+		sql.Named("request_body", requestBody),
+		sql.Named("response_body", responseBody),
+		sql.Named("error", error),
+		sql.Named("prompt_id", promptID),
 	).Error
 	if err != nil {
 		panic(err)
