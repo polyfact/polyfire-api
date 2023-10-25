@@ -11,7 +11,9 @@ import (
 	audio "github.com/rakyll/openai-go/audio"
 )
 
-func WhisperTranscribe(ctx context.Context, reader io.Reader, format string) (*TranscriptionResult, error) {
+type WhisperProvider struct{}
+
+func (WhisperProvider) Transcribe(ctx context.Context, reader io.Reader, format string) (*TranscriptionResult, error) {
 	var session *openai.Session
 	customToken, ok := ctx.Value(utils.ContextKeyOpenAIToken).(string)
 	if ok {

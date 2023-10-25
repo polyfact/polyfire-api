@@ -114,6 +114,7 @@ func DownloadFromBucket(bucket string, path string) ([]byte, error) {
 
 type TranscribeRequestBody struct {
 	FilePath string `json:"file_path"`
+	Provider string `json:"provider"`
 }
 
 type Result struct {
@@ -140,6 +141,7 @@ func Transcribe(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	content_type := r.Header.Get("Content-Type")
 	var file_buf_reader io.Reader
 
+	var providerName string = ""
 	if content_type == "application/json" {
 		var input TranscribeRequestBody
 
@@ -149,6 +151,7 @@ func Transcribe(w http.ResponseWriter, r *http.Request, _ router.Params) {
 			return
 		}
 
+		providerName = input.Provider
 		b, err := DownloadFromBucket("audio_transcribes", input.FilePath)
 		if err != nil {
 			fmt.Println(err)
@@ -179,12 +182,20 @@ func Transcribe(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	if err != nil {
 		fmt.Println(err)
 		utils.RespondError(w, record, "splitting_error")
+		return
 	}
 	defer close_func()
+
+	provider, err := providers.NewProvider(providerName)
+	if err != nil {
+		utils.RespondError(w, record, "invalid_model_provider")
+		return
+	}
+
 	var res providers.TranscriptionResult
 	res.Words = make([]providers.Word, 0)
 	for i, r := range files {
-		resTmp, err := providers.DeepgramTranscribe(ctx, r, "mpeg")
+		resTmp, err := provider.Transcribe(ctx, r, "mpeg")
 		if err != nil {
 			fmt.Printf("%v\n", err)
 			utils.RespondError(w, record, "transcription_error")

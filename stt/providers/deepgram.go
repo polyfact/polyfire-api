@@ -9,7 +9,9 @@ import (
 	"github.com/deepgram-devs/deepgram-go-sdk/deepgram"
 )
 
-func DeepgramTranscribe(ctx context.Context, reader io.Reader, format string) (*TranscriptionResult, error) {
+type DeepgramProvider struct{}
+
+func (DeepgramProvider) Transcribe(ctx context.Context, reader io.Reader, format string) (*TranscriptionResult, error) {
 	credentials := os.Getenv("DEEPGRAM_API_KEY")
 	dg := deepgram.NewClient(credentials)
 
@@ -49,9 +51,6 @@ func DeepgramTranscribe(ctx context.Context, reader io.Reader, format string) (*
 			}
 		}
 	}
-
-	fmt.Println(text)
-	fmt.Println(words)
 
 	response := TranscriptionResult{
 		Text:  text,
