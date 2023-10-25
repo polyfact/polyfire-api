@@ -14,7 +14,7 @@ import (
 	memory "github.com/polyfire/api/memory"
 	middlewares "github.com/polyfire/api/middlewares"
 	prompt "github.com/polyfire/api/prompt"
-	transcription "github.com/polyfire/api/transcription"
+	stt "github.com/polyfire/api/stt"
 	tts "github.com/polyfire/api/tts"
 	utils "github.com/polyfire/api/utils"
 )
@@ -63,7 +63,7 @@ func main() {
 	router.GET("/stream", middlewares.Record(utils.Generate, middlewares.AuthStream(completion.Stream)))
 
 	// Transcription Routes
-	router.POST("/transcribe", middlewares.Record(utils.SpeechToText, middlewares.Auth(transcription.Transcribe)))
+	router.POST("/transcribe", middlewares.Record(utils.SpeechToText, middlewares.Auth(stt.Transcribe)))
 
 	// TTS Routes
 	router.POST("/tts", middlewares.Record(utils.TextToSpeech, middlewares.Auth(tts.TTSHandler)))
