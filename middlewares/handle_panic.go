@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"os"
 
+	router "github.com/julienschmidt/httprouter"
+
 	db "github.com/polyfire/api/db"
 	posthog "github.com/polyfire/api/posthog"
 	"github.com/polyfire/api/utils"
@@ -37,7 +39,7 @@ func getErrorMessage(rec interface{}) string {
 	return "Internal Server Error"
 }
 
-func AddRecord(r *http.Request) {
+func AddRecord(r *http.Request, eventType utils.EventType) {
 	var recordEventRequest utils.RecordRequestFunc = func(request string, response string, userID string, props ...utils.KeyValue) {
 		go func() {
 			pId, _ := db.GetProjectForUserId(userID)
@@ -63,7 +65,7 @@ func AddRecord(r *http.Request) {
 				properties[element.Key] = element.Value
 			}
 			posthog.Event("API Request", userID, properties)
-			db.LogEvents(string(r.URL.Path), userID, projectId, request, response, error, promptID)
+			db.LogEvents(string(r.URL.Path), userID, projectId, request, response, error, promptID, string(eventType))
 		}()
 	}
 
@@ -85,4 +87,14 @@ func AddRecord(r *http.Request) {
 	newCtx = context.WithValue(newCtx, utils.ContextKeyRecordEventWithUserID, recordEventWithUserID)
 
 	*r = *r.WithContext(newCtx)
+}
+
+func Record(
+	eventType utils.EventType,
+	handler func(http.ResponseWriter, *http.Request, router.Params),
+) func(http.ResponseWriter, *http.Request, router.Params) {
+	return func(w http.ResponseWriter, r *http.Request, params router.Params) {
+		AddRecord(r, eventType)
+		handler(w, r, params)
+	}
 }
