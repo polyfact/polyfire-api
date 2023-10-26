@@ -15,6 +15,10 @@ type KeyValue struct {
 }
 
 type (
+	RecordEventTypeFunc           func(string, EventType, ...KeyValue)
+	RecordWithUserIDEventTypeFunc func(string, string, EventType, ...KeyValue)
+	RecordRequestEventTypeFunc    func(string, string, string, EventType, ...KeyValue)
+
 	RecordFunc           func(string, ...KeyValue)
 	RecordWithUserIDFunc func(string, string, ...KeyValue)
 	RecordRequestFunc    func(string, string, string, ...KeyValue)
@@ -370,7 +374,12 @@ func RespondError(w http.ResponseWriter, record RecordFunc, errorCode string, me
 	}
 }
 
-func RespondErrorStream(conn *websocket.Conn, record RecordFunc, errorCode string, message ...string) {
+func RespondErrorStream(
+	conn *websocket.Conn,
+	record RecordFunc,
+	errorCode string,
+	message ...string,
+) {
 	apiError, exists := ErrorMessages[errorCode]
 
 	if !exists {
