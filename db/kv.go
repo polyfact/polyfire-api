@@ -1,6 +1,8 @@
 package db
 
 import (
+	"strings"
+
 	"gorm.io/gorm/clause"
 )
 
@@ -28,6 +30,10 @@ func (KVStoreInsert) TableName() string {
 
 func createCombinedKey(userID, key string) string {
 	return userID + "|" + key
+}
+
+func RemoveUserIDFromKey(key string, userID string) string {
+	return strings.Replace(key, userID+"|", "", 1)
 }
 
 func SetKV(userID, key, value string) error {
@@ -63,6 +69,10 @@ func ListKV(userID string) ([]KVStore, error) {
 	err := DB.Where("user_id = ?", userID).Find(&results).Error
 	if err != nil {
 		return nil, err
+	}
+
+	for i := range results {
+		results[i].Key = RemoveUserIDFromKey(results[i].Key, userID)
 	}
 	return results, nil
 }
