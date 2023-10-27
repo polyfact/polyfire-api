@@ -70,6 +70,7 @@ const (
 	ContextKeyReplicateToken        ContextKey = "replicateToken"
 	ContextKeyProjectID             ContextKey = "projectID"
 	ContextKeyElevenlabsToken       ContextKey = "elevenlabsToken"
+	ContextKeyEventID               ContextKey = "eventID"
 )
 
 type EventType string
