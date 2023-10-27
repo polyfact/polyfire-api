@@ -64,9 +64,12 @@ func GenerationStart(ctx context.Context, user_id string, input GenerateRequestB
 
 	callback := func(provider_name string, model_name string, input_count int, output_count int, _completion string, credit *int) {
 		if credit != nil && provider.DoesFollowRateLimit() {
-			db.LogRequestsCredits(user_id, provider_name, model_name, *credit, input_count, output_count, "completion")
+			db.LogRequestsCredits(
+				ctx.Value(utils.ContextKeyEventID).(string),
+				user_id, provider_name, model_name, *credit, input_count, output_count, "completion")
 		} else {
 			db.LogRequests(
+				ctx.Value(utils.ContextKeyEventID).(string),
 				user_id,
 				provider_name,
 				model_name,
@@ -264,7 +267,7 @@ func Generate(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	response, _ := result.JSON()
 	var recordProps []utils.KeyValue = make([]utils.KeyValue, 0)
 	if input.SystemPromptId != nil {
-		recordProps = append(recordProps, utils.KeyValue{Key: "PromptID", Value:*input.SystemPromptId})
+		recordProps = append(recordProps, utils.KeyValue{Key: "PromptID", Value: *input.SystemPromptId})
 	}
 	record(string(response), recordProps...)
 

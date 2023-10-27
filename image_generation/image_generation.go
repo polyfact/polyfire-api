@@ -77,7 +77,9 @@ func ImageGeneration(w http.ResponseWriter, r *http.Request, _ router.Params) {
 
 	reader, err := DALLEGenerate(r.Context(), prompt)
 
-	db.LogRequests(user_id, "openai", "dalle-2", 0, 0, "image", true)
+	db.LogRequests(
+		r.Context().Value(utils.ContextKeyEventID).(string),
+		user_id, "openai", "dalle-2", 0, 0, "image", true)
 
 	if err != nil {
 		utils.RespondError(w, record, "image_generation_error")

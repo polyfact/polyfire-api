@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/google/uuid"
+
 	router "github.com/julienschmidt/httprouter"
 
 	db "github.com/polyfire/api/db"
@@ -40,6 +42,8 @@ func getErrorMessage(rec interface{}) string {
 }
 
 func AddRecord(r *http.Request, eventType utils.EventType) {
+	eventId := uuid.New().String()
+
 	var recordEventRequest utils.RecordRequestFunc = func(request string, response string, userID string, props ...utils.KeyValue) {
 		go func() {
 			pId, _ := db.GetProjectForUserId(userID)
@@ -65,7 +69,7 @@ func AddRecord(r *http.Request, eventType utils.EventType) {
 				properties[element.Key] = element.Value
 			}
 			posthog.Event("API Request", userID, properties)
-			db.LogEvents(string(r.URL.Path), userID, projectId, request, response, error, promptID, string(eventType))
+			db.LogEvents(eventId, string(r.URL.Path), userID, projectId, request, response, error, promptID, string(eventType))
 		}()
 	}
 
@@ -83,6 +87,7 @@ func AddRecord(r *http.Request, eventType utils.EventType) {
 	}
 
 	newCtx := context.WithValue(r.Context(), utils.ContextKeyRecordEvent, recordEvent)
+	newCtx = context.WithValue(newCtx, utils.ContextKeyEventID, eventId)
 	newCtx = context.WithValue(newCtx, utils.ContextKeyRecordEventRequest, recordEventRequest)
 	newCtx = context.WithValue(newCtx, utils.ContextKeyRecordEventWithUserID, recordEventWithUserID)
 
