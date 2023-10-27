@@ -72,7 +72,16 @@ func TTSHandler(w http.ResponseWriter, r *http.Request, _ router.Params) {
 
 	w.Header().Set("Content-Type", "audio/mp3")
 
-	db.LogRequestsCredits(userId, "elevenlabs", "elevenlabs", len(reqBody.Text)*3000, len(reqBody.Text), 0, "tts")
+	db.LogRequestsCredits(
+		r.Context().Value(utils.ContextKeyEventID).(string),
+		userId,
+		"elevenlabs",
+		"elevenlabs",
+		len(reqBody.Text)*3000,
+		len(reqBody.Text),
+		0,
+		"tts",
+	)
 	err = TextToSpeech(r.Context(), w, reqBody.Text, voice.ProviderVoiceID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

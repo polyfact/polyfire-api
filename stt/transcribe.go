@@ -208,7 +208,9 @@ func Transcribe(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	}
 
 	res.Text = strings.Trim(total_str, " \t\n")
-	db.LogRequestsCredits(user_id, "openai", "whisper", duration*1000, 0, 0, "transcription")
+	db.LogRequestsCredits(
+		r.Context().Value(utils.ContextKeyEventID).(string),
+		user_id, "openai", "whisper", duration*1000, 0, 0, "transcription")
 
 	response, _ := json.Marshal(&res)
 	record(string(response))

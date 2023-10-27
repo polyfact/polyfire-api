@@ -48,6 +48,7 @@ func tokenToCredit(provider_name string, model_name string, input_token_count in
 }
 
 func LogRequests(
+	eventID string,
 	user_id string,
 	provider_name string,
 	model_name string,
@@ -68,13 +69,14 @@ func LogRequests(
 	}
 
 	err := DB.Exec(
-		"INSERT INTO request_logs (user_id, model_name, kind, input_token_count, output_token_count, credits) VALUES (?::uuid, ?, ?, ?, ?, ?)",
+		"INSERT INTO request_logs (user_id, model_name, kind, input_token_count, output_token_count, credits, event_id) VALUES (?::uuid, ?, ?, ?, ?, ?, try_cast_uuid(?))",
 		user_id,
 		model_name,
 		kind,
 		input_token_count,
 		output_token_count,
 		credits,
+		eventID,
 	).Error
 	if err != nil {
 		panic(err)
@@ -82,6 +84,7 @@ func LogRequests(
 }
 
 func LogRequestsCredits(
+	eventID string,
 	user_id string,
 	provider_name string,
 	model_name string,
@@ -91,13 +94,14 @@ func LogRequestsCredits(
 	kind Kind,
 ) {
 	err := DB.Exec(
-		"INSERT INTO request_logs (user_id, model_name, kind, input_token_count, output_token_count, credits) VALUES (?::uuid, ?, ?, ?, ?, ?)",
+		"INSERT INTO request_logs (user_id, model_name, kind, input_token_count, output_token_count, credits, event_id) VALUES (?::uuid, ?, ?, ?, ?, ?, try_cast_uuid(?))",
 		user_id,
 		model_name,
 		kind,
 		input_token_count,
 		output_token_count,
 		credits,
+		eventID,
 	).Error
 	if err != nil {
 		panic(err)
@@ -168,6 +172,7 @@ type Event struct {
 }
 
 func LogEvents(
+	id string,
 	path string,
 	userId string,
 	projectId string,
@@ -178,8 +183,9 @@ func LogEvents(
 	eventType string,
 ) {
 	err := DB.Exec(
-		`INSERT INTO events (path, user_id, project_id, request_body, response_body, error, prompt_id, type)
+		`INSERT INTO events (id, path, user_id, project_id, request_body, response_body, error, prompt_id, type)
 		VALUES (
+			@id,
 			@path,
 			(CASE WHEN @user_id = '' THEN NULL ELSE @user_id END)::uuid,
 			@project_id,
@@ -189,6 +195,7 @@ func LogEvents(
 			(SELECT id FROM prompts WHERE id = try_cast_uuid(@prompt_id) OR slug = @prompt_id)::uuid,
 			@type
 		)`,
+		sql.Named("id", id),
 		sql.Named("path", path),
 		sql.Named("user_id", userId),
 		sql.Named("project_id", projectId),
