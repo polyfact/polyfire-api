@@ -43,6 +43,8 @@ func getAvailableModels(model string) (string, string) {
 		return "replicate", "llama-2-70b-chat"
 	case "replit-code-v1-3b":
 		return "replicate", "replit-code-v1-3b"
+	case "wizard-mega-13b-awq":
+		return "replicate", "wizard-mega-13b-awq"
 	}
 	return "", ""
 }
