@@ -21,7 +21,6 @@ var (
 )
 
 type UserInfos struct {
-	AuthId            string      `json:"auth_id"`
 	DevRateLimit      int         `json:"dev_rate_limit"`
 	DevUsage          int         `json:"dev_usage"`
 	Version           int         `json:"version"`
@@ -39,7 +38,6 @@ func getUserInfos(user_id string) (*UserInfos, error) {
 
 	err := DB.Raw(`
 		SELECT
-			user_users.id as auth_id,
 			COALESCE(dev_users.rate_limit, 50000000) as dev_rate_limit,
 			COALESCE((SELECT SUM(credits) FROM get_logs_per_projects(dev_users.id, now()::timestamp, (now() - interval '1' month)::timestamp)), 0) as dev_usage,
 			project_users.version as version,
@@ -53,7 +51,6 @@ func getUserInfos(user_id string) (*UserInfos, error) {
 		FROM project_users
 		JOIN projects ON project_users.project_id = projects.id
 		JOIN auth_users as dev_users ON dev_users.id::text = projects.auth_id::text
-		JOIN auth_users as user_users ON user_users.id = project_users.auth_id
 		WHERE project_users.id = @id
 		LIMIT 1
 	`, sql.Named("id", user_id)).Scan(&userInfos).Error
