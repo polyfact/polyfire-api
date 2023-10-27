@@ -126,6 +126,8 @@ func (m ReplicateProvider) GetCreditsPerSecond() float64 {
 		return 14000.0
 	case "replit-code-v1-3b":
 		return 11500.0
+	case "wizard-mega-13b-awq":
+		return 7250.0
 	default:
 		fmt.Printf("Invalid model: %v\n", m.Model)
 		return 0.0
@@ -138,6 +140,8 @@ func (m ReplicateProvider) GetVersion() (string, error) {
 		return "02e509c789964a7ea8736978a43525956ef40397be9033abf9fd2badfe68c9e3", nil
 	case "replit-code-v1-3b":
 		return "b84f4c074b807211cd75e3e8b1589b6399052125b4c27106e43d47189e8415ad", nil
+	case "wizard-mega-13b-awq":
+		return "a4be2a7c75e51c53b22167d44de3333436f1aa9253a201d2619cf74286478599", nil
 	default:
 		return "", errors.New("Invalid model")
 	}
