@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/polyfire/api/llm/providers/options"
 	tokens "github.com/polyfire/api/tokens"
 )
 
@@ -22,12 +23,12 @@ type LLaMaProvider struct {
 	Model string
 }
 
-func (m LLaMaProvider) Generate(task string, c ProviderCallback, opts *ProviderOptions) chan Result {
-	chan_res := make(chan Result)
+func (m LLaMaProvider) Generate(task string, c options.ProviderCallback, opts *options.ProviderOptions) chan options.Result {
+	chan_res := make(chan options.Result)
 
 	go func() {
 		defer close(chan_res)
-		tokenUsage := TokenUsage{Input: 0, Output: 0}
+		tokenUsage := options.TokenUsage{Input: 0, Output: 0}
 		body := LLaMaInputBody{Prompt: task, Model: m.Model}
 		if opts != nil && opts.Temperature != nil {
 			body.Temperature = opts.Temperature
@@ -36,14 +37,14 @@ func (m LLaMaProvider) Generate(task string, c ProviderCallback, opts *ProviderO
 		input, err := json.Marshal(body)
 		tokenUsage.Input += tokens.CountTokens("gpt-2", task)
 		if err != nil {
-			chan_res <- Result{Err: "generation_error"}
+			chan_res <- options.Result{Err: "generation_error"}
 			return
 		}
 		reqBody := string(input)
 		fmt.Println(reqBody)
 		resp, err := http.Post(os.Getenv("LLAMA_URL"), "application/json", strings.NewReader(reqBody))
 		if err != nil {
-			chan_res <- Result{Err: "generation_error"}
+			chan_res <- options.Result{Err: "generation_error"}
 			return
 		}
 		defer resp.Body.Close()
@@ -58,7 +59,7 @@ func (m LLaMaProvider) Generate(task string, c ProviderCallback, opts *ProviderO
 			tokenUsage.Output = tokens.CountTokens("gpt-2", string(p[:nb]))
 			totalOutput += tokenUsage.Output
 			totalCompletion += string(p[:nb])
-			chan_res <- Result{Result: string(p[:nb]), TokenUsage: tokenUsage}
+			chan_res <- options.Result{Result: string(p[:nb]), TokenUsage: tokenUsage}
 		}
 		if c != nil {
 			(*c)("llama", m.Model, tokenUsage.Input, totalOutput, totalCompletion, nil)

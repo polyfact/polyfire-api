@@ -7,6 +7,7 @@ import (
 
 	"github.com/polyfire/api/db"
 	"github.com/polyfire/api/llm/providers"
+	"github.com/polyfire/api/llm/providers/options"
 	"github.com/polyfire/api/utils"
 	"github.com/tmc/langchaingo/llms/cohere"
 )
@@ -16,7 +17,7 @@ var ErrUnknownModel = errors.New("Unknown model")
 type Provider interface {
 	Name() string
 	ProviderModel() (string, string)
-	Generate(prompt string, c providers.ProviderCallback, opts *providers.ProviderOptions) chan providers.Result
+	Generate(prompt string, c options.ProviderCallback, opts *options.ProviderOptions) chan options.Result
 	UserAllowed(user_id string) bool
 	DoesFollowRateLimit() bool
 }
@@ -132,7 +133,7 @@ func NewProvider(ctx context.Context, provider string, model *string) (Provider,
 			m = *model
 		}
 
-		if m != "llama-2-70b-chat" && m != "replit-code-v1-3b" {
+		if m != "llama-2-70b-chat" && m != "replit-code-v1-3b" && m != "wizard-mega-13b-awq" {
 			return nil, ErrUnknownModel
 		}
 

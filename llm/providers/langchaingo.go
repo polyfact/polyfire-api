@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	db "github.com/polyfire/api/db"
+	"github.com/polyfire/api/llm/providers/options"
 	"github.com/tmc/langchaingo/llms"
 	"github.com/tmc/langchaingo/schema"
 )
@@ -14,13 +15,13 @@ type LangchainProvider struct {
 	ModelName string
 }
 
-func (m LangchainProvider) Call(prompt string, opts *ProviderOptions) (string, error) {
+func (m LangchainProvider) Call(prompt string, opts *options.ProviderOptions) (string, error) {
 	ctx := context.Background()
 	var result string
 	var err error
 
 	if opts == nil {
-		opts = &ProviderOptions{}
+		opts = &options.ProviderOptions{}
 	}
 
 	options := llms.CallOptions{}
@@ -50,18 +51,18 @@ func (m LangchainProvider) Call(prompt string, opts *ProviderOptions) (string, e
 
 func (m LangchainProvider) Generate(
 	task string,
-	c ProviderCallback,
-	opts *ProviderOptions,
-) chan Result {
-	chan_res := make(chan Result)
+	c options.ProviderCallback,
+	opts *options.ProviderOptions,
+) chan options.Result {
+	chan_res := make(chan options.Result)
 
-	go func(chan_res chan Result) {
+	go func(chan_res chan options.Result) {
 		defer close(chan_res)
-		tokenUsage := TokenUsage{Input: 0, Output: 0}
+		tokenUsage := options.TokenUsage{Input: 0, Output: 0}
 		input_prompt := task
 		completion, err := m.Call(input_prompt, opts)
 		if err != nil {
-			chan_res <- Result{Err: "generation_error"}
+			chan_res <- options.Result{Err: "generation_error"}
 			return
 		}
 
@@ -79,7 +80,7 @@ func (m LangchainProvider) Generate(
 		tokenUsage.Input += m.Model.GetNumTokens(input_prompt)
 		tokenUsage.Output += m.Model.GetNumTokens(completion)
 
-		result := Result{Result: completion, TokenUsage: tokenUsage}
+		result := options.Result{Result: completion, TokenUsage: tokenUsage}
 
 		chan_res <- result
 	}(chan_res)
