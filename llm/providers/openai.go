@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	db "github.com/polyfire/api/db"
+	"github.com/polyfire/api/llm/providers/options"
 	tokens "github.com/polyfire/api/tokens"
 	utils "github.com/polyfire/api/utils"
 	goOpenai "github.com/sashabaranov/go-openai"
@@ -47,18 +48,18 @@ func NewOpenAIStreamProvider(ctx context.Context, model string) OpenAIStreamProv
 
 func (m OpenAIStreamProvider) Generate(
 	task string,
-	c ProviderCallback,
-	opts *ProviderOptions,
-) chan Result {
-	chan_res := make(chan Result)
+	c options.ProviderCallback,
+	opts *options.ProviderOptions,
+) chan options.Result {
+	chan_res := make(chan options.Result)
 
 	go func() {
 		defer close(chan_res)
-		tokenUsage := TokenUsage{Input: 0, Output: 0}
+		tokenUsage := options.TokenUsage{Input: 0, Output: 0}
 		ctx := context.Background()
 
 		if opts == nil {
-			opts = &ProviderOptions{}
+			opts = &options.ProviderOptions{}
 		}
 
 		req := goOpenai.ChatCompletionRequest{
@@ -89,9 +90,9 @@ func (m OpenAIStreamProvider) Generate(
 		stream, err := m.client.CreateChatCompletionStream(ctx, req)
 		if err != nil {
 			if strings.Contains(err.Error(), "Incorrect API key provided") && m.IsCustomToken {
-				chan_res <- Result{Err: "openai_invalid_api_key"}
+				chan_res <- options.Result{Err: "openai_invalid_api_key"}
 			} else {
-				chan_res <- Result{Err: "generation_error"}
+				chan_res <- options.Result{Err: "generation_error"}
 			}
 			return
 		}
@@ -114,7 +115,7 @@ func (m OpenAIStreamProvider) Generate(
 
 			totalOutput += tokenUsage.Output
 
-			result := Result{Result: completion.Choices[0].Delta.Content, TokenUsage: tokenUsage}
+			result := options.Result{Result: completion.Choices[0].Delta.Content, TokenUsage: tokenUsage}
 
 			totalCompletion += completion.Choices[0].Delta.Content
 

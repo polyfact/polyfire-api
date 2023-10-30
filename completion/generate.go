@@ -9,7 +9,7 @@ import (
 	router "github.com/julienschmidt/httprouter"
 	db "github.com/polyfire/api/db"
 	llm "github.com/polyfire/api/llm"
-	providers "github.com/polyfire/api/llm/providers"
+	options "github.com/polyfire/api/llm/providers/options"
 	utils "github.com/polyfire/api/utils"
 	webrequest "github.com/polyfire/api/web_request"
 )
@@ -38,7 +38,7 @@ func getLanguageCompletion(language *string) string {
 	return ""
 }
 
-func GenerationStart(ctx context.Context, user_id string, input GenerateRequestBody) (*chan providers.Result, error) {
+func GenerationStart(ctx context.Context, user_id string, input GenerateRequestBody) (*chan options.Result, error) {
 	context_completion := ""
 	resources := []db.MatchResult{}
 
@@ -103,7 +103,7 @@ func GenerationStart(ctx context.Context, user_id string, input GenerateRequestB
 		chan_system_prompt <- system_prompt
 	}()
 
-	opts := providers.ProviderOptions{}
+	opts := options.ProviderOptions{}
 	if input.Stop != nil {
 		opts.StopWords = input.Stop
 	}
@@ -160,11 +160,11 @@ func GenerationStart(ctx context.Context, user_id string, input GenerateRequestB
 		if cache != nil {
 			log.Println("Cache hit")
 
-			result := make(chan providers.Result)
+			result := make(chan options.Result)
 			go func() {
 				defer close(result)
-				result <- providers.Result{Resources: resources}
-				result <- providers.Result{Result: cache.Result}
+				result <- options.Result{Resources: resources}
+				result <- options.Result{Result: cache.Result}
 			}()
 			return &result, nil
 		}
@@ -173,7 +173,7 @@ func GenerationStart(ctx context.Context, user_id string, input GenerateRequestB
 	log.Println("Generate")
 	res_chan := provider.Generate(prompt, &callback, &opts)
 
-	result := make(chan providers.Result)
+	result := make(chan options.Result)
 
 	go func() {
 		defer close(result)
@@ -182,7 +182,7 @@ func GenerationStart(ctx context.Context, user_id string, input GenerateRequestB
 			result <- res
 			totalCompletion += res.Result
 		}
-		result <- providers.Result{Resources: resources}
+		result <- options.Result{Resources: resources}
 		if input.Cache {
 			_ = db.AddCompletionCache(embeddings, totalCompletion, provider_name, model_name)
 		}
@@ -238,9 +238,9 @@ func Generate(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		return
 	}
 
-	result := providers.Result{
+	result := options.Result{
 		Result:     "",
-		TokenUsage: providers.TokenUsage{Input: 0, Output: 0},
+		TokenUsage: options.TokenUsage{Input: 0, Output: 0},
 	}
 
 	inputTokens := 0

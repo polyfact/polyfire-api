@@ -6,7 +6,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	router "github.com/julienschmidt/httprouter"
-	providers "github.com/polyfire/api/llm/providers"
+	options "github.com/polyfire/api/llm/providers/options"
 	utils "github.com/polyfire/api/utils"
 	webrequest "github.com/polyfire/api/web_request"
 )
@@ -95,9 +95,9 @@ func Stream(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		}
 	}
 
-	result := providers.Result{
+	result := options.Result{
 		Result:     "",
-		TokenUsage: providers.TokenUsage{Input: 0, Output: 0},
+		TokenUsage: options.TokenUsage{Input: 0, Output: 0},
 	}
 
 	chan_stop := make(chan bool)

@@ -7,7 +7,7 @@ import (
 
 	router "github.com/julienschmidt/httprouter"
 	"github.com/polyfire/api/db"
-	"github.com/polyfire/api/llm/providers"
+	"github.com/polyfire/api/llm/providers/options"
 	"github.com/polyfire/api/utils"
 )
 
@@ -81,8 +81,8 @@ func chatContext(
 	user_id string,
 	task string,
 	chatId string,
-	callback providers.ProviderCallback,
-	opts *providers.ProviderOptions,
+	callback options.ProviderCallback,
+	opts *options.ProviderOptions,
 ) (string, *string, error) {
 	log.Println("GetChatById")
 	chat, err := db.GetChatById(chatId)
