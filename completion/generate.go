@@ -217,8 +217,6 @@ func Generate(w http.ResponseWriter, r *http.Request, _ router.Params) {
 			utils.RespondError(w, record, "error_website_exceeds_limit")
 		case webrequest.WebsitesContentExceeds:
 			utils.RespondError(w, record, "error_websites_content_exceeds")
-		case webrequest.NoContentFound:
-			utils.RespondError(w, record, "error_no_content_found")
 		case webrequest.FetchWebpageError:
 			utils.RespondError(w, record, "error_fetch_webpage")
 		case webrequest.ParseContentError:
