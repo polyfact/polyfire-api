@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 
@@ -44,10 +43,6 @@ func main() {
 	db.InitDB()
 
 	router := httprouter.New()
-
-	fmt.Println(
-		completion.ParseSystemPrompt("Hello {{name}}! How are you {{ this is a test }} kv \\{\\{ this is a test \\}\\}?"),
-	)
 
 	// Auth Routes
 	router.GET("/project/:id/auth/firebase", middlewares.Record(utils.AuthFirebase, auth.ExternalFirebaseTokenExchangeHandler))

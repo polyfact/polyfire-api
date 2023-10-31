@@ -2,6 +2,7 @@ package completion
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/polyfire/api/db"
 )
@@ -11,10 +12,12 @@ type ParsedSystemPromptElement struct {
 	IsVar   bool
 }
 
-type SystemPrompt = []ParsedSystemPromptElement
+type SystemPrompt struct {
+	elements []ParsedSystemPromptElement
+}
 
 func ParseSystemPrompt(system_prompt string) SystemPrompt {
-	var result SystemPrompt = make([]ParsedSystemPromptElement, 0)
+	result := make([]ParsedSystemPromptElement, 0)
 
 	var literal string = ""
 	var is_var bool = false
@@ -25,14 +28,14 @@ func ParseSystemPrompt(system_prompt string) SystemPrompt {
 		if c == '\\' && last_char != '\\' {
 			last_char = c
 			continue
-		} else if c == '{' && last_char == '{' {
+		} else if c == '{' && last_char == '{' && !is_var {
 			result = append(result, ParsedSystemPromptElement{Literal: literal, IsVar: is_var})
 			literal = ""
 			is_var = true
 			last_char = 0
 			continue
-		} else if c == '}' && last_char == '}' {
-			result = append(result, ParsedSystemPromptElement{Literal: literal, IsVar: is_var})
+		} else if c == '}' && last_char == '}' && is_var {
+			result = append(result, ParsedSystemPromptElement{Literal: strings.TrimSpace(literal), IsVar: is_var})
 			literal = ""
 			is_var = false
 			last_char = 0
@@ -46,17 +49,76 @@ func ParseSystemPrompt(system_prompt string) SystemPrompt {
 		} else {
 			last_char = c
 		}
+	}
 
-		fmt.Println(string(c))
-		fmt.Println(literal)
-
+	if last_char == '{' || last_char == '}' {
+		literal += string(last_char)
 	}
 
 	if is_var {
 		literal = "{{" + literal
 		is_var = false
 	}
+
 	result = append(result, ParsedSystemPromptElement{Literal: literal, IsVar: is_var})
+
+	return SystemPrompt{elements: result}
+}
+
+func (sp SystemPrompt) ListVars() []string {
+	var result []string = make([]string, 0)
+
+	for _, e := range sp.elements {
+		if e.IsVar {
+			result = append(result, e.Literal)
+		}
+	}
+
+	return result
+}
+
+func (sp SystemPrompt) Render(vars map[string]string) string {
+	var result string = ""
+
+	for _, e := range sp.elements {
+		if e.IsVar {
+			result += vars[e.Literal]
+		} else {
+			result += e.Literal
+		}
+	}
+
+	return result
+}
+
+func GetVars(user_id string, varList []string) map[string]string {
+	var result map[string]string = make(map[string]string)
+
+	kv_vars := make([]string, 0)
+	for _, v := range varList {
+		if strings.HasPrefix(v, "kv.") {
+			kv_vars = append(kv_vars, strings.TrimPrefix(v, "kv."))
+		}
+	}
+
+	kv_map, err := db.GetKVMap(user_id, kv_vars)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	for _, v := range varList {
+		if strings.HasPrefix(v, "kv.") {
+			key := strings.TrimPrefix(v, "kv.")
+			if kv_map[key] == "" {
+				fmt.Printf("Unknown var: \"%s\". Ignoring...\n", v)
+				result[v] = ""
+			}
+			result[v] = kv_map[key]
+		} else {
+			fmt.Printf("Unknown var: \"%s\". Ignoring...\n", v)
+			result[v] = ""
+		}
+	}
 
 	return result
 }
@@ -76,6 +138,14 @@ func getSystemPrompt(user_id string, system_prompt_id *string, system_prompt *st
 
 		result = p.Prompt
 	}
+
+	if len(result) == 0 {
+		return result, nil
+	}
+
+	systemPrompt := ParseSystemPrompt(result)
+
+	result = systemPrompt.Render(GetVars(user_id, systemPrompt.ListVars()))
 
 	return result, nil
 }
