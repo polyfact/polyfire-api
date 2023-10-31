@@ -192,7 +192,7 @@ func LogEvents(
 			@request_body,
 			@response_body,
 			@error,
-			(SELECT id FROM prompts WHERE id = try_cast_uuid(@prompt_id) OR slug = @prompt_id)::uuid,
+			(SELECT id FROM prompts WHERE id = try_cast_uuid(@prompt_id) OR slug = @prompt_id LIMIT 1)::uuid,
 			@type
 		)`,
 		sql.Named("id", id),
