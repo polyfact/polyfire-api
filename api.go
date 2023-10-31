@@ -13,7 +13,6 @@ import (
 	kv "github.com/polyfire/api/kv"
 	memory "github.com/polyfire/api/memory"
 	middlewares "github.com/polyfire/api/middlewares"
-	prompt "github.com/polyfire/api/prompt"
 	stt "github.com/polyfire/api/stt"
 	tts "github.com/polyfire/api/tts"
 	utils "github.com/polyfire/api/utils"
@@ -82,17 +81,6 @@ func main() {
 	router.GET("/kvs", middlewares.Record(utils.KVList, middlewares.Auth(kv.List)))
 	router.PUT("/kv", middlewares.Record(utils.KVSet, middlewares.Auth(kv.Set)))
 	router.DELETE("/kv", middlewares.Record(utils.KVDelete, middlewares.Auth(kv.Delete)))
-
-	// Prompt Routes
-	router.GET("/prompt/name/:name", middlewares.Record(utils.PromptGet, middlewares.Auth(prompt.GetPromptByName)))
-	router.GET("/prompt/id/:id", middlewares.Record(utils.PromptGet, middlewares.Auth(prompt.GetPromptById)))
-	router.GET("/prompts", middlewares.Record(utils.PromptList, middlewares.Auth(prompt.GetAllPrompts)))
-	router.POST("/prompt", middlewares.Record(utils.PromptCreate, middlewares.Auth(prompt.CreatePrompt)))
-	router.PUT("/prompt/:id", middlewares.Record(utils.PromptUpdate, middlewares.Auth(prompt.UpdatePrompt)))
-	router.DELETE("/prompt/:id", middlewares.Record(utils.PromptDelete, middlewares.Auth(prompt.DeletePrompt)))
-
-	// Prompt Like Routes
-	router.POST("/prompt/like/:id", middlewares.Record(utils.PromptLike, middlewares.Auth(prompt.HandlePromptLike)))
 
 	log.Fatal(http.ListenAndServe(":8080", GlobalMiddleware(router)))
 }

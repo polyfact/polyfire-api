@@ -56,6 +56,25 @@ func GetKV(userID, key string) (*KVStore, error) {
 	return &result, nil
 }
 
+func GetKVMap(userID string, keys []string) (map[string]string, error) {
+	var results []KVStore
+	combinedKeys := make([]string, len(keys))
+	for i, v := range keys {
+		combinedKeys[i] = createCombinedKey(userID, v)
+	}
+	err := DB.Where("key IN ?", combinedKeys).Find(&results).Error
+	if err != nil {
+		return nil, err
+	}
+
+	result := make(map[string]string)
+	for _, v := range results {
+		result[RemoveUserIDFromKey(v.Key, userID)] = v.Value
+	}
+
+	return result, nil
+}
+
 func DeleteKV(userID, key string) error {
 	combinedKey := createCombinedKey(userID, key)
 

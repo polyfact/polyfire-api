@@ -26,7 +26,6 @@ const (
 var (
 	WebsiteExceedsLimit    error = errors.New("error_website_exceeds_limit")
 	WebsitesContentExceeds error = errors.New("error_websites_content_exceeds")
-	NoContentFound         error = errors.New("error_no_content_found")
 	FetchWebpageError      error = errors.New("error_fetch_webpage")
 	ParseContentError      error = errors.New("error_parse_content")
 	VisitBaseURLError      error = errors.New("error_visit_base_url")
@@ -117,7 +116,7 @@ func WebRequest(query string, m *string) (string, error) {
 		}
 
 		if accumulatedText.Len() == 0 {
-			return "", NoContentFound
+			accumulatedText.WriteString("[No content found matching your query]")
 		}
 		return accumulatedText.String(), nil
 	}
@@ -161,13 +160,14 @@ func WebRequest(query string, m *string) (string, error) {
 
 	err := c.Visit(fmt.Sprintf(baseUrl, url.QueryEscape(query)))
 	if err != nil {
+		fmt.Println(err)
 		return "", VisitBaseURLError
 	}
 
 	<-allDone
 
 	if accumulatedText.Len() == 0 {
-		return "", NoContentFound
+		accumulatedText.WriteString("[No content found matching your query]")
 	}
 
 	return accumulatedText.String(), nil
