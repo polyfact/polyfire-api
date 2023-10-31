@@ -93,9 +93,12 @@ func GenerationStart(ctx context.Context, user_id string, input GenerateRequestB
 	}()
 
 	chan_system_prompt := make(chan string)
+	var warnings []string = nil
 	go func() {
 		defer close(chan_system_prompt)
-		system_prompt, err := getSystemPrompt(user_id, input.SystemPromptId, input.SystemPrompt)
+		var system_prompt string
+		var err error
+		system_prompt, warnings, err = getSystemPrompt(user_id, input.SystemPromptId, input.SystemPrompt)
 		if err != nil {
 			return
 		}
@@ -182,7 +185,7 @@ func GenerationStart(ctx context.Context, user_id string, input GenerateRequestB
 			result <- res
 			totalCompletion += res.Result
 		}
-		result <- options.Result{Resources: resources}
+		result <- options.Result{Resources: resources, Warnings: warnings}
 		if input.Cache {
 			_ = db.AddCompletionCache(embeddings, totalCompletion, provider_name, model_name)
 		}
@@ -253,8 +256,9 @@ func Generate(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		}
 		result.TokenUsage.Output += v.TokenUsage.Output
 
-		if len(v.Resources) > 0 {
+		if len(v.Resources) > 0 || v.Warnings != nil && len(v.Warnings) > 0 {
 			result.Resources = v.Resources
+			result.Warnings = v.Warnings
 		}
 
 		if v.Err != "" {

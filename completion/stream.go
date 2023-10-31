@@ -131,6 +131,11 @@ generation_loop:
 		default:
 		}
 
+		if v.Err != "" {
+			utils.RespondErrorStream(conn, record, v.Err)
+			return
+		}
+
 		total_result += v.Result
 		if v.Result != "" {
 			err = conn.WriteMessage(websocket.TextMessage, []byte(v.Result))

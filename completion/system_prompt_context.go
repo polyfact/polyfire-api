@@ -91,7 +91,8 @@ func (sp SystemPrompt) Render(vars map[string]string) string {
 	return result
 }
 
-func GetVars(user_id string, varList []string) map[string]string {
+func GetVars(user_id string, varList []string) (map[string]string, []string) {
+	var warnings []string = make([]string, 0)
 	var result map[string]string = make(map[string]string)
 
 	kv_vars := make([]string, 0)
@@ -110,20 +111,20 @@ func GetVars(user_id string, varList []string) map[string]string {
 		if strings.HasPrefix(v, "kv.") {
 			key := strings.TrimPrefix(v, "kv.")
 			if kv_map[key] == "" {
-				fmt.Printf("Unknown var: \"%s\". Ignoring...\n", v)
+				warnings = append(warnings, fmt.Sprintf("Unknown var: \"%s\"", v))
 				result[v] = ""
 			}
 			result[v] = kv_map[key]
 		} else {
-			fmt.Printf("Unknown var: \"%s\". Ignoring...\n", v)
+			warnings = append(warnings, fmt.Sprintf("Unknown var: \"%s\"", v))
 			result[v] = ""
 		}
 	}
 
-	return result
+	return result, warnings
 }
 
-func getSystemPrompt(user_id string, system_prompt_id *string, system_prompt *string) (string, error) {
+func getSystemPrompt(user_id string, system_prompt_id *string, system_prompt *string) (string, []string, error) {
 	var result string = ""
 
 	if system_prompt != nil && len(*system_prompt) > 0 {
@@ -133,19 +134,23 @@ func getSystemPrompt(user_id string, system_prompt_id *string, system_prompt *st
 	if system_prompt_id != nil && len(*system_prompt_id) > 0 {
 		p, err := db.GetPromptByIdOrSlug(*system_prompt_id)
 		if err != nil || p == nil {
-			return "", NotFound
+			return "", nil, NotFound
 		}
 
 		result = p.Prompt
 	}
 
 	if len(result) == 0 {
-		return result, nil
+		return result, nil, nil
 	}
 
 	systemPrompt := ParseSystemPrompt(result)
 
-	result = systemPrompt.Render(GetVars(user_id, systemPrompt.ListVars()))
+	vars, warnings := GetVars(user_id, systemPrompt.ListVars())
+	result = systemPrompt.Render(vars)
 
-	return result, nil
+	if len(warnings) == 0 {
+		warnings = nil
+	}
+	return result, warnings, nil
 }
