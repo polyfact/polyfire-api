@@ -72,8 +72,6 @@ func Stream(w http.ResponseWriter, r *http.Request, _ router.Params) {
 				utils.RespondErrorStream(conn, record, "error_website_exceeds_limit")
 			case webrequest.WebsitesContentExceeds:
 				utils.RespondErrorStream(conn, record, "error_websites_content_exceeds")
-			case webrequest.NoContentFound:
-				utils.RespondErrorStream(conn, record, "error_no_content_found")
 			case webrequest.FetchWebpageError:
 				utils.RespondErrorStream(conn, record, "error_fetch_webpage")
 			case webrequest.ParseContentError:
@@ -129,6 +127,15 @@ generation_loop:
 		case <-chan_stop:
 			break generation_loop
 		default:
+		}
+
+		if v.Err != "" {
+			utils.RespondErrorStream(conn, record, v.Err)
+			return
+		}
+
+		if v.Warnings != nil && len(v.Warnings) > 0 {
+			result.Warnings = append(result.Warnings, v.Warnings...)
 		}
 
 		total_result += v.Result

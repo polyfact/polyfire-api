@@ -309,11 +309,6 @@ var ErrorMessages = map[string]APIError{
 		Message:    "Error: The accumulated content from the websites exceeds the token limit.",
 		StatusCode: http.StatusBadRequest,
 	},
-	"error_no_content_found": {
-		Code:       "error_no_content_found",
-		Message:    "Error: No content accumulated from the results.",
-		StatusCode: http.StatusBadRequest,
-	},
 	"error_fetch_webpage": {
 		Code:       "error_fetch_webpage",
 		Message:    "Error fetching the webpage:",

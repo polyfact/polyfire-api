@@ -22,6 +22,7 @@ type Result struct {
 	TokenUsage TokenUsage       `json:"token_usage"`
 	Resources  []db.MatchResult `json:"ressources,omitempty"`
 	Err        string           `json:"error,omitempty"`
+	Warnings   []string         `json:"warnings,omitempty"`
 }
 
 type ProviderCallback *func(string, string, int, int, string, *int)
@@ -31,6 +32,7 @@ type jsonableResult struct {
 	TokenUsage TokenUsage       `json:"token_usage"`
 	Resources  []db.MatchResult `json:"ressources,omitempty"`
 	Error      *utils.APIError  `json:"error,omitempty"`
+	Warnings   []string         `json:"warnings,omitempty"`
 }
 
 func (r Result) JSON() ([]byte, error) {
@@ -50,6 +52,7 @@ func (r Result) JSON() ([]byte, error) {
 		TokenUsage: r.TokenUsage,
 		Resources:  r.Resources,
 		Error:      apiError,
+		Warnings:   r.Warnings,
 	})
 	if err != nil {
 		return []byte{}, err
