@@ -146,11 +146,18 @@ func getSystemPrompt(user_id string, system_prompt_id *string, system_prompt *st
 
 	systemPrompt := ParseSystemPrompt(result)
 
-	vars, warnings := GetVars(user_id, systemPrompt.ListVars())
-	result = systemPrompt.Render(vars)
+	varList := systemPrompt.ListVars()
 
-	if len(warnings) == 0 {
-		warnings = nil
+	var warnings []string = nil
+
+	if len(varList) != 0 {
+		var vars map[string]string
+		vars, warnings = GetVars(user_id, varList)
+		result = systemPrompt.Render(vars)
+
+		if len(warnings) == 0 {
+			warnings = nil
+		}
 	}
 	return result, warnings, nil
 }
