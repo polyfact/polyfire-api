@@ -134,6 +134,10 @@ generation_loop:
 			return
 		}
 
+		if v.Warnings != nil && len(v.Warnings) > 0 {
+			result.Warnings = append(result.Warnings, v.Warnings...)
+		}
+
 		total_result += v.Result
 		if v.Result != "" {
 			err = conn.WriteMessage(websocket.TextMessage, []byte(v.Result))
