@@ -296,6 +296,11 @@ var ErrorMessages = map[string]APIError{
 		Message:    "Failed to write message to connection.",
 		StatusCode: http.StatusInternalServerError,
 	},
+	"elevenlabs_error": {
+		Code:       "elevenlabs_error",
+		Message:    "There was an error with the Eleven Labs API.",
+		StatusCode: http.StatusInternalServerError,
+	},
 
 	// Web request
 
