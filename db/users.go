@@ -119,10 +119,6 @@ func GetAndDeleteRefreshToken(refreshToken string) (*RefreshToken, error) {
 	return &refreshTokenStruct[0], nil
 }
 
-type devEmailProject struct {
-	Email string `json:"email"`
-}
-
 func GetDevEmail(project_id string) (string, error) {
 	var devEmail []string
 
