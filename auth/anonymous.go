@@ -19,12 +19,21 @@ func getUserFromAnonymousToken(token string, project_id string) (string, string,
 		return "", "", fmt.Errorf("Anonymous auth is not allowed for this project")
 	}
 
-	emailBytes, err := base64.URLEncoding.DecodeString(token)
-	if err != nil {
-		return "", "", err
-	}
+	var email string
+	if token == "auto" {
+		email, err = db.GetDevEmail(project_id)
+		if err != nil {
+			return "", "", err
+		}
+	} else {
 
-	email := strings.TrimSpace(string(emailBytes))
+		emailBytes, err := base64.URLEncoding.DecodeString(token)
+		if err != nil {
+			return "", "", err
+		}
+
+		email = strings.TrimSpace(string(emailBytes))
+	}
 
 	re_encoded := base64.URLEncoding.EncodeToString(
 		[]byte(email),

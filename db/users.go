@@ -118,3 +118,22 @@ func GetAndDeleteRefreshToken(refreshToken string) (*RefreshToken, error) {
 
 	return &refreshTokenStruct[0], nil
 }
+
+type devEmailProject struct {
+	Email string `json:"email"`
+}
+
+func GetDevEmail(project_id string) (string, error) {
+	var devEmail []string
+
+	err := DB.Raw(`SELECT get_dev_email_project_id(@project_id)`, sql.Named("project_id", project_id)).Scan(&devEmail).Error
+	if err != nil {
+		return "", err
+	}
+
+	if len(devEmail) == 0 {
+		return "", errors.New("Invalid project id")
+	}
+
+	return devEmail[0], nil
+}
