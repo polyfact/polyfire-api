@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"time"
+	"fmt"
 
 	"github.com/haguro/elevenlabs-go"
 	router "github.com/julienschmidt/httprouter"
@@ -49,11 +50,12 @@ type TTSRequestBody struct {
 
 func TTSHandler(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	userId := r.Context().Value(utils.ContextKeyUserID).(string)
+	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
 
 	var reqBody TTSRequestBody
 	err := json.NewDecoder(r.Body).Decode(&reqBody)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		utils.RespondError(w, record, "invalid_json")
 		return
 	}
 
@@ -66,7 +68,7 @@ func TTSHandler(w http.ResponseWriter, r *http.Request, _ router.Params) {
 
 	voice, err := db.GetTTSVoice(voiceSlug)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		utils.RespondError(w, record, "database_error")
 		return
 	}
 
@@ -84,7 +86,8 @@ func TTSHandler(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	)
 	err = TextToSpeech(r.Context(), w, reqBody.Text, voice.ProviderVoiceID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		fmt.Println(err)
+		utils.RespondError(w, record, "elevenlabs_error")
 		return
 	}
 }

@@ -82,7 +82,7 @@ ifndef DEEPGRAM_API_KEY
 endif
 
 deploy: app.yaml
-	gcloud app deploy --quiet --version v0
+	gcloud app deploy --quiet --version v1
 
 clean:
 	rm -f ./build/* app.yaml
