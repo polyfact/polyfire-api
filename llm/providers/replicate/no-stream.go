@@ -39,6 +39,7 @@ func (m ReplicateProvider) NoStream(
 		tokenUsage := options.TokenUsage{}
 
 		tokenUsage.Input = tokens.CountTokens("gpt-2", task)
+		var coldBootDetected bool = false
 
 		for {
 			req, err := http.NewRequest("GET", startResponse.URLs.Get, nil)
@@ -77,6 +78,12 @@ func (m ReplicateProvider) NoStream(
 				fmt.Println(output)
 				chan_res <- options.Result{Err: "generation_error"}
 				return
+			}
+
+			if output.Status == "starting" && time.Since(replicateStartTime) > 10*time.Second && !coldBootDetected {
+				fmt.Println("cold boot detected")
+				chan_res <- options.Result{Warnings: []string{"The model is taking longer than usual to start up. It's probably due to a cold boot on replicate's side. It will respond enventually but it can take some time."}}
+				coldBootDetected = true
 			}
 
 			if output.Status == "succeeded" {
