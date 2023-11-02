@@ -3,10 +3,13 @@ package completion
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
+	"sync"
 
 	router "github.com/julienschmidt/httprouter"
+	completionContext "github.com/polyfire/api/completion/context"
 	db "github.com/polyfire/api/db"
 	llm "github.com/polyfire/api/llm"
 	options "github.com/polyfire/api/llm/providers/options"
@@ -38,8 +41,22 @@ func getLanguageCompletion(language *string) string {
 	return ""
 }
 
+func parseMemoryIdArray(memoryId interface{}) []string {
+	var memoryIdArray []string
+
+	if str, ok := memoryId.(string); ok {
+		memoryIdArray = append(memoryIdArray, str)
+	} else if array, ok := memoryId.([]interface{}); ok {
+		for _, item := range array {
+			if str, ok := item.(string); ok {
+				memoryIdArray = append(memoryIdArray, str)
+			}
+		}
+	}
+	return memoryIdArray
+}
+
 func GenerationStart(ctx context.Context, user_id string, input GenerateRequestBody) (*chan options.Result, error) {
-	context_completion := ""
 	resources := []db.MatchResult{}
 
 	log.Println("Init provider")
@@ -81,29 +98,33 @@ func GenerationStart(ctx context.Context, user_id string, input GenerateRequestB
 		}
 	}
 
-	chan_memory_res := make(chan *MemoryProcessResult)
+	var wg sync.WaitGroup
+	var contextElements []completionContext.ContentElement = make([]completionContext.ContentElement, 0)
+
+	wg.Add(1)
 	go func() {
-		defer close(chan_memory_res)
-		memoryResult, err := getMemory(ctx, user_id, input.MemoryId, input.Task)
-		if err != nil {
+		defer wg.Done()
+
+		memory, err := completionContext.GetMemory(ctx, user_id, parseMemoryIdArray(input.MemoryId), input.Task)
+		if err != nil || memory == nil {
 			return
 		}
 
-		chan_memory_res <- memoryResult
+		contextElements = append(contextElements, memory)
 	}()
 
-	chan_system_prompt := make(chan string)
+	wg.Add(1)
 	var warnings []string = nil
 	go func() {
-		defer close(chan_system_prompt)
-		var system_prompt string
+		defer wg.Done()
+		var system_prompt completionContext.ContentElement
 		var err error
-		system_prompt, warnings, err = getSystemPrompt(user_id, input.SystemPromptId, input.SystemPrompt)
+		system_prompt, warnings, err = completionContext.GetSystemPrompt(user_id, input.SystemPromptId, input.SystemPrompt)
 		if err != nil {
 			return
 		}
 
-		chan_system_prompt <- system_prompt
+		contextElements = append(contextElements, system_prompt)
 	}()
 
 	opts := options.ProviderOptions{}
@@ -131,21 +152,21 @@ func GenerationStart(ctx context.Context, user_id string, input GenerateRequestB
 		prompt = input.Task
 	}
 
-	log.Println("Wait for memory")
-	memoryResult := <-chan_memory_res
-	if memoryResult != nil {
-		context_completion = memoryResult.ContextCompletion
-		resources = memoryResult.Resources
+	wg.Wait()
+
+	contextString, err := completionContext.GetContext(contextElements, 200)
+	if err != nil {
+		return nil, err
 	}
 
-	log.Println("Wait for system_prompt")
-	system_prompt := <-chan_system_prompt
-
-	if system_prompt == "" && chat_system_prompt != nil {
+	var system_prompt string = ""
+	if chat_system_prompt != nil {
 		system_prompt = *chat_system_prompt
 	}
 
-	prompt = context_completion + "\n" + system_prompt + "\n" + getLanguageCompletion(input.Language) + "\n" + prompt
+	prompt = contextString + "\n" + system_prompt + "\n" + getLanguageCompletion(input.Language) + "\n" + prompt
+
+	fmt.Println("Prompt: ```\n" + prompt + "\n```")
 
 	var embeddings []float32
 
