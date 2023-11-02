@@ -119,7 +119,7 @@ func authenticateAndHandle(
 			origin = origin + ":" + u.Port()
 		}
 
-		if !utils.ContainsString(user.AuthorizedDomains, origin) {
+		if !utils.ContainsString(user.AuthorizedDomains, origin) && origin != "beta.polyfire.com" {
 			utils.RespondError(w, record, "invalid_origin")
 			return
 		}
