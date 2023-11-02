@@ -80,7 +80,7 @@ func (m ReplicateProvider) NoStream(
 				return
 			}
 
-			if output.Status == "starting" && time.Now().Sub(replicateStartTime) > 10*time.Second && !coldBootDetected {
+			if output.Status == "starting" && time.Since(replicateStartTime) > 10*time.Second && !coldBootDetected {
 				fmt.Println("cold boot detected")
 				chan_res <- options.Result{Warnings: []string{"The model is taking longer than usual to start up. It's probably due to a cold boot on replicate's side. It will respond enventually but it can take some time."}}
 				coldBootDetected = true
