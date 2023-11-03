@@ -1,7 +1,6 @@
 package context
 
 import (
-	"fmt"
 	"text/template"
 
 	"github.com/polyfire/api/web_request"
@@ -22,6 +21,5 @@ func GetWebContext(task string) (*WebContext, error) {
 		return nil, err
 	}
 
-	fmt.Println("RESULT WEB:", res)
 	return GetTemplateContext(res, *PROMPT_WEB_TEMPLATE)
 }

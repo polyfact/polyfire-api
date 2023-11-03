@@ -3,7 +3,6 @@ package completion
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"sync"
@@ -119,7 +118,12 @@ func GenerationStart(ctx context.Context, user_id string, input GenerateRequestB
 		defer wg.Done()
 		var system_prompt completionContext.ContentElement
 		var err error
-		system_prompt, warnings, err = completionContext.GetSystemPrompt(user_id, input.SystemPromptId, input.SystemPrompt)
+		system_prompt, warnings, err = completionContext.GetSystemPrompt(
+			user_id,
+			input.SystemPromptId,
+			input.SystemPrompt,
+			input.ChatId,
+		)
 		if err != nil {
 			return
 		}
@@ -176,8 +180,6 @@ func GenerationStart(ctx context.Context, user_id string, input GenerateRequestB
 	}
 
 	prompt := getLanguageCompletion(input.Language) + contextString + "\n" + input.Task
-
-	fmt.Println("Prompt: ```\n" + prompt + "\n```")
 
 	var embeddings []float32
 
