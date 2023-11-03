@@ -127,6 +127,20 @@ func GenerationStart(ctx context.Context, user_id string, input GenerateRequestB
 		contextElements = append(contextElements, system_prompt)
 	}()
 
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if !input.WebRequest {
+			return
+		}
+		web, err := completionContext.GetWebContext(input.Task)
+		if err != nil {
+			return
+		}
+
+		contextElements = append(contextElements, web)
+	}()
+
 	opts := options.ProviderOptions{}
 	if input.Stop != nil {
 		opts.StopWords = input.Stop
@@ -143,18 +157,13 @@ func GenerationStart(ctx context.Context, user_id string, input GenerateRequestB
 		if err != nil {
 			return nil, err
 		}
-	} else if input.WebRequest && input.Provider != "llama" {
-		prompt, err = webContext(input.Task, input.Model)
-		if err != nil {
-			return nil, err
-		}
 	} else {
 		prompt = input.Task
 	}
 
 	wg.Wait()
 
-	contextString, err := completionContext.GetContext(contextElements, 200)
+	contextString, err := completionContext.GetContext(contextElements, 2000)
 	if err != nil {
 		return nil, err
 	}

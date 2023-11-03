@@ -38,7 +38,7 @@ func (m ReplicateProvider) NoStream(
 		var completion string
 		tokenUsage := options.TokenUsage{}
 
-		tokenUsage.Input = tokens.CountTokens("gpt-2", task)
+		tokenUsage.Input = tokens.CountTokens(task)
 		var coldBootDetected bool = false
 
 		for {
@@ -88,7 +88,7 @@ func (m ReplicateProvider) NoStream(
 
 			if output.Status == "succeeded" {
 				completion = output.Output
-				tokenUsage.Output = tokens.CountTokens("gpt-2", completion)
+				tokenUsage.Output = tokens.CountTokens(completion)
 				chan_res <- options.Result{Result: output.Output, TokenUsage: tokenUsage}
 				break
 			}

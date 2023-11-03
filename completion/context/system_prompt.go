@@ -173,15 +173,15 @@ func (spc *SystemPromptContext) GetPriority() Priority {
 }
 
 func (spc *SystemPromptContext) GetMinimumContextSize() int {
-	return tokens.CountTokens("gpt-3.5-turbo", spc.SystemPrompt)
+	return tokens.CountTokens(spc.SystemPrompt)
 }
 
 func (spc *SystemPromptContext) GetRecommendedContextSize() int {
-	return tokens.CountTokens("gpt-3.5-turbo", spc.SystemPrompt)
+	return tokens.CountTokens(spc.SystemPrompt)
 }
 
 func (spc *SystemPromptContext) GetContentFittingIn(tokenCount int) string {
-	if tokens.CountTokens("gpt-3.5-turbo", spc.SystemPrompt) > tokenCount {
+	if tokens.CountTokens(spc.SystemPrompt) > tokenCount {
 		return ""
 	}
 	return spc.SystemPrompt

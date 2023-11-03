@@ -12,7 +12,7 @@ func CutChatHistory(chat_messages []db.ChatMessage, max_token int) []db.ChatMess
 	tokens := 0
 
 	for _, item := range chat_messages {
-		textTokens := llmTokens.CountTokens("gpt3.5-turbo", item.Content)
+		textTokens := llmTokens.CountTokens(item.Content)
 
 		if tokens+textTokens > max_token {
 			break

@@ -42,7 +42,7 @@ func GetContext(content []ContentElement, tokenLimit int) (string, error) {
 	for _, item := range content {
 		if item.GetPriority() == CRITICAL {
 			added := item.GetContentFittingIn(tokenLimit)
-			addedTokens := tokens.CountTokens("gpt-3.5-turbo", added)
+			addedTokens := tokens.CountTokens(added)
 			if addedTokens+tokenCount > tokenLimit {
 				return context, CriticalDoesNotFitWarning
 			}

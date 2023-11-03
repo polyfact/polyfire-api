@@ -18,7 +18,7 @@ func initEncoding() *tiktoken.Tiktoken {
 
 var tke = initEncoding()
 
-func CountTokens(_model string, text string) int {
+func CountTokens(text string) int {
 	token := tke.Encode(text, nil, nil)
 
 	return len(token)
