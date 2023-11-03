@@ -97,7 +97,7 @@ func (m OpenAIStreamProvider) Generate(
 			return
 		}
 
-		tokenUsage.Input += tokens.CountTokens(m.Model, task)
+		tokenUsage.Input += tokens.CountTokens(task)
 
 		totalOutput := 0
 		totalCompletion := ""
@@ -109,7 +109,7 @@ func (m OpenAIStreamProvider) Generate(
 				break
 			}
 
-			tokenUsage.Output = tokens.CountTokens(m.Model, completion.Choices[0].Delta.Content)
+			tokenUsage.Output = tokens.CountTokens(completion.Choices[0].Delta.Content)
 
 			fmt.Printf("%v %v\n", completion.Choices[0].Delta.Content, tokenUsage.Output)
 

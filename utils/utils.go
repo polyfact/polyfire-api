@@ -5,28 +5,6 @@ import (
 	llmTokens "github.com/polyfire/api/tokens"
 )
 
-func FillContext(embeddings []db.MatchResult) (string, error) {
-	context := ""
-	tokens := 0
-
-	for _, item := range embeddings {
-		textTokens := llmTokens.CountTokens("gpt3.5-turbo", item.Content)
-
-		if tokens+textTokens > 2000 {
-			break
-		}
-
-		context += "\n" + item.Content
-		tokens += textTokens
-	}
-
-	if len(context) > 0 {
-		context = "Context : " + context + "\n\n"
-	}
-
-	return context, nil
-}
-
 const PROMPT_IDENTIFIER_TOKEN_COUNT int = 5
 
 func CutChatHistory(chat_messages []db.ChatMessage, max_token int) []db.ChatMessage {
@@ -34,7 +12,7 @@ func CutChatHistory(chat_messages []db.ChatMessage, max_token int) []db.ChatMess
 	tokens := 0
 
 	for _, item := range chat_messages {
-		textTokens := llmTokens.CountTokens("gpt3.5-turbo", item.Content)
+		textTokens := llmTokens.CountTokens(item.Content)
 
 		if tokens+textTokens > max_token {
 			break

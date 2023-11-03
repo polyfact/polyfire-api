@@ -35,7 +35,7 @@ func (m LLaMaProvider) Generate(task string, c options.ProviderCallback, opts *o
 		}
 		fmt.Println(body)
 		input, err := json.Marshal(body)
-		tokenUsage.Input += tokens.CountTokens("gpt-2", task)
+		tokenUsage.Input += tokens.CountTokens(task)
 		if err != nil {
 			chan_res <- options.Result{Err: "generation_error"}
 			return
@@ -56,7 +56,7 @@ func (m LLaMaProvider) Generate(task string, c options.ProviderCallback, opts *o
 			if errors.Is(err, io.EOF) || err != nil {
 				break
 			}
-			tokenUsage.Output = tokens.CountTokens("gpt-2", string(p[:nb]))
+			tokenUsage.Output = tokens.CountTokens(string(p[:nb]))
 			totalOutput += tokenUsage.Output
 			totalCompletion += string(p[:nb])
 			chan_res <- options.Result{Result: string(p[:nb]), TokenUsage: tokenUsage}

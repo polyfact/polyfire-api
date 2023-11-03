@@ -10,17 +10,13 @@ import (
 
 	"github.com/cixtor/readability"
 	"github.com/gocolly/colly/v2"
-	tokens "github.com/polyfire/api/tokens"
-	"github.com/tmc/langchaingo/llms"
 )
 
 const (
-	baseUrl              = "https://html.duckduckgo.com/html/?q=%s&no_redirect=1"
-	duckDuckGoPrefix     = "//duckduckgo.com/l/?uddg="
-	maxSitesToVisit      = 7
-	answerTokenLength    = 300
-	additionalTokenSpace = 300
-	urlPattern           = `read:(https?://[^\s]+)` // Extract URL with "read:" prefix.
+	baseUrl          = "https://html.duckduckgo.com/html/?q=%s&no_redirect=1"
+	duckDuckGoPrefix = "//duckduckgo.com/l/?uddg="
+	maxSitesToVisit  = 7
+	urlPattern       = `read:(https?://[^\s]+)` // Extract URL with "read:" prefix.
 )
 
 var (
@@ -81,17 +77,8 @@ func containsURL(content string) ([]string, bool) {
 	return nil, false
 }
 
-func WebRequest(query string, m *string) (string, error) {
-	var accumulatedText strings.Builder
-	var model string
-
-	if m == nil {
-		model = "gpt-3.5-turbo"
-	} else {
-		model = *m
-	}
-
-	contextSize := llms.GetModelContextSize(model) - answerTokenLength
+func WebRequest(query string) ([]string, error) {
+	var res []string
 
 	urlsFound, ok := containsURL(query)
 	if ok {
@@ -102,23 +89,13 @@ func WebRequest(query string, m *string) (string, error) {
 				continue
 			}
 
-			contentTokenCount := tokens.CountTokens(model, content)
-			if contentTokenCount > contextSize {
-				return "", WebsiteExceedsLimit
-			}
-
-			totalTokens := tokens.CountTokens(model, accumulatedText.String()+content)
-			if totalTokens > contextSize {
-				return "", WebsitesContentExceeds
-			}
-
-			accumulatedText.WriteString(content + "\n==========\n")
+			res = append(res, content+"\n==========\n")
 		}
 
-		if accumulatedText.Len() == 0 {
-			accumulatedText.WriteString("[No content found matching your query]")
+		if len(res) == 0 {
+			res = append(res, "[No content found matching your query]")
 		}
-		return accumulatedText.String(), nil
+		return res, nil
 	}
 
 	c := colly.NewCollector()
@@ -144,14 +121,14 @@ func WebRequest(query string, m *string) (string, error) {
 			return
 		}
 
+		if len(content) > 1000 {
+			content = content[:1000] + "..."
+		}
+
 		formattedContent := fmt.Sprintf("Site %d (%s): %s\n==========\n", sitesVisited+1, link, content)
 
-		totalTokens := tokens.CountTokens(model, accumulatedText.String()+formattedContent)
-
-		if totalTokens <= contextSize && totalTokens+additionalTokenSpace <= contextSize {
-			accumulatedText.WriteString(formattedContent)
-			sitesVisited++
-		}
+		res = append(res, formattedContent)
+		sitesVisited++
 	})
 
 	c.OnScraped(func(r *colly.Response) {
@@ -161,14 +138,14 @@ func WebRequest(query string, m *string) (string, error) {
 	err := c.Visit(fmt.Sprintf(baseUrl, url.QueryEscape(query)))
 	if err != nil {
 		fmt.Println(err)
-		return "", VisitBaseURLError
+		return []string{}, VisitBaseURLError
 	}
 
 	<-allDone
 
-	if accumulatedText.Len() == 0 {
-		accumulatedText.WriteString("[No content found matching your query]")
+	if len(res) == 0 {
+		res = append(res, "[No content found matching your query]")
 	}
 
-	return accumulatedText.String(), nil
+	return res, nil
 }
