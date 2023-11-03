@@ -5,6 +5,7 @@ import (
 	"context"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 
 	"github.com/google/uuid"
@@ -44,6 +45,19 @@ func getErrorMessage(rec interface{}) string {
 func AddRecord(r *http.Request, eventType utils.EventType) {
 	eventId := uuid.New().String()
 
+	originHeader := r.Header.Get("Origin")
+	origin := ""
+
+	if originHeader != "" {
+		u, err := url.Parse(originHeader)
+		if err == nil {
+			origin = u.Hostname()
+			if u.Port() != "" {
+				origin = origin + ":" + u.Port()
+			}
+		}
+	}
+
 	var recordEventRequest utils.RecordRequestFunc = func(request string, response string, userID string, props ...utils.KeyValue) {
 		go func() {
 			pId, _ := db.GetProjectForUserId(userID)
@@ -69,7 +83,18 @@ func AddRecord(r *http.Request, eventType utils.EventType) {
 				properties[element.Key] = element.Value
 			}
 			posthog.Event("API Request", userID, properties)
-			db.LogEvents(eventId, string(r.URL.Path), userID, projectId, request, response, error, promptID, string(eventType))
+			db.LogEvents(
+				eventId,
+				string(r.URL.Path),
+				userID,
+				projectId,
+				request,
+				response,
+				error,
+				promptID,
+				string(eventType),
+				origin,
+			)
 		}()
 	}
 
@@ -88,6 +113,7 @@ func AddRecord(r *http.Request, eventType utils.EventType) {
 
 	newCtx := context.WithValue(r.Context(), utils.ContextKeyRecordEvent, recordEvent)
 	newCtx = context.WithValue(newCtx, utils.ContextKeyEventID, eventId)
+	newCtx = context.WithValue(newCtx, utils.ContextKeyOriginDomain, origin)
 	newCtx = context.WithValue(newCtx, utils.ContextKeyRecordEventRequest, recordEventRequest)
 	newCtx = context.WithValue(newCtx, utils.ContextKeyRecordEventWithUserID, recordEventWithUserID)
 
