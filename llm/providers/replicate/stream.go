@@ -113,7 +113,7 @@ func (m ReplicateProvider) Stream(
 			return
 		}
 
-		tokenUsage.Input += tokens.CountTokens("gpt-2", task)
+		tokenUsage.Input += tokens.CountTokens(task)
 		totalOutputTokens := 0
 
 		totalCompletion := ""
@@ -160,7 +160,7 @@ func (m ReplicateProvider) Stream(
 
 				totalCompletion += result
 
-				tokenUsage.Output = tokens.CountTokens("gpt-2", result)
+				tokenUsage.Output = tokens.CountTokens(result)
 				totalOutputTokens += tokenUsage.Output
 
 				chan_res <- options.Result{Result: result, TokenUsage: tokenUsage}

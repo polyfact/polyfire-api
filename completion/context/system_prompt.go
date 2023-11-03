@@ -1,10 +1,12 @@
-package completion
+package context
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/polyfire/api/db"
+	"github.com/polyfire/api/tokens"
 )
 
 type ParsedSystemPromptElement struct {
@@ -124,24 +126,44 @@ func GetVars(user_id string, varList []string) (map[string]string, []string) {
 	return result, warnings
 }
 
-func getSystemPrompt(user_id string, system_prompt_id *string, system_prompt *string) (string, []string, error) {
+type SystemPromptContext struct {
+	SystemPrompt string
+}
+
+func GetSystemPrompt(
+	user_id string,
+	system_prompt_id *string,
+	system_prompt *string,
+	chat_id *string,
+) (*SystemPromptContext, []string, error) {
 	var result string = ""
 
 	if system_prompt != nil && len(*system_prompt) > 0 {
 		result = *system_prompt
 	}
 
+	if chat_id != nil && len(*chat_id) > 0 {
+		c, err := db.GetChatById(*chat_id)
+		if err != nil {
+			return nil, nil, errors.New("Chat not found")
+		}
+
+		if c.SystemPromptId != nil && len(*c.SystemPromptId) > 0 {
+			system_prompt_id = c.SystemPromptId
+		}
+	}
+
 	if system_prompt_id != nil && len(*system_prompt_id) > 0 {
 		p, err := db.GetPromptByIdOrSlug(*system_prompt_id)
 		if err != nil || p == nil {
-			return "", nil, NotFound
+			return nil, nil, errors.New("Prompt not found")
 		}
 
 		result = p.Prompt
 	}
 
 	if len(result) == 0 {
-		return result, nil, nil
+		return nil, nil, errors.New("No prompt provided")
 	}
 
 	systemPrompt := ParseSystemPrompt(result)
@@ -159,5 +181,28 @@ func getSystemPrompt(user_id string, system_prompt_id *string, system_prompt *st
 			warnings = nil
 		}
 	}
-	return result, warnings, nil
+	return &SystemPromptContext{SystemPrompt: result + "\n"}, warnings, nil
+}
+
+func (spc *SystemPromptContext) GetOrderIndex() int {
+	return 1
+}
+
+func (spc *SystemPromptContext) GetPriority() Priority {
+	return CRITICAL
+}
+
+func (spc *SystemPromptContext) GetMinimumContextSize() int {
+	return tokens.CountTokens(spc.SystemPrompt)
+}
+
+func (spc *SystemPromptContext) GetRecommendedContextSize() int {
+	return tokens.CountTokens(spc.SystemPrompt)
+}
+
+func (spc *SystemPromptContext) GetContentFittingIn(tokenCount int) string {
+	if tokens.CountTokens(spc.SystemPrompt) > tokenCount {
+		return ""
+	}
+	return spc.SystemPrompt
 }

@@ -53,7 +53,7 @@ func Embed(ctx context.Context, content string, c *func(string, int)) ([]float32
 
 	model := "text-embedding-ada-002"
 
-	token_usage := llmTokens.CountTokens(model, content)
+	token_usage := llmTokens.CountTokens(content)
 
 	if c != nil {
 		(*c)(model, token_usage)

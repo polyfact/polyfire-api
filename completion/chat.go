@@ -11,22 +11,6 @@ import (
 	"github.com/polyfire/api/utils"
 )
 
-func FormatPrompt(chatHistory []db.ChatMessage, userPrompt string) string {
-	res := ""
-
-	for i := len(chatHistory) - 1; i >= 0; i-- {
-		if chatHistory[i].IsUserMessage {
-			res += "\nHuman: " + chatHistory[i].Content
-		} else {
-			res += "\nAI: " + chatHistory[i].Content
-		}
-	}
-
-	res += "\nHuman: " + userPrompt + "\nAI: "
-
-	return res
-}
-
 func CreateChat(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	user_id := r.Context().Value(utils.ContextKeyUserID).(string)
 	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
@@ -77,39 +61,21 @@ func GetChatHistory(w http.ResponseWriter, r *http.Request, ps router.Params) {
 	_ = json.NewEncoder(w).Encode(messages)
 }
 
-func chatContext(
+func AddToChatHistory(
 	user_id string,
 	task string,
 	chatId string,
 	callback options.ProviderCallback,
 	opts *options.ProviderOptions,
-) (string, *string, error) {
+) error {
 	log.Println("GetChatById")
 	chat, err := db.GetChatById(chatId)
 	if err != nil {
-		return "", nil, InternalServerError
+		return InternalServerError
 	}
 
 	if chat == nil || chat.UserID != user_id {
-		return "", nil, NotFound
-	}
-
-	log.Println("GetChatMessages")
-	allHistory, err := db.GetChatMessages(user_id, chatId)
-	if err != nil {
-		return "", nil, InternalServerError
-	}
-
-	log.Println("CutChatHistory")
-	chatHistory := utils.CutChatHistory(allHistory, 1000)
-
-	log.Println("FormatPrompt")
-	prompt := FormatPrompt(chatHistory, task)
-
-	log.Println("Add Chat Message")
-	err = db.AddChatMessage(chat.ID, true, task)
-	if err != nil {
-		return "", nil, InternalServerError
+		return NotFound
 	}
 
 	old_callback := *callback
@@ -118,11 +84,17 @@ func chatContext(
 			log.Println("Old callback")
 			old_callback(provider_name, model_name, input_count, output_count, completion, credit)
 		}
+
+		log.Println("Add Chat Message")
+		err = db.AddChatMessage(chat.ID, true, task)
+		if err != nil {
+			log.Printf("Error adding chat message for user %s : %v", user_id, err)
+		}
 		log.Println("Add Chat Message Callback")
 		_ = db.AddChatMessage(chat.ID, false, completion)
 	}
 
 	opts.StopWords = &[]string{"AI:", "Human:"}
 
-	return prompt, chat.SystemPrompt, nil
+	return nil
 }

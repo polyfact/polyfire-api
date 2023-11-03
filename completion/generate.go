@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"sync"
 
 	router "github.com/julienschmidt/httprouter"
+	completionContext "github.com/polyfire/api/completion/context"
 	db "github.com/polyfire/api/db"
 	llm "github.com/polyfire/api/llm"
 	options "github.com/polyfire/api/llm/providers/options"
@@ -33,13 +35,27 @@ type GenerateRequestBody struct {
 
 func getLanguageCompletion(language *string) string {
 	if language != nil && *language != "" {
-		return "Answer in " + *language + "."
+		return "Answer in " + *language + ".\n"
 	}
 	return ""
 }
 
+func parseMemoryIdArray(memoryId interface{}) []string {
+	var memoryIdArray []string
+
+	if str, ok := memoryId.(string); ok {
+		memoryIdArray = append(memoryIdArray, str)
+	} else if array, ok := memoryId.([]interface{}); ok {
+		for _, item := range array {
+			if str, ok := item.(string); ok {
+				memoryIdArray = append(memoryIdArray, str)
+			}
+		}
+	}
+	return memoryIdArray
+}
+
 func GenerationStart(ctx context.Context, user_id string, input GenerateRequestBody) (*chan options.Result, error) {
-	context_completion := ""
 	resources := []db.MatchResult{}
 
 	log.Println("Init provider")
@@ -81,29 +97,52 @@ func GenerationStart(ctx context.Context, user_id string, input GenerateRequestB
 		}
 	}
 
-	chan_memory_res := make(chan *MemoryProcessResult)
+	var wg sync.WaitGroup
+	var contextElements []completionContext.ContentElement = make([]completionContext.ContentElement, 0)
+
+	wg.Add(1)
 	go func() {
-		defer close(chan_memory_res)
-		memoryResult, err := getMemory(ctx, user_id, input.MemoryId, input.Task)
-		if err != nil {
+		defer wg.Done()
+
+		memory, err := completionContext.GetMemory(ctx, user_id, parseMemoryIdArray(input.MemoryId), input.Task)
+		if err != nil || memory == nil {
 			return
 		}
 
-		chan_memory_res <- memoryResult
+		contextElements = append(contextElements, memory)
 	}()
 
-	chan_system_prompt := make(chan string)
+	wg.Add(1)
 	var warnings []string = nil
 	go func() {
-		defer close(chan_system_prompt)
-		var system_prompt string
+		defer wg.Done()
+		var system_prompt completionContext.ContentElement
 		var err error
-		system_prompt, warnings, err = getSystemPrompt(user_id, input.SystemPromptId, input.SystemPrompt)
+		system_prompt, warnings, err = completionContext.GetSystemPrompt(
+			user_id,
+			input.SystemPromptId,
+			input.SystemPrompt,
+			input.ChatId,
+		)
 		if err != nil {
 			return
 		}
 
-		chan_system_prompt <- system_prompt
+		contextElements = append(contextElements, system_prompt)
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if !input.WebRequest {
+			return
+		}
+		web, err := completionContext.GetWebContext(input.Task)
+		if err != nil {
+			return
+		}
+
+		contextElements = append(contextElements, web)
 	}()
 
 	opts := options.ProviderOptions{}
@@ -115,37 +154,32 @@ func GenerationStart(ctx context.Context, user_id string, input GenerateRequestB
 	}
 
 	log.Println("Get ContextTask")
-	var prompt string
-	var chat_system_prompt *string = nil
 	if input.ChatId != nil && len(*input.ChatId) > 0 {
-		prompt, chat_system_prompt, err = chatContext(user_id, input.Task, *input.ChatId, &callback, &opts)
+		err := AddToChatHistory(user_id, input.Task, *input.ChatId, &callback, &opts)
 		if err != nil {
 			return nil, err
 		}
-	} else if input.WebRequest && input.Provider != "llama" {
-		prompt, err = webContext(input.Task, input.Model)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		prompt = input.Task
+
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			chat, err := completionContext.GetChatHistoryContext(user_id, *input.ChatId)
+			if err != nil {
+				return
+			}
+
+			contextElements = append(contextElements, chat)
+		}()
 	}
 
-	log.Println("Wait for memory")
-	memoryResult := <-chan_memory_res
-	if memoryResult != nil {
-		context_completion = memoryResult.ContextCompletion
-		resources = memoryResult.Resources
+	wg.Wait()
+
+	contextString, err := completionContext.GetContext(contextElements, 1000)
+	if err != nil {
+		return nil, err
 	}
 
-	log.Println("Wait for system_prompt")
-	system_prompt := <-chan_system_prompt
-
-	if system_prompt == "" && chat_system_prompt != nil {
-		system_prompt = *chat_system_prompt
-	}
-
-	prompt = context_completion + "\n" + system_prompt + "\n" + getLanguageCompletion(input.Language) + "\n" + prompt
+	prompt := getLanguageCompletion(input.Language) + contextString + "\n" + input.Task
 
 	var embeddings []float32
 
