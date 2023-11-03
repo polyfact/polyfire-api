@@ -2,6 +2,7 @@ package context
 
 import (
 	"errors"
+	"sort"
 
 	"github.com/polyfire/api/tokens"
 )
@@ -21,39 +22,69 @@ type ContentElement interface {
 	GetMinimumContextSize() int
 	GetRecommendedContextSize() int
 	GetPriority() Priority
+	GetOrderIndex() int
 	GetContentFittingIn(token_count int) string
 }
 
-var CriticalDoesNotFitWarning = errors.New("Critical content does not fit in the context")
+var CriticalDoesNotFitError = errors.New("Critical content does not fit in the context")
 
 type contextElement struct {
+	ContentElement  ContentElement
 	Minimum         string
 	MinimumSize     int
 	Recommended     string
 	RecommendedSize int
 	UseRecommended  bool
+	OrderIndex      int
+}
+
+type contextElementList []contextElement
+
+func (cel *contextElementList) Len() int {
+	return len(*cel)
+}
+
+func (cel *contextElementList) Less(i, j int) bool {
+	return (*cel)[i].OrderIndex < (*cel)[j].OrderIndex
+}
+
+func (cel *contextElementList) Swap(i, j int) {
+	(*cel)[i], (*cel)[j] = (*cel)[j], (*cel)[i]
+}
+
+func contextElementFromContentElement(content ContentElement) contextElement {
+	return contextElement{
+		ContentElement:  content,
+		Minimum:         content.GetContentFittingIn(content.GetMinimumContextSize()),
+		MinimumSize:     content.GetMinimumContextSize(),
+		Recommended:     content.GetContentFittingIn(content.GetRecommendedContextSize()),
+		RecommendedSize: content.GetRecommendedContextSize(),
+		UseRecommended:  false,
+		OrderIndex:      content.GetOrderIndex(),
+	}
 }
 
 func GetContext(content []ContentElement, tokenLimit int) (string, error) {
-	context := ""
 	tokenCount := 0
 
+	criticalContent := []contextElement{}
 	// First we get the critical elements directly in the context
 	for _, item := range content {
 		if item.GetPriority() == CRITICAL {
 			added := item.GetContentFittingIn(tokenLimit)
 			addedTokens := tokens.CountTokens(added)
 			if addedTokens+tokenCount > tokenLimit {
-				return context, CriticalDoesNotFitWarning
+				return "", CriticalDoesNotFitError
 			}
 
-			context += added
+			criticalContent = append(criticalContent, contextElementFromContentElement(item))
+
 			tokenCount += addedTokens
 		}
 	}
 
 	// Then we get the important elements with the minimum size
-	importantContent := []contextElement{}
+	importantAndHelpfulContent := []contextElement{}
 	for _, item := range content {
 		if item.GetPriority() == IMPORTANT {
 			minimumSize := item.GetMinimumContextSize()
@@ -61,20 +92,13 @@ func GetContext(content []ContentElement, tokenLimit int) (string, error) {
 				continue
 			}
 
-			importantContent = append(importantContent, contextElement{
-				Minimum:         item.GetContentFittingIn(item.GetMinimumContextSize()),
-				MinimumSize:     item.GetMinimumContextSize(),
-				Recommended:     item.GetContentFittingIn(item.GetRecommendedContextSize()),
-				RecommendedSize: item.GetRecommendedContextSize(),
-				UseRecommended:  false,
-			})
+			importantAndHelpfulContent = append(importantAndHelpfulContent, contextElementFromContentElement(item))
 
 			tokenCount += minimumSize
 		}
 	}
 
 	// Then we get the helpful elements with the minimum size
-	helpfulContent := []contextElement{}
 	for _, item := range content {
 		if item.GetPriority() == HELPFUL {
 			minimumSize := item.GetMinimumContextSize()
@@ -82,54 +106,40 @@ func GetContext(content []ContentElement, tokenLimit int) (string, error) {
 				continue
 			}
 
-			helpfulContent = append(helpfulContent, contextElement{
-				Minimum:         item.GetContentFittingIn(item.GetMinimumContextSize()),
-				MinimumSize:     item.GetMinimumContextSize(),
-				Recommended:     item.GetContentFittingIn(item.GetRecommendedContextSize()),
-				RecommendedSize: item.GetRecommendedContextSize(),
-				UseRecommended:  false,
-			})
+			importantAndHelpfulContent = append(importantAndHelpfulContent, contextElementFromContentElement(item))
 
 			tokenCount += minimumSize
 		}
 	}
 
-	// We try to fit the important elements with the recommended size
-	for i, item := range importantContent {
-		if (tokenCount + item.RecommendedSize - item.MinimumSize) > tokenLimit {
+	// We try to increase the size of the important and helpful elements (in the order of importance we added them in)
+	for i, item := range importantAndHelpfulContent {
+		importantAndHelpfulContent[i].Recommended = item.ContentElement.GetContentFittingIn(
+			tokenLimit - (tokenCount - item.MinimumSize),
+		)
+		importantAndHelpfulContent[i].RecommendedSize = tokens.CountTokens(importantAndHelpfulContent[i].Recommended)
+
+		if (tokenCount + importantAndHelpfulContent[i].RecommendedSize - importantAndHelpfulContent[i].MinimumSize) > tokenLimit {
 			continue
 		}
 
-		importantContent[i].UseRecommended = true
-		tokenCount = tokenCount - item.MinimumSize + item.RecommendedSize
+		importantAndHelpfulContent[i].UseRecommended = true
+		tokenCount = tokenCount - importantAndHelpfulContent[i].MinimumSize + importantAndHelpfulContent[i].RecommendedSize
 	}
 
-	// We try to fit the helpful elements with the recommended size
-	for i, item := range helpfulContent {
-		if (tokenCount + item.RecommendedSize - item.MinimumSize) > tokenLimit {
-			continue
-		}
+	// We merge all the context and sort them by the order we want to get them in the context prompt
+	var context contextElementList = append(criticalContent, importantAndHelpfulContent...)
 
-		helpfulContent[i].UseRecommended = true
-		tokenCount = tokenCount - item.MinimumSize + item.RecommendedSize
-	}
+	sort.Sort(&context)
 
-	// We add everything to the context
-	for _, item := range importantContent {
+	result := ""
+	for _, item := range context {
 		if item.UseRecommended {
-			context += item.Recommended
+			result += item.Recommended
 		} else {
-			context += item.Minimum
+			result += item.Minimum
 		}
 	}
 
-	for _, item := range helpfulContent {
-		if item.UseRecommended {
-			context += item.Recommended
-		} else {
-			context += item.Minimum
-		}
-	}
-
-	return context, nil
+	return result, nil
 }

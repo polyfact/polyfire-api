@@ -168,6 +168,10 @@ func GetSystemPrompt(user_id string, system_prompt_id *string, system_prompt *st
 	return &SystemPromptContext{SystemPrompt: result + "\n"}, warnings, nil
 }
 
+func (spc *SystemPromptContext) GetOrderIndex() int {
+	return 1
+}
+
 func (spc *SystemPromptContext) GetPriority() Priority {
 	return CRITICAL
 }

@@ -84,6 +84,10 @@ func (m *TemplateContext) GetPriority() Priority {
 	return HELPFUL
 }
 
+func (m *TemplateContext) GetOrderIndex() int {
+	return 2
+}
+
 func (m *TemplateContext) fillContext(data []string, token_count int) (string, error) {
 	memories := []string{}
 	currentTokens := m.ContextGrowth.B

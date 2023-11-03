@@ -36,7 +36,7 @@ type GenerateRequestBody struct {
 
 func getLanguageCompletion(language *string) string {
 	if language != nil && *language != "" {
-		return "Answer in " + *language + "."
+		return "Answer in " + *language + ".\n"
 	}
 	return ""
 }
@@ -150,30 +150,32 @@ func GenerationStart(ctx context.Context, user_id string, input GenerateRequestB
 	}
 
 	log.Println("Get ContextTask")
-	var prompt string
-	var chat_system_prompt *string = nil
 	if input.ChatId != nil && len(*input.ChatId) > 0 {
-		prompt, chat_system_prompt, err = chatContext(user_id, input.Task, *input.ChatId, &callback, &opts)
+		err := AddToChatHistory(user_id, input.Task, *input.ChatId, &callback, &opts)
 		if err != nil {
 			return nil, err
 		}
-	} else {
-		prompt = input.Task
+
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			chat, err := completionContext.GetChatHistoryContext(user_id, *input.ChatId)
+			if err != nil {
+				return
+			}
+
+			contextElements = append(contextElements, chat)
+		}()
 	}
 
 	wg.Wait()
 
-	contextString, err := completionContext.GetContext(contextElements, 2000)
+	contextString, err := completionContext.GetContext(contextElements, 1000)
 	if err != nil {
 		return nil, err
 	}
 
-	var system_prompt string = ""
-	if chat_system_prompt != nil {
-		system_prompt = *chat_system_prompt
-	}
-
-	prompt = contextString + "\n" + system_prompt + "\n" + getLanguageCompletion(input.Language) + "\n" + prompt
+	prompt := getLanguageCompletion(input.Language) + contextString + "\n" + input.Task
 
 	fmt.Println("Prompt: ```\n" + prompt + "\n```")
 
