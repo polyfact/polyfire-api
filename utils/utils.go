@@ -49,6 +49,7 @@ const (
 	ContextKeyProjectID             ContextKey = "projectID"
 	ContextKeyElevenlabsToken       ContextKey = "elevenlabsToken"
 	ContextKeyEventID               ContextKey = "eventID"
+	ContextKeyOriginDomain          ContextKey = "originDomain"
 )
 
 type EventType string

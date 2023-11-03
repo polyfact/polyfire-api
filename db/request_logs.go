@@ -181,9 +181,10 @@ func LogEvents(
 	error bool,
 	promptID string,
 	eventType string,
+	orginDomain string,
 ) {
 	err := DB.Exec(
-		`INSERT INTO events (id, path, user_id, project_id, request_body, response_body, error, prompt_id, type)
+		`INSERT INTO events (id, path, user_id, project_id, request_body, response_body, error, prompt_id, type, origin_domain)
 		VALUES (
 			@id,
 			@path,
@@ -193,7 +194,8 @@ func LogEvents(
 			@response_body,
 			@error,
 			(SELECT id FROM prompts WHERE id = try_cast_uuid(@prompt_id) OR slug = @prompt_id LIMIT 1)::uuid,
-			@type
+			@type,
+			@origin_domain
 		)`,
 		sql.Named("id", id),
 		sql.Named("path", path),
@@ -204,6 +206,7 @@ func LogEvents(
 		sql.Named("error", error),
 		sql.Named("prompt_id", promptID),
 		sql.Named("type", eventType),
+		sql.Named("origin_domain", orginDomain),
 	).Error
 	if err != nil {
 		panic(err)

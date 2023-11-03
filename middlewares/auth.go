@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"net/url"
 	"os"
 
 	jwt "github.com/golang-jwt/jwt/v5"
@@ -33,7 +32,12 @@ func parseJWT(token string) (jwt.MapClaims, error) {
 	return claims, nil
 }
 
-func createUserContext(r *http.Request, userID string, user *db.UserInfos, rateLimitStatus db.RateLimitStatus) context.Context {
+func createUserContext(
+	r *http.Request,
+	userID string,
+	user *db.UserInfos,
+	rateLimitStatus db.RateLimitStatus,
+) context.Context {
 	recordEventWithUserID := r.Context().Value(utils.ContextKeyRecordEventWithUserID).(utils.RecordWithUserIDFunc)
 	newCtx := context.WithValue(r.Context(), utils.ContextKeyUserID, userID)
 	newCtx = context.WithValue(newCtx, utils.ContextKeyRateLimitStatus, rateLimitStatus)
@@ -107,19 +111,8 @@ func authenticateAndHandle(
 	}
 
 	if len(user.AuthorizedDomains) != 0 {
-		originHeader := r.Header.Get("Origin")
-
-		u, err := url.Parse(originHeader)
-		if err != nil {
-			utils.RespondError(w, record, "invalid_origin")
-			return
-		}
-		origin := u.Hostname()
-		if u.Port() != "" {
-			origin = origin + ":" + u.Port()
-		}
-
-		if !utils.ContainsString(user.AuthorizedDomains, origin) && origin != "beta.polyfire.com" {
+		originDomain := r.Context().Value(utils.ContextKeyOriginDomain).(string)
+		if !utils.ContainsString(user.AuthorizedDomains, originDomain) && originDomain != "beta.polyfire.com" {
 			utils.RespondError(w, record, "invalid_origin")
 			return
 		}
