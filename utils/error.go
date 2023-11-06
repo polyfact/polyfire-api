@@ -150,7 +150,7 @@ var ErrorMessages = map[string]APIError{
 	// Database Errors
 	"database_error": {
 		Code:       "database_error",
-		Message:    "Failed to set the key-value pair in the database.",
+		Message:    "Connection to the database failed.",
 		StatusCode: http.StatusInternalServerError,
 	},
 	"db_creation_error": {
@@ -232,6 +232,11 @@ var ErrorMessages = map[string]APIError{
 		StatusCode: http.StatusNotFound,
 	},
 	"user_id_error": {Code: "user_id_error", Message: "User ID not found in context.", StatusCode: http.StatusNotFound},
+	"voice_not_found": {
+		Code:       "voice_not_found",
+		Message:    "The requested voice was not found. You can find the list of available voices at https://docs.polyfire.com/reference/text-to-speech#available-voices-list",
+		StatusCode: http.StatusNotFound,
+	},
 
 	// Project Errors
 	"project_retrieval_error": {

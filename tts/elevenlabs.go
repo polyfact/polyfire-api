@@ -4,11 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"strings"
 	"time"
-	"fmt"
 
 	"github.com/haguro/elevenlabs-go"
 	router "github.com/julienschmidt/httprouter"
@@ -66,9 +67,9 @@ func TTSHandler(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		voiceSlug = *reqBody.Voice
 	}
 
-	voice, err := db.GetTTSVoice(voiceSlug)
+	voice, err := db.GetTTSVoice(strings.ToLower(voiceSlug))
 	if err != nil {
-		utils.RespondError(w, record, "database_error")
+		utils.RespondError(w, record, "voice_not_found")
 		return
 	}
 
