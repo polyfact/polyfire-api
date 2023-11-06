@@ -23,7 +23,7 @@ func Embed(ctx context.Context, content string, c *func(string, int)) ([]float32
 
 	var config goOpenai.ClientConfig
 
-	userId := ctx.Value(utils.ContextKeyUserID).(string)
+	userID := ctx.Value(utils.ContextKeyUserID).(string)
 
 	customToken, ok := ctx.Value(utils.ContextKeyOpenAIToken).(string)
 	if ok {
@@ -43,7 +43,7 @@ func Embed(ctx context.Context, content string, c *func(string, int)) ([]float32
 	res, err := client.CreateEmbeddings(embeddingCtx, goOpenai.EmbeddingRequestStrings{
 		Input: []string{content},
 		Model: goOpenai.AdaEmbeddingV2,
-		User:  userId,
+		User:  userID,
 	})
 	if err != nil {
 		return nil, err
@@ -53,10 +53,10 @@ func Embed(ctx context.Context, content string, c *func(string, int)) ([]float32
 
 	model := "text-embedding-ada-002"
 
-	token_usage := llmTokens.CountTokens(content)
+	tokenUsage := llmTokens.CountTokens(content)
 
 	if c != nil {
-		(*c)(model, token_usage)
+		(*c)(model, tokenUsage)
 	}
 
 	return embeddings, nil

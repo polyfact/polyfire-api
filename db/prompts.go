@@ -49,11 +49,11 @@ type Prompt struct {
 	UpdatedAt   time.Time   `json:"updated_at,omitempty"`
 	Tags        StringArray `json:"tags,omitempty"`
 	Public      bool        `json:"public"`
-	UserId      string      `json:"user_id"`
+	UserID      string      `json:"user_id"`
 	Slug        string      `json:"slug"`
 }
 
-func GetPromptByIdOrSlug(id string) (*Prompt, error) {
+func GetPromptByIDOrSlug(id string) (*Prompt, error) {
 	prompt := &Prompt{}
 
 	matchUUID, _ := regexp.MatchString(UUIDRegexp, id)

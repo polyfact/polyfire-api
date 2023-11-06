@@ -24,10 +24,10 @@ type LLaMaProvider struct {
 }
 
 func (m LLaMaProvider) Generate(task string, c options.ProviderCallback, opts *options.ProviderOptions) chan options.Result {
-	chan_res := make(chan options.Result)
+	chanRes := make(chan options.Result)
 
 	go func() {
-		defer close(chan_res)
+		defer close(chanRes)
 		tokenUsage := options.TokenUsage{Input: 0, Output: 0}
 		body := LLaMaInputBody{Prompt: task, Model: m.Model}
 		if opts != nil && opts.Temperature != nil {
@@ -37,18 +37,18 @@ func (m LLaMaProvider) Generate(task string, c options.ProviderCallback, opts *o
 		input, err := json.Marshal(body)
 		tokenUsage.Input += tokens.CountTokens(task)
 		if err != nil {
-			chan_res <- options.Result{Err: "generation_error"}
+			chanRes <- options.Result{Err: "generation_error"}
 			return
 		}
 		reqBody := string(input)
 		fmt.Println(reqBody)
 		resp, err := http.Post(os.Getenv("LLAMA_URL"), "application/json", strings.NewReader(reqBody))
 		if err != nil {
-			chan_res <- options.Result{Err: "generation_error"}
+			chanRes <- options.Result{Err: "generation_error"}
 			return
 		}
 		defer resp.Body.Close()
-		var p []byte = make([]byte, 128)
+		var p = make([]byte, 128)
 		totalOutput := 0
 		totalCompletion := ""
 		for {
@@ -59,14 +59,14 @@ func (m LLaMaProvider) Generate(task string, c options.ProviderCallback, opts *o
 			tokenUsage.Output = tokens.CountTokens(string(p[:nb]))
 			totalOutput += tokenUsage.Output
 			totalCompletion += string(p[:nb])
-			chan_res <- options.Result{Result: string(p[:nb]), TokenUsage: tokenUsage}
+			chanRes <- options.Result{Result: string(p[:nb]), TokenUsage: tokenUsage}
 		}
 		if c != nil {
 			(*c)("llama", m.Model, tokenUsage.Input, totalOutput, totalCompletion, nil)
 		}
 	}()
 
-	return chan_res
+	return chanRes
 }
 
 func (m LLaMaProvider) UserAllowed(_user_id string) bool {

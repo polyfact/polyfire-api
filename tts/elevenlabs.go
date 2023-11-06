@@ -19,9 +19,9 @@ import (
 )
 
 var (
-	RateLimitReached        = errors.New("Rate limit reached")
-	ProjectRateLimitReached = errors.New("Project rate limit reached")
-	UnknownError            = errors.New("Unknown error")
+	ErrRateLimitReached        = errors.New("Rate limit reached")
+	ErrProjectRateLimitReached = errors.New("Project rate limit reached")
+	ErrUnknown            = errors.New("Unknown error")
 )
 
 func TextToSpeech(ctx context.Context, w io.Writer, text string, voiceID string) error {
@@ -30,7 +30,7 @@ func TextToSpeech(ctx context.Context, w io.Writer, text string, voiceID string)
 		customToken = os.Getenv("ELEVENLABS_API_KEY")
 		rateLimitStatus := ctx.Value(utils.ContextKeyRateLimitStatus)
 		if rateLimitStatus != db.RateLimitStatusOk {
-			return RateLimitReached
+			return ErrRateLimitReached
 		}
 	}
 
@@ -44,16 +44,16 @@ func TextToSpeech(ctx context.Context, w io.Writer, text string, voiceID string)
 	return client.TextToSpeechStream(w, voiceID, ttsReq)
 }
 
-type TTSRequestBody struct {
+type RequestBody struct {
 	Text  string  `json:"text"`
 	Voice *string `json:"voice"`
 }
 
-func TTSHandler(w http.ResponseWriter, r *http.Request, _ router.Params) {
-	userId := r.Context().Value(utils.ContextKeyUserID).(string)
+func Handler(w http.ResponseWriter, r *http.Request, _ router.Params) {
+	userID := r.Context().Value(utils.ContextKeyUserID).(string)
 	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
 
-	var reqBody TTSRequestBody
+	var reqBody RequestBody
 	err := json.NewDecoder(r.Body).Decode(&reqBody)
 	if err != nil {
 		utils.RespondError(w, record, "invalid_json")
@@ -77,8 +77,7 @@ func TTSHandler(w http.ResponseWriter, r *http.Request, _ router.Params) {
 
 	db.LogRequestsCredits(
 		r.Context().Value(utils.ContextKeyEventID).(string),
-		userId,
-		"elevenlabs",
+		userID,
 		"elevenlabs",
 		len(reqBody.Text)*3000,
 		len(reqBody.Text),

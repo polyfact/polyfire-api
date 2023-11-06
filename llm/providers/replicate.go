@@ -13,8 +13,8 @@ import (
 
 type ReplicateProvider struct {
 	Model           string
-	ReplicateApiKey string
-	IsCustomApiKey  bool
+	ReplicateAPIKey string
+	IsCustomAPIKey  bool
 }
 
 func NewReplicateProvider(ctx context.Context, model string) ReplicateProvider {
@@ -27,7 +27,7 @@ func NewReplicateProvider(ctx context.Context, model string) ReplicateProvider {
 		apiKey = os.Getenv("REPLICATE_API_KEY")
 	}
 
-	return ReplicateProvider{Model: model, ReplicateApiKey: apiKey, IsCustomApiKey: ok}
+	return ReplicateProvider{Model: model, ReplicateAPIKey: apiKey, IsCustomAPIKey: ok}
 }
 
 func (m ReplicateProvider) GetCreditsPerSecond() float64 {
@@ -70,23 +70,23 @@ func (m ReplicateProvider) Generate(
 
 	replicateProvider := replicate.ReplicateProvider{
 		Model:            m.Model,
-		ReplicateApiKey:  m.ReplicateApiKey,
-		IsCustomApiKey:   m.IsCustomApiKey,
+		ReplicateAPIKey:  m.ReplicateAPIKey,
+		IsCustomAPIKey:   m.IsCustomAPIKey,
 		Version:          version,
 		CreditsPerSecond: m.GetCreditsPerSecond(),
 	}
 
-	var chan_res chan options.Result
+	var chanRes chan options.Result
 	if stream {
-		chan_res = replicateProvider.Stream(task, c, opts)
+		chanRes = replicateProvider.Stream(task, c, opts)
 	} else {
-		chan_res = replicateProvider.NoStream(task, c, opts)
+		chanRes = replicateProvider.NoStream(task, c, opts)
 	}
 
-	return chan_res
+	return chanRes
 }
 
-func (m ReplicateProvider) UserAllowed(_user_id string) bool {
+func (m ReplicateProvider) UserAllowed(_ string) bool {
 	return true
 }
 
@@ -99,5 +99,5 @@ func (m ReplicateProvider) ProviderModel() (string, string) {
 }
 
 func (m ReplicateProvider) DoesFollowRateLimit() bool {
-	return !m.IsCustomApiKey
+	return !m.IsCustomAPIKey
 }

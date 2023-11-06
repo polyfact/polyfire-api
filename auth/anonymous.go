@@ -9,8 +9,8 @@ import (
 	db "github.com/polyfire/api/db"
 )
 
-func getUserFromAnonymousToken(token string, project_id string) (string, string, error) {
-	project, err := db.GetProjectByID(project_id)
+func getUserFromAnonymousToken(token string, projectID string) (string, string, error) {
+	project, err := db.GetProjectByID(projectID)
 	if err != nil {
 		return "", "", err
 	}
@@ -21,7 +21,7 @@ func getUserFromAnonymousToken(token string, project_id string) (string, string,
 
 	var email string
 	if token == "auto" {
-		email, err = db.GetDevEmail(project_id)
+		email, err = db.GetDevEmail(projectID)
 		if err != nil {
 			return "", "", err
 		}
@@ -35,7 +35,7 @@ func getUserFromAnonymousToken(token string, project_id string) (string, string,
 		email = strings.TrimSpace(string(emailBytes))
 	}
 
-	re_encoded := base64.URLEncoding.EncodeToString(
+	reEncoded := base64.URLEncoding.EncodeToString(
 		[]byte(email),
 	) // This needs to be re-encoded since it has been trimmed by the previous line
 
@@ -44,7 +44,7 @@ func getUserFromAnonymousToken(token string, project_id string) (string, string,
 		return "", "", err
 	}
 
-	return re_encoded + "@" + project_id, email, nil
+	return reEncoded + "@" + projectID, email, nil
 }
 
 var AnonymousTokenExchangeHandler = TokenExchangeHandler(getUserFromAnonymousToken)

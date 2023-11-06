@@ -100,7 +100,7 @@ func authenticateAndHandle(
 	log.Println("DB Version / Rate Limit Status In Context")
 	user, rateLimitStatus, err := db.CheckDBVersionRateLimit(userID, version)
 
-	if err == db.DBVersionMismatch {
+	if err == db.ErrDBVersionMismatch {
 		utils.RespondError(w, record, "invalid_token")
 		return
 	}

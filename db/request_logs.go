@@ -22,38 +22,38 @@ type RequestLog struct {
 	Kind             Kind   `json:"kind"`
 }
 
-func tokenToCredit(provider_name string, model_name string, input_token_count int, output_token_count int) int {
-	switch provider_name {
+func tokenToCredit(providerName string, modelName string, inputTokenCount int, outputTokenCount int) int {
+	switch providerName {
 	case "openai":
-		switch model_name {
+		switch modelName {
 		case "gpt-3.5-turbo":
-			return (input_token_count * 15) + (output_token_count * 20)
+			return (inputTokenCount * 15) + (outputTokenCount * 20)
 		case "gpt-3.5-turbo-16k":
-			return (input_token_count * 30) + (output_token_count * 40)
+			return (inputTokenCount * 30) + (outputTokenCount * 40)
 		case "gpt-4":
-			return (input_token_count * 300) + (output_token_count * 600)
+			return (inputTokenCount * 300) + (outputTokenCount * 600)
 		case "gpt-4-32k":
-			return (input_token_count * 600) + (output_token_count * 1200)
+			return (inputTokenCount * 600) + (outputTokenCount * 1200)
 		case "text-embedding-ada-002":
-			return input_token_count * 1
+			return inputTokenCount * 1
 		case "dalle-2":
 			return 200000
 		}
 	case "llama":
 		return 0
 	case "cohere":
-		return (input_token_count + output_token_count) * 150
+		return (inputTokenCount + outputTokenCount) * 150
 	}
 	return 0
 }
 
 func LogRequests(
 	eventID string,
-	user_id string,
-	provider_name string,
-	model_name string,
-	input_token_count int,
-	output_token_count int,
+	userId string,
+	providerName string,
+	modelName string,
+	inputTokenCount int,
+	outputTokenCount int,
 	kind Kind,
 	countCredits bool,
 ) {
@@ -63,18 +63,18 @@ func LogRequests(
 	var credits int
 
 	if countCredits {
-		credits = tokenToCredit(provider_name, model_name, input_token_count, output_token_count)
+		credits = tokenToCredit(providerName, modelName, inputTokenCount, outputTokenCount)
 	} else {
 		credits = 0
 	}
 
 	err := DB.Exec(
 		"INSERT INTO request_logs (user_id, model_name, kind, input_token_count, output_token_count, credits, event_id) VALUES (?::uuid, ?, ?, ?, ?, ?, try_cast_uuid(?))",
-		user_id,
-		model_name,
+		userId,
+		modelName,
 		kind,
-		input_token_count,
-		output_token_count,
+		inputTokenCount,
+		outputTokenCount,
 		credits,
 		eventID,
 	).Error
@@ -85,21 +85,20 @@ func LogRequests(
 
 func LogRequestsCredits(
 	eventID string,
-	user_id string,
-	provider_name string,
-	model_name string,
+	userId string,
+	modelName string,
 	credits int,
-	input_token_count int,
-	output_token_count int,
+	inputTokenCount int,
+	outputTokenCount int,
 	kind Kind,
 ) {
 	err := DB.Exec(
 		"INSERT INTO request_logs (user_id, model_name, kind, input_token_count, output_token_count, credits, event_id) VALUES (?::uuid, ?, ?, ?, ?, ?, try_cast_uuid(?))",
-		user_id,
-		model_name,
+		userId,
+		modelName,
 		kind,
-		input_token_count,
-		output_token_count,
+		inputTokenCount,
+		outputTokenCount,
 		credits,
 		eventID,
 	).Error
@@ -112,9 +111,9 @@ type UsageParams struct {
 	UserID string `json:"userid"`
 }
 
-func GetUserIdMonthlyTokenUsage(user_id string) (int, error) {
+func GetUserIDMonthlyTokenUsage(userId string) (int, error) {
 	params := UsageParams{
-		UserID: user_id,
+		UserID: userId,
 	}
 
 	client, err := CreateClient()
@@ -136,9 +135,9 @@ func GetUserIdMonthlyTokenUsage(user_id string) (int, error) {
 	return usage, nil
 }
 
-func GetUserIdMonthlyCreditUsage(user_id string) (int, error) {
+func GetUserIDMonthlyCreditUsage(userId string) (int, error) {
 	params := UsageParams{
-		UserID: user_id,
+		UserID: userId,
 	}
 
 	client, err := CreateClient()
@@ -175,7 +174,7 @@ func LogEvents(
 	id string,
 	path string,
 	userId string,
-	projectId string,
+	projectID string,
 	requestBody string,
 	responseBody string,
 	error bool,
@@ -200,7 +199,7 @@ func LogEvents(
 		sql.Named("id", id),
 		sql.Named("path", path),
 		sql.Named("user_id", userId),
-		sql.Named("project_id", projectId),
+		sql.Named("project_id", projectID),
 		sql.Named("request_body", requestBody),
 		sql.Named("response_body", responseBody),
 		sql.Named("error", error),

@@ -6,14 +6,14 @@ import (
 	"github.com/posthog/posthog-go"
 )
 
-var POSTHOG_API_KEY = os.Getenv("POSTHOG_API_KEY")
+var PosthogApiKey = os.Getenv("POSTHOG_API_KEY")
 
 func IdentifyUser(auth_id string, user_id string, email string) {
-	if POSTHOG_API_KEY == "" {
+	if PosthogApiKey == "" {
 		return
 	}
 
-	client := posthog.New(POSTHOG_API_KEY)
+	client := posthog.New(PosthogApiKey)
 	defer client.Close()
 
 	_ = client.Enqueue(posthog.Identify{
@@ -28,11 +28,11 @@ func IdentifyUser(auth_id string, user_id string, email string) {
 }
 
 func Event(eventName string, distinctId string, props map[string]string) {
-	if POSTHOG_API_KEY == "" {
+	if PosthogApiKey == "" {
 		return
 	}
 
-	client := posthog.New(POSTHOG_API_KEY)
+	client := posthog.New(PosthogApiKey)
 	defer client.Close()
 
 	properties := posthog.NewProperties()

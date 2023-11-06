@@ -6,9 +6,9 @@ import (
 )
 
 var (
-	UnknownUserId     = errors.New("Unknown user id")
-	DBVersionMismatch = errors.New("DB version mismatch")
-	DBError           = errors.New("Database error")
+	ErrUnknownUserId     = errors.New("Unknown user id")
+	ErrDBVersionMismatch = errors.New("DB version mismatch")
+	ErrDB                = errors.New("Database error")
 )
 
 type RateLimitStatus string
@@ -68,11 +68,11 @@ func CheckDBVersionRateLimit(user_id string, version int) (*UserInfos, RateLimit
 	}
 
 	if userInfos == nil {
-		return nil, RateLimitStatusNone, UnknownUserId
+		return nil, RateLimitStatusNone, ErrUnknownUserId
 	}
 
 	if userInfos.Version != version {
-		return nil, RateLimitStatusNone, DBVersionMismatch
+		return nil, RateLimitStatusNone, ErrDBVersionMismatch
 	}
 
 	if userInfos.DevUsage >= userInfos.DevRateLimit {

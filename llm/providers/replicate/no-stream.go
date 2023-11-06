@@ -39,7 +39,7 @@ func (m ReplicateProvider) NoStream(
 		tokenUsage := options.TokenUsage{}
 
 		tokenUsage.Input = tokens.CountTokens(task)
-		var coldBootDetected bool = false
+		var coldBootDetected = false
 
 		for {
 			req, err := http.NewRequest("GET", startResponse.URLs.Get, nil)
@@ -49,7 +49,7 @@ func (m ReplicateProvider) NoStream(
 				return
 			}
 
-			req.Header.Set("Authorization", "Token "+m.ReplicateApiKey)
+			req.Header.Set("Authorization", "Token "+m.ReplicateAPIKey)
 			req.Header.Set("Accept", "text/event-stream")
 
 			resp, err := http.DefaultClient.Do(req)

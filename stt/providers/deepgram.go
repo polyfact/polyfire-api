@@ -11,7 +11,7 @@ import (
 
 type DeepgramProvider struct{}
 
-func (DeepgramProvider) Transcribe(ctx context.Context, reader io.Reader, format string) (*TranscriptionResult, error) {
+func (DeepgramProvider) Transcribe(_ context.Context, reader io.Reader, _ string) (*TranscriptionResult, error) {
 	credentials := os.Getenv("DEEPGRAM_API_KEY")
 	dg := deepgram.NewClient(credentials)
 
@@ -33,7 +33,7 @@ func (DeepgramProvider) Transcribe(ctx context.Context, reader io.Reader, format
 	}
 
 	var text string
-	var words []Word = make([]Word, 0)
+	words := make([]Word, 0)
 
 	if len(res.Results.Channels) > 0 {
 		if len(res.Results.Channels[0].Alternatives) > 0 {

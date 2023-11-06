@@ -39,15 +39,15 @@ func Create(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		requestBody.Public = &defaultVal
 	}
 
-	memoryId := uuid.New().String()
+	memoryID := uuid.New().String()
 
-	if err := db.CreateMemory(memoryId, userId, *requestBody.Public); err != nil {
+	if err := db.CreateMemory(memoryID, userId, *requestBody.Public); err != nil {
 		utils.RespondError(w, record, "db_creation_error")
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	memory := db.Memory{ID: memoryId, UserId: userId, Public: *requestBody.Public}
+	memory := db.Memory{ID: memoryID, UserId: userId, Public: *requestBody.Public}
 
 	response, _ := json.Marshal(&memory)
 	record(string(response))
@@ -127,7 +127,7 @@ func Get(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		return
 	}
 
-	results, err := db.GetMemoryIds(userId)
+	results, err := db.GetMemoryIDs(userId)
 	if err != nil {
 		utils.RespondError(w, record, "retrieval_error")
 		return
@@ -148,7 +148,7 @@ func Get(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	_ = json.NewEncoder(w).Encode(response)
 }
 
-func Embedder(ctx context.Context, userId string, memoryId []string, task string) ([]db.MatchResult, error) {
+func Embedder(ctx context.Context, userId string, memoryID []string, task string) ([]db.MatchResult, error) {
 	callback := func(model_name string, input_count int) {
 		db.LogRequests(
 			ctx.Value(utils.ContextKeyEventID).(string),
@@ -160,7 +160,7 @@ func Embedder(ctx context.Context, userId string, memoryId []string, task string
 		return nil, err
 	}
 
-	results, err := db.MatchEmbeddings(memoryId, userId, embeddings)
+	results, err := db.MatchEmbeddings(memoryID, userId, embeddings)
 	if err != nil {
 		return nil, err
 	}

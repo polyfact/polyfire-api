@@ -15,12 +15,12 @@ func CheckRateLimit(ctx context.Context) error {
 	}
 
 	if rateLimitStatus == db.RateLimitStatusReached {
-		return RateLimitReached
+		return ErrRateLimitReached
 	}
 
 	if rateLimitStatus == db.RateLimitStatusProjectReached {
-		return ProjectRateLimitReached
+		return ErrProjectRateLimitReached
 	}
 
-	return UnknownError
+	return ErrUnknownError
 }

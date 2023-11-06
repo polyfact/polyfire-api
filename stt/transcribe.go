@@ -26,7 +26,7 @@ import (
 func SplitFile(file io.Reader) ([]io.Reader, int, func(), error) {
 	id := "split_transcribe-" + uuid.New().String()
 	_ = os.Mkdir("/tmp/"+id, 0700)
-	close_func := func() {
+	closeFunc := func() {
 		os.RemoveAll("/tmp/" + id)
 	}
 	fmt.Println(id)
@@ -46,30 +46,30 @@ func SplitFile(file io.Reader) ([]io.Reader, int, func(), error) {
 		return nil, 0, nil, err
 	}
 
-	ffprobe_result, err := exec.Command("ffprobe", "-i", "/tmp/"+id+"/audio-file", "-show_entries", "format=duration", "-v", "quiet", "-of", "csv=p=0").
+	ffprobeResult, err := exec.Command("ffprobe", "-i", "/tmp/"+id+"/audio-file", "-show_entries", "format=duration", "-v", "quiet", "-of", "csv=p=0").
 		Output()
 	if err != nil {
 		return nil, 0, nil, err
 	}
 
-	duration_ffprobe := strings.Split(strings.Trim(string(ffprobe_result), " \t\n"), ".")
+	durationFfprobe := strings.Split(strings.Trim(string(ffprobeResult), " \t\n"), ".")
 
-	duration_minutes, err := strconv.Atoi(duration_ffprobe[0])
+	durationMinutes, err := strconv.Atoi(durationFfprobe[0])
 	if err != nil {
 		return nil, 0, nil, err
 	}
 
-	duration_seconds, err := strconv.Atoi(duration_ffprobe[1][0:2])
+	durationSeconds, err := strconv.Atoi(durationFfprobe[1][0:2])
 	if err != nil {
 		return nil, 0, nil, err
 	}
 
-	duration_seconds = duration_minutes*60 + duration_seconds + 1
+	durationSeconds = durationMinutes*60 + durationSeconds + 1
 	os.Remove("/tmp/" + id + "/audio-file")
 
-	split_cmd := exec.Command("split", "-b", "20971400", "/tmp/"+id+"/audio-file.ts")
-	split_cmd.Dir = "/tmp/" + id
-	err = split_cmd.Run()
+	splitCmd := exec.Command("split", "-b", "20971400", "/tmp/"+id+"/audio-file.ts")
+	splitCmd.Dir = "/tmp/" + id
+	err = splitCmd.Run()
 	if err != nil {
 		return nil, 0, nil, err
 	}
@@ -81,7 +81,7 @@ func SplitFile(file io.Reader) ([]io.Reader, int, func(), error) {
 		return nil, 0, nil, err
 	}
 
-	var res []io.Reader = make([]io.Reader, 0)
+	var res = make([]io.Reader, 0)
 	for _, file := range files {
 		if file.Name() != "audio-file" && file.Name() != "audio-file.mpeg" {
 			err := exec.Command("ffmpeg", "-i", "/tmp/"+id+"/"+file.Name(), "/tmp/"+id+"/"+file.Name()+".mp3").Run()
@@ -90,24 +90,24 @@ func SplitFile(file io.Reader) ([]io.Reader, int, func(), error) {
 			}
 
 			os.Remove("/tmp/" + id + "/" + file.Name())
-			audio_part_r, err := os.Open("/tmp/" + id + "/" + file.Name() + ".mp3")
+			audioPartR, err := os.Open("/tmp/" + id + "/" + file.Name() + ".mp3")
 			if err != nil {
 				fmt.Println("open part")
 				return nil, 0, nil, err
 			}
-			res = append(res, audio_part_r)
+			res = append(res, audioPartR)
 			fmt.Println("adding:", file.Name())
 		}
 	}
 
-	return res, duration_seconds, close_func, nil
+	return res, durationSeconds, closeFunc, nil
 }
 
 func DownloadFromBucket(bucket string, path string) ([]byte, error) {
-	supabaseUrl := os.Getenv("SUPABASE_URL")
+	supabaseURL := os.Getenv("SUPABASE_URL")
 	supabaseKey := os.Getenv("SUPABASE_KEY")
 
-	supabase := supa.CreateClient(supabaseUrl, supabaseKey)
+	supabase := supa.CreateClient(supabaseURL, supabaseKey)
 
 	return supabase.Storage.From(bucket).Download(path)
 }
@@ -123,7 +123,7 @@ type Result struct {
 
 func Transcribe(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	ctx := r.Context()
-	user_id := ctx.Value(utils.ContextKeyUserID).(string)
+	userID := ctx.Value(utils.ContextKeyUserID).(string)
 	record := ctx.Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
 
 	rateLimitStatus := ctx.Value(utils.ContextKeyRateLimitStatus)
@@ -138,11 +138,11 @@ func Transcribe(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		return
 	}
 
-	content_type := r.Header.Get("Content-Type")
-	var file_buf_reader io.Reader
+	contentType := r.Header.Get("Content-Type")
+	var fileBufReader io.Reader
 
-	var providerName string = ""
-	if content_type == "application/json" {
+	var providerName = ""
+	if contentType == "application/json" {
 		var input TranscribeRequestBody
 
 		err := json.NewDecoder(r.Body).Decode(&input)
@@ -159,9 +159,9 @@ func Transcribe(w http.ResponseWriter, r *http.Request, _ router.Params) {
 			return
 		}
 
-		file_buf_reader = bytes.NewReader(b)
+		fileBufReader = bytes.NewReader(b)
 	} else {
-		_, p, _ := mime.ParseMediaType(content_type)
+		_, p, _ := mime.ParseMediaType(contentType)
 		boundary := p["boundary"]
 		reader := multipart.NewReader(r.Body, boundary)
 		part, err := reader.NextPart()
@@ -173,18 +173,18 @@ func Transcribe(w http.ResponseWriter, r *http.Request, _ router.Params) {
 			utils.RespondError(w, record, "read_error", err.Error())
 			return
 		}
-		file_buf_reader = bufio.NewReader(part)
+		fileBufReader = bufio.NewReader(part)
 	}
 
-	total_str := ""
+	totalStr := ""
 	// The format doesn't seem to really matter
-	files, duration, close_func, err := SplitFile(file_buf_reader)
+	files, duration, closeFunc, err := SplitFile(fileBufReader)
 	if err != nil {
 		fmt.Println(err)
 		utils.RespondError(w, record, "splitting_error")
 		return
 	}
-	defer close_func()
+	defer closeFunc()
 
 	provider, err := providers.NewProvider(providerName)
 	if err != nil {
@@ -201,16 +201,16 @@ func Transcribe(w http.ResponseWriter, r *http.Request, _ router.Params) {
 			utils.RespondError(w, record, "transcription_error")
 			return
 		}
-		total_str += " " + resTmp.Text
+		totalStr += " " + resTmp.Text
 		res.Text += " " + resTmp.Text
 		res.Words = append(res.Words, resTmp.Words...)
 		fmt.Printf("Transcription %v/%v\n", i+1, len(files))
 	}
 
-	res.Text = strings.Trim(total_str, " \t\n")
+	res.Text = strings.Trim(totalStr, " \t\n")
 	db.LogRequestsCredits(
 		r.Context().Value(utils.ContextKeyEventID).(string),
-		user_id, "openai", "whisper", duration*1000, 0, 0, "transcription")
+		userID, "whisper", duration*1000, 0, 0, "transcription")
 
 	response, _ := json.Marshal(&res)
 	record(string(response))

@@ -143,18 +143,18 @@ func GetSystemPrompt(
 	}
 
 	if chat_id != nil && len(*chat_id) > 0 {
-		c, err := db.GetChatById(*chat_id)
+		c, err := db.GetChatByID(*chat_id)
 		if err != nil {
 			return nil, nil, errors.New("Chat not found")
 		}
 
-		if c.SystemPromptId != nil && len(*c.SystemPromptId) > 0 {
-			system_prompt_id = c.SystemPromptId
+		if c.SystemPromptID != nil && len(*c.SystemPromptID) > 0 {
+			system_prompt_id = c.SystemPromptID
 		}
 	}
 
 	if system_prompt_id != nil && len(*system_prompt_id) > 0 {
-		p, err := db.GetPromptByIdOrSlug(*system_prompt_id)
+		p, err := db.GetPromptByIDOrSlug(*system_prompt_id)
 		if err != nil || p == nil {
 			return nil, nil, errors.New("Prompt not found")
 		}

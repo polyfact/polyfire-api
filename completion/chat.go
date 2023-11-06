@@ -12,12 +12,12 @@ import (
 )
 
 func CreateChat(w http.ResponseWriter, r *http.Request, _ router.Params) {
-	user_id := r.Context().Value(utils.ContextKeyUserID).(string)
+	userID := r.Context().Value(utils.ContextKeyUserID).(string)
 	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
 
 	var requestBody struct {
 		SystemPrompt   *string `json:"system_prompt"`
-		SystemPromptId *string `json:"system_prompt_id"`
+		SystemPromptID *string `json:"system_prompt_id"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -26,14 +26,9 @@ func CreateChat(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		return
 	}
 
-	if r.Method != "POST" {
-		utils.RespondError(w, record, "only_post_method_allowed")
-		return
-	}
-
-	chat, err := db.CreateChat(user_id, requestBody.SystemPrompt, requestBody.SystemPromptId)
+	chat, err := db.CreateChat(userID, requestBody.SystemPrompt, requestBody.SystemPromptID)
 	if err != nil {
-		log.Printf("Error creating chat for user %s : %v", user_id, err)
+		log.Printf("Error creating chat for user %s : %v", userID, err)
 		utils.RespondError(w, record, "error_create_chat", err.Error())
 		return
 	}
@@ -46,10 +41,10 @@ func CreateChat(w http.ResponseWriter, r *http.Request, _ router.Params) {
 
 func GetChatHistory(w http.ResponseWriter, r *http.Request, ps router.Params) {
 	id := ps.ByName("id")
-	user_id := r.Context().Value(utils.ContextKeyUserID).(string)
+	userID := r.Context().Value(utils.ContextKeyUserID).(string)
 	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
 
-	messages, err := db.GetChatMessages(user_id, id)
+	messages, err := db.GetChatMessages(userID, id)
 	if err != nil {
 		utils.RespondError(w, record, "error_chat_history")
 		return
@@ -62,33 +57,33 @@ func GetChatHistory(w http.ResponseWriter, r *http.Request, ps router.Params) {
 }
 
 func AddToChatHistory(
-	user_id string,
+	userID string,
 	task string,
-	chatId string,
+	chatID string,
 	callback options.ProviderCallback,
 	opts *options.ProviderOptions,
 ) error {
-	log.Println("GetChatById")
-	chat, err := db.GetChatById(chatId)
+	log.Println("GetChatByID")
+	chat, err := db.GetChatByID(chatID)
 	if err != nil {
-		return InternalServerError
+		return ErrInternalServerError
 	}
 
-	if chat == nil || chat.UserID != user_id {
-		return NotFound
+	if chat == nil || chat.UserID != userID {
+		return ErrNotFound
 	}
 
-	old_callback := *callback
-	*callback = func(provider_name string, model_name string, input_count int, output_count int, completion string, credit *int) {
-		if old_callback != nil {
+	oldCallback := *callback
+	*callback = func(providerName string, modelName string, inputCount int, outputCount int, completion string, credit *int) {
+		if oldCallback != nil {
 			log.Println("Old callback")
-			old_callback(provider_name, model_name, input_count, output_count, completion, credit)
+			oldCallback(providerName, modelName, inputCount, outputCount, completion, credit)
 		}
 
 		log.Println("Add Chat Message")
 		err = db.AddChatMessage(chat.ID, true, task)
 		if err != nil {
-			log.Printf("Error adding chat message for user %s : %v", user_id, err)
+			log.Printf("Error adding chat message for user %s : %v", userID, err)
 		}
 		log.Println("Add Chat Message Callback")
 		_ = db.AddChatMessage(chat.ID, false, completion)

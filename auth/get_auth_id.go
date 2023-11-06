@@ -8,13 +8,13 @@ import (
 	"github.com/polyfire/api/utils"
 )
 
-func GetAuthId(w http.ResponseWriter, r *http.Request, _ router.Params) {
-	user_id := r.Context().Value(utils.ContextKeyUserID).(string)
+func GetAuthID(w http.ResponseWriter, r *http.Request, _ router.Params) {
+	userID := r.Context().Value(utils.ContextKeyUserID).(string)
 
-	projectUser, _ := db.GetProjectUserByID(user_id)
+	projectUser, _ := db.GetProjectUserByID(userID)
 
 	if projectUser == nil {
-		_, _ = w.Write([]byte(user_id))
+		_, _ = w.Write([]byte(userID))
 		return
 	}
 
