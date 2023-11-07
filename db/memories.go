@@ -9,7 +9,7 @@ import (
 
 type Memory struct {
 	ID     string `json:"id"`
-	UserId string `json:"user_id"`
+	UserID string `json:"user_id"`
 	Public bool   `json:"public"`
 }
 
@@ -56,13 +56,13 @@ func (FloatArray) GormDataType() string {
 
 type Embedding struct {
 	MemoryID  string     `json:"memory_id"`
-	UserId    string     `json:"user_id"`
+	UserID    string     `json:"user_id"`
 	Content   string     `json:"content"`
 	Embedding FloatArray `json:"embedding"`
 }
 
-func CreateMemory(memoryID string, userId string, public bool) error {
-	err := DB.Exec("INSERT INTO memories (id, user_id, public) VALUES (?, ?::uuid, ?)", memoryID, userId, public).Error
+func CreateMemory(memoryID string, userID string, public bool) error {
+	err := DB.Exec("INSERT INTO memories (id, user_id, public) VALUES (?, ?::uuid, ?)", memoryID, userID, public).Error
 	if err != nil {
 		return err
 	}
@@ -80,13 +80,13 @@ func GetMemory(memoryID string) (*Memory, error) {
 	return &memory, nil
 }
 
-func AddMemory(userId string, memoryID string, content string, embedding []float32) error {
+func AddMemory(userID string, memoryID string, content string, embedding []float32) error {
 	memory, err := GetMemory(memoryID)
 	if err != nil {
 		return err
 	}
 
-	if memory == nil || memory.UserId != userId {
+	if memory == nil || memory.UserID != userID {
 		return errors.New("memory not found")
 	}
 
@@ -99,7 +99,7 @@ func AddMemory(userId string, memoryID string, content string, embedding []float
 	err = DB.Exec(
 		"INSERT INTO embeddings (memory_id, user_id, content, embedding) VALUES (?, ?::uuid, ?, string_to_array(?, ',')::float[])",
 		memoryID,
-		userId,
+		userID,
 		content,
 		embeddingstr,
 	).Error
@@ -133,10 +133,10 @@ func (MemoryRecord) TableName() string {
 	return "memories"
 }
 
-func GetMemoryIDs(userId string) ([]MemoryRecord, error) {
+func GetMemoryIDs(userID string) ([]MemoryRecord, error) {
 	var results []MemoryRecord
 
-	err := DB.Find(&results, "user_id = ?", userId).Error
+	err := DB.Find(&results, "user_id = ?", userID).Error
 	if err != nil {
 		return nil, err
 	}
@@ -144,13 +144,13 @@ func GetMemoryIDs(userId string) ([]MemoryRecord, error) {
 	return results, nil
 }
 
-func MatchEmbeddings(memoryIDs []string, userId string, embedding []float32) ([]MatchResult, error) {
+func MatchEmbeddings(memoryIDs []string, userID string, embedding []float32) ([]MatchResult, error) {
 	params := MatchParams{
 		QueryEmbedding: embedding,
 		MatchTreshold:  0.70,
 		MatchCount:     10,
 		MemoryID:       memoryIDs,
-		UserID:         userId,
+		UserID:         userID,
 	}
 
 	client, err := CreateClient()

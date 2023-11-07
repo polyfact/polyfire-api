@@ -48,7 +48,7 @@ func (m LLaMaProvider) Generate(task string, c options.ProviderCallback, opts *o
 			return
 		}
 		defer resp.Body.Close()
-		var p = make([]byte, 128)
+		p := make([]byte, 128)
 		totalOutput := 0
 		totalCompletion := ""
 		for {
@@ -69,7 +69,7 @@ func (m LLaMaProvider) Generate(task string, c options.ProviderCallback, opts *o
 	return chanRes
 }
 
-func (m LLaMaProvider) UserAllowed(_user_id string) bool {
+func (m LLaMaProvider) UserAllowed(_ string) bool {
 	return true
 }
 

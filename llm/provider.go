@@ -18,7 +18,7 @@ type Provider interface {
 	Name() string
 	ProviderModel() (string, string)
 	Generate(prompt string, c options.ProviderCallback, opts *options.ProviderOptions) chan options.Result
-	UserAllowed(user_id string) bool
+	UserAllowed(userID string) bool
 	DoesFollowRateLimit() bool
 }
 
@@ -50,12 +50,12 @@ func getAvailableModels(model string) (string, string) {
 	return "", ""
 }
 
-func getModelWithAliases(modelAlias string, projectId string) (string, string) {
+func getModelWithAliases(modelAlias string, projectID string) (string, string) {
 	provider, model := getAvailableModels(modelAlias)
 
-	fmt.Println("Project ID: ", projectId)
+	fmt.Println("Project ID: ", projectID)
 	if model == "" {
-		newModel, err := db.GetModelByAliasAndProjectId(modelAlias, projectId, "completion")
+		newModel, err := db.GetModelByAliasAndProjectID(modelAlias, projectID, "completion")
 		if err != nil {
 			return "", ""
 		}
@@ -73,10 +73,10 @@ func NewProvider(ctx context.Context, provider string, model *string) (Provider,
 	}
 
 	if provider == "" && model != nil {
-		projectId, _ := ctx.Value(utils.ContextKeyProjectID).(string)
+		projectID, _ := ctx.Value(utils.ContextKeyProjectID).(string)
 
 		var newModel string
-		provider, newModel = getModelWithAliases(*model, projectId)
+		provider, newModel = getModelWithAliases(*model, projectID)
 		model = &newModel
 	}
 

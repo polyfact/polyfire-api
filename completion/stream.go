@@ -68,15 +68,15 @@ func Stream(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	if err != nil {
 		if err != nil {
 			switch err {
-			case webrequest.WebsiteExceedsLimit:
+			case webrequest.ErrWebsiteExceedsLimit:
 				utils.RespondErrorStream(conn, record, "error_website_exceeds_limit")
-			case webrequest.WebsitesContentExceeds:
+			case webrequest.ErrWebsitesContentExceeds:
 				utils.RespondErrorStream(conn, record, "error_websites_content_exceeds")
-			case webrequest.FetchWebpageError:
+			case webrequest.ErrFetchWebpage:
 				utils.RespondErrorStream(conn, record, "error_fetch_webpage")
-			case webrequest.ParseContentError:
+			case webrequest.ErrParseContent:
 				utils.RespondErrorStream(conn, record, "error_parse_content")
-			case webrequest.VisitBaseURLError:
+			case webrequest.ErrVisitBaseURL:
 				utils.RespondErrorStream(conn, record, "error_visit_base_url")
 			case ErrNotFound:
 				utils.RespondErrorStream(conn, record, "not_found")

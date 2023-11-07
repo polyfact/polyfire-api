@@ -23,10 +23,10 @@ type ContentElement interface {
 	GetRecommendedContextSize() int
 	GetPriority() Priority
 	GetOrderIndex() int
-	GetContentFittingIn(token_count int) string
+	GetContentFittingIn(tokenCount int) string
 }
 
-var CriticalDoesNotFitError = errors.New("Critical content does not fit in the context")
+var ErrCriticalDoesNotFit = errors.New("Critical content does not fit in the context")
 
 type contextElement struct {
 	ContentElement  ContentElement
@@ -74,7 +74,7 @@ func GetContext(content []ContentElement, tokenLimit int) (string, error) {
 			added := item.GetContentFittingIn(tokenLimit)
 			addedTokens := tokens.CountTokens(added)
 			if addedTokens+tokenCount > tokenLimit {
-				return "", CriticalDoesNotFitError
+				return "", ErrCriticalDoesNotFit
 			}
 
 			criticalContent = append(criticalContent, contextElementFromContentElement(item))

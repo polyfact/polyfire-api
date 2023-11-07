@@ -19,7 +19,7 @@ const BatchSize int = 512
 
 func Create(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
-	userId, ok := r.Context().Value(utils.ContextKeyUserID).(string)
+	userID, ok := r.Context().Value(utils.ContextKeyUserID).(string)
 	if !ok {
 		utils.RespondError(w, record, "user_id_missing")
 		return
@@ -41,13 +41,13 @@ func Create(w http.ResponseWriter, r *http.Request, _ router.Params) {
 
 	memoryID := uuid.New().String()
 
-	if err := db.CreateMemory(memoryID, userId, *requestBody.Public); err != nil {
+	if err := db.CreateMemory(memoryID, userID, *requestBody.Public); err != nil {
 		utils.RespondError(w, record, "db_creation_error")
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	memory := db.Memory{ID: memoryID, UserId: userId, Public: *requestBody.Public}
+	memory := db.Memory{ID: memoryID, UserID: userID, Public: *requestBody.Public}
 
 	response, _ := json.Marshal(&memory)
 	record(string(response))
@@ -60,7 +60,7 @@ func Create(w http.ResponseWriter, r *http.Request, _ router.Params) {
 func Add(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	decoder := json.NewDecoder(r.Body)
 	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
-	userId := r.Context().Value(utils.ContextKeyUserID).(string)
+	userID := r.Context().Value(utils.ContextKeyUserID).(string)
 
 	var requestBody struct {
 		ID       string `json:"id"`
@@ -91,7 +91,7 @@ func Add(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	callback := func(model_name string, input_count int) {
 		db.LogRequests(
 			r.Context().Value(utils.ContextKeyEventID).(string),
-			userId, "openai", model_name, input_count, 0, "embedding", true)
+			userID, "openai", model_name, input_count, 0, "embedding", true)
 	}
 
 	for _, chunk := range chunks {
@@ -101,7 +101,7 @@ func Add(w http.ResponseWriter, r *http.Request, _ router.Params) {
 			return
 		}
 
-		err = db.AddMemory(userId, requestBody.ID, chunk, embeddings)
+		err = db.AddMemory(userID, requestBody.ID, chunk, embeddings)
 
 		if err != nil {
 			utils.RespondError(w, record, "db_insert_error")
@@ -113,21 +113,21 @@ func Add(w http.ResponseWriter, r *http.Request, _ router.Params) {
 
 	w.Header().Set("Content-Type", "application/json")
 
-	response_str, _ := json.Marshal(&response)
-	record(string(response_str))
+	responseStr, _ := json.Marshal(&response)
+	record(string(responseStr))
 
 	_ = json.NewEncoder(w).Encode(response)
 }
 
 func Get(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
-	userId, ok := r.Context().Value(utils.ContextKeyUserID).(string)
+	userID, ok := r.Context().Value(utils.ContextKeyUserID).(string)
 	if !ok {
 		utils.RespondError(w, record, "user_id_error")
 		return
 	}
 
-	results, err := db.GetMemoryIDs(userId)
+	results, err := db.GetMemoryIDs(userID)
 	if err != nil {
 		utils.RespondError(w, record, "retrieval_error")
 		return
@@ -142,17 +142,17 @@ func Get(w http.ResponseWriter, r *http.Request, _ router.Params) {
 
 	w.Header().Set("Content-Type", "application/json")
 
-	response_str, _ := json.Marshal(&response)
-	record(string(response_str))
+	responseStr, _ := json.Marshal(&response)
+	record(string(responseStr))
 
 	_ = json.NewEncoder(w).Encode(response)
 }
 
-func Embedder(ctx context.Context, userId string, memoryID []string, task string) ([]db.MatchResult, error) {
+func Embedder(ctx context.Context, userID string, memoryID []string, task string) ([]db.MatchResult, error) {
 	callback := func(model_name string, input_count int) {
 		db.LogRequests(
 			ctx.Value(utils.ContextKeyEventID).(string),
-			userId, "openai", model_name, input_count, 0, "embedding", true)
+			userID, "openai", model_name, input_count, 0, "embedding", true)
 	}
 
 	embeddings, err := llm.Embed(ctx, task, &callback)
@@ -160,7 +160,7 @@ func Embedder(ctx context.Context, userId string, memoryID []string, task string
 		return nil, err
 	}
 
-	results, err := db.MatchEmbeddings(memoryID, userId, embeddings)
+	results, err := db.MatchEmbeddings(memoryID, userID, embeddings)
 	if err != nil {
 		return nil, err
 	}
@@ -172,7 +172,7 @@ func Search(w http.ResponseWriter, r *http.Request, p router.Params) {
 	id := p.ByName("id")
 	decoder := json.NewDecoder(r.Body)
 	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
-	userId := r.Context().Value(utils.ContextKeyUserID).(string)
+	userID := r.Context().Value(utils.ContextKeyUserID).(string)
 
 	var requestBody struct {
 		Input string `json:"input"`
@@ -184,7 +184,7 @@ func Search(w http.ResponseWriter, r *http.Request, p router.Params) {
 		return
 	}
 
-	results, err := Embedder(r.Context(), userId, []string{id}, requestBody.Input)
+	results, err := Embedder(r.Context(), userID, []string{id}, requestBody.Input)
 	if err != nil {
 		utils.RespondError(w, record, "embedding_error")
 		return
@@ -194,8 +194,8 @@ func Search(w http.ResponseWriter, r *http.Request, p router.Params) {
 
 	w.Header().Set("Content-Type", "application/json")
 
-	response_str, _ := json.Marshal(&response)
-	record(string(response_str))
+	responseStr, _ := json.Marshal(&response)
+	record(string(responseStr))
 
 	_ = json.NewEncoder(w).Encode(response)
 }

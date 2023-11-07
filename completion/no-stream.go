@@ -2,8 +2,8 @@ package completion
 
 import (
 	"encoding/json"
-	"net/http"
 	"errors"
+	"net/http"
 
 	router "github.com/julienschmidt/httprouter"
 	options "github.com/polyfire/api/llm/providers/options"
@@ -30,15 +30,15 @@ func Generate(w http.ResponseWriter, r *http.Request, _ router.Params) {
 
 	resChan, err := GenerationStart(r.Context(), userID, input)
 	if err != nil {
-		if errors.Is(err, webrequest.WebsiteExceedsLimit) {
+		if errors.Is(err, webrequest.ErrWebsiteExceedsLimit) {
 			utils.RespondError(w, record, "error_website_exceeds_limit")
-		} else if errors.Is(err, webrequest.WebsitesContentExceeds) {
+		} else if errors.Is(err, webrequest.ErrWebsitesContentExceeds) {
 			utils.RespondError(w, record, "error_websites_content_exceeds")
-		} else if errors.Is(err, webrequest.FetchWebpageError) {
+		} else if errors.Is(err, webrequest.ErrFetchWebpage) {
 			utils.RespondError(w, record, "error_fetch_webpage")
-		} else if errors.Is(err, webrequest.ParseContentError) {
+		} else if errors.Is(err, webrequest.ErrParseContent) {
 			utils.RespondError(w, record, "error_parse_content")
-		} else if errors.Is(err, webrequest.VisitBaseURLError) {
+		} else if errors.Is(err, webrequest.ErrVisitBaseURL) {
 			utils.RespondError(w, record, "error_visit_base_url")
 		} else if errors.Is(err, ErrNotFound) {
 			utils.RespondError(w, record, "not_found")

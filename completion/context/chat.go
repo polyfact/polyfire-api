@@ -8,7 +8,7 @@ import (
 	"github.com/polyfire/api/db"
 )
 
-var CHAT_HISTORY_TEMPLATE = template.Must(
+var chatHistoryTemplate = template.Must(
 	template.New("chat_history_context").Parse(`Here's the previous conversation history:
 ==========
 {{range .Data}}{{.}}
@@ -20,10 +20,10 @@ type ChatHistoryContext struct {
 	Messages []string
 }
 
-var CHAT_HISTORY_TEMPLATE_GROWTH = InitContextStructureTemplate(*CHAT_HISTORY_TEMPLATE)
+var chatHistoryTemplateGrowth = InitContextStructureTemplate(*chatHistoryTemplate)
 
-func GetChatHistoryContext(user_id string, chatId string) (*ChatHistoryContext, error) {
-	allHistory, err := db.GetChatMessages(user_id, chatId)
+func GetChatHistoryContext(userID string, chatID string) (*ChatHistoryContext, error) {
+	allHistory, err := db.GetChatMessages(userID, chatID)
 	if err != nil {
 		return nil, err
 	}
@@ -56,16 +56,16 @@ func (chc *ChatHistoryContext) GetMinimumContextSize() int {
 	if len(chc.Messages) == 0 {
 		return 0
 	}
-	return CHAT_HISTORY_TEMPLATE_GROWTH.B + CHAT_HISTORY_TEMPLATE_GROWTH.A + len(chc.Messages[0])
+	return chatHistoryTemplateGrowth.B + chatHistoryTemplateGrowth.A + len(chc.Messages[0])
 }
 
 func (chc *ChatHistoryContext) GetRecommendedContextSize() int {
 	if len(chc.Messages) == 0 {
 		return 0
 	}
-	totalSize := CHAT_HISTORY_TEMPLATE_GROWTH.B
+	totalSize := chatHistoryTemplateGrowth.B
 	for i := 0; i < len(chc.Messages); i++ {
-		totalSize += CHAT_HISTORY_TEMPLATE_GROWTH.A + len(chc.Messages[i])
+		totalSize += chatHistoryTemplateGrowth.A + len(chc.Messages[i])
 	}
 
 	return totalSize
@@ -75,15 +75,15 @@ type ChatHistoryTemplateData struct {
 	Data []string
 }
 
-func (spc *ChatHistoryContext) GetContentFittingIn(tokenCount int) string {
-	tokenCurrentSize := CHAT_HISTORY_TEMPLATE_GROWTH.B
+func (chc *ChatHistoryContext) GetContentFittingIn(tokenCount int) string {
+	tokenCurrentSize := chatHistoryTemplateGrowth.B
 	var result []string
-	for i := 0; i < len(spc.Messages); i++ {
-		tokenCurrentSize += CHAT_HISTORY_TEMPLATE_GROWTH.A + len(spc.Messages[i])
+	for i := 0; i < len(chc.Messages); i++ {
+		tokenCurrentSize += chatHistoryTemplateGrowth.A + len(chc.Messages[i])
 		if tokenCurrentSize > tokenCount {
 			break
 		}
-		result = append([]string{spc.Messages[i]}, result...)
+		result = append([]string{chc.Messages[i]}, result...)
 	}
 
 	templData := ChatHistoryTemplateData{
@@ -92,7 +92,7 @@ func (spc *ChatHistoryContext) GetContentFittingIn(tokenCount int) string {
 
 	var resultBuf bytes.Buffer
 
-	if err := CHAT_HISTORY_TEMPLATE.Execute(&resultBuf, templData); err != nil {
+	if err := chatHistoryTemplate.Execute(&resultBuf, templData); err != nil {
 		return ""
 	}
 

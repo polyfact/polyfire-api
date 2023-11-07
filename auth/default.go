@@ -182,7 +182,7 @@ func RefreshToken(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 		return
 	}
 
-	if (*refreshTokenFromDB).ProjectId != project.ID {
+	if (*refreshTokenFromDB).ProjectID != project.ID {
 		http.Error(w, "refresh_token_project_mismatch", http.StatusBadRequest)
 		return
 	}

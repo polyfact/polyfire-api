@@ -49,7 +49,7 @@ func tokenToCredit(providerName string, modelName string, inputTokenCount int, o
 
 func LogRequests(
 	eventID string,
-	userId string,
+	userID string,
 	providerName string,
 	modelName string,
 	inputTokenCount int,
@@ -70,7 +70,7 @@ func LogRequests(
 
 	err := DB.Exec(
 		"INSERT INTO request_logs (user_id, model_name, kind, input_token_count, output_token_count, credits, event_id) VALUES (?::uuid, ?, ?, ?, ?, ?, try_cast_uuid(?))",
-		userId,
+		userID,
 		modelName,
 		kind,
 		inputTokenCount,
@@ -85,7 +85,7 @@ func LogRequests(
 
 func LogRequestsCredits(
 	eventID string,
-	userId string,
+	userID string,
 	modelName string,
 	credits int,
 	inputTokenCount int,
@@ -94,7 +94,7 @@ func LogRequestsCredits(
 ) {
 	err := DB.Exec(
 		"INSERT INTO request_logs (user_id, model_name, kind, input_token_count, output_token_count, credits, event_id) VALUES (?::uuid, ?, ?, ?, ?, ?, try_cast_uuid(?))",
-		userId,
+		userID,
 		modelName,
 		kind,
 		inputTokenCount,
@@ -111,9 +111,9 @@ type UsageParams struct {
 	UserID string `json:"userid"`
 }
 
-func GetUserIDMonthlyTokenUsage(userId string) (int, error) {
+func GetUserIDMonthlyTokenUsage(userID string) (int, error) {
 	params := UsageParams{
-		UserID: userId,
+		UserID: userID,
 	}
 
 	client, err := CreateClient()
@@ -135,9 +135,9 @@ func GetUserIDMonthlyTokenUsage(userId string) (int, error) {
 	return usage, nil
 }
 
-func GetUserIDMonthlyCreditUsage(userId string) (int, error) {
+func GetUserIDMonthlyCreditUsage(userID string) (int, error) {
 	params := UsageParams{
-		UserID: userId,
+		UserID: userID,
 	}
 
 	client, err := CreateClient()
@@ -173,7 +173,7 @@ type Event struct {
 func LogEvents(
 	id string,
 	path string,
-	userId string,
+	userID string,
 	projectID string,
 	requestBody string,
 	responseBody string,
@@ -198,7 +198,7 @@ func LogEvents(
 		)`,
 		sql.Named("id", id),
 		sql.Named("path", path),
-		sql.Named("user_id", userId),
+		sql.Named("user_id", userID),
 		sql.Named("project_id", projectID),
 		sql.Named("request_body", requestBody),
 		sql.Named("response_body", responseBody),

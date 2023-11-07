@@ -43,7 +43,7 @@ func getErrorMessage(rec interface{}) string {
 }
 
 func AddRecord(r *http.Request, eventType utils.EventType) {
-	eventId := uuid.New().String()
+	eventID := uuid.New().String()
 
 	originHeader := r.Header.Get("Origin")
 	origin := ""
@@ -60,22 +60,22 @@ func AddRecord(r *http.Request, eventType utils.EventType) {
 
 	var recordEventRequest utils.RecordRequestFunc = func(request string, response string, userID string, props ...utils.KeyValue) {
 		go func() {
-			pId, _ := db.GetProjectForUserId(userID)
-			projectId := "00000000-0000-0000-0000-000000000000"
+			pID, _ := db.GetProjectForUserID(userID)
+			projectID := "00000000-0000-0000-0000-000000000000"
 
-			if pId != nil {
-				projectId = *pId
+			if pID != nil {
+				projectID = *pID
 			}
 			properties := make(map[string]string)
 			properties["path"] = string(r.URL.Path)
-			properties["projectId"] = projectId
+			properties["projectID"] = projectID
 			properties["requestBody"] = request
 			properties["responseBody"] = response
-			var error bool = false
+			var isError bool = false
 			var promptID string = ""
 			for _, element := range props {
 				if element.Key == "Error" {
-					error = true
+					isError = true
 				}
 				if element.Key == "PromptID" {
 					promptID = element.Value
@@ -84,13 +84,13 @@ func AddRecord(r *http.Request, eventType utils.EventType) {
 			}
 			posthog.Event("API Request", userID, properties)
 			db.LogEvents(
-				eventId,
+				eventID,
 				string(r.URL.Path),
 				userID,
-				projectId,
+				projectID,
 				request,
 				response,
-				error,
+				isError,
 				promptID,
 				string(eventType),
 				origin,
@@ -112,7 +112,7 @@ func AddRecord(r *http.Request, eventType utils.EventType) {
 	}
 
 	newCtx := context.WithValue(r.Context(), utils.ContextKeyRecordEvent, recordEvent)
-	newCtx = context.WithValue(newCtx, utils.ContextKeyEventID, eventId)
+	newCtx = context.WithValue(newCtx, utils.ContextKeyEventID, eventID)
 	newCtx = context.WithValue(newCtx, utils.ContextKeyOriginDomain, origin)
 	newCtx = context.WithValue(newCtx, utils.ContextKeyRecordEventRequest, recordEventRequest)
 	newCtx = context.WithValue(newCtx, utils.ContextKeyRecordEventWithUserID, recordEventWithUserID)

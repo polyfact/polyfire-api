@@ -6,33 +6,33 @@ import (
 	"github.com/posthog/posthog-go"
 )
 
-var PosthogApiKey = os.Getenv("POSTHOG_API_KEY")
+var PosthogAPIKey = os.Getenv("POSTHOG_API_KEY")
 
-func IdentifyUser(auth_id string, user_id string, email string) {
-	if PosthogApiKey == "" {
+func IdentifyUser(authID string, userID string, email string) {
+	if PosthogAPIKey == "" {
 		return
 	}
 
-	client := posthog.New(PosthogApiKey)
+	client := posthog.New(PosthogAPIKey)
 	defer client.Close()
 
 	_ = client.Enqueue(posthog.Identify{
-		DistinctId: auth_id,
+		DistinctId: authID,
 		Properties: posthog.NewProperties().Set("email", email),
 	})
 
 	_ = client.Enqueue(posthog.Alias{
-		DistinctId: auth_id,
-		Alias:      user_id,
+		DistinctId: authID,
+		Alias:      userID,
 	})
 }
 
-func Event(eventName string, distinctId string, props map[string]string) {
-	if PosthogApiKey == "" {
+func Event(eventName string, distinctID string, props map[string]string) {
+	if PosthogAPIKey == "" {
 		return
 	}
 
-	client := posthog.New(PosthogApiKey)
+	client := posthog.New(PosthogAPIKey)
 	defer client.Close()
 
 	properties := posthog.NewProperties()
@@ -42,7 +42,7 @@ func Event(eventName string, distinctId string, props map[string]string) {
 	}
 
 	_ = client.Enqueue(posthog.Capture{
-		DistinctId: distinctId,
+		DistinctId: distinctID,
 		Event:      eventName,
 		Properties: properties,
 	})
