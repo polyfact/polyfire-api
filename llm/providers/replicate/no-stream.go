@@ -22,16 +22,16 @@ func (m ReplicateProvider) NoStream(
 	c options.ProviderCallback,
 	opts *options.ProviderOptions,
 ) chan options.Result {
-	chan_res := make(chan options.Result)
+	chanRes := make(chan options.Result)
 
 	go func() {
-		defer close(chan_res)
+		defer close(chanRes)
 
 		replicateStartTime := time.Now()
 
 		startResponse, errorCode := m.ReplicateStart(task, opts, false)
 		if errorCode != "" {
-			chan_res <- options.Result{Err: errorCode}
+			chanRes <- options.Result{Err: errorCode}
 			return
 		}
 
@@ -39,30 +39,30 @@ func (m ReplicateProvider) NoStream(
 		tokenUsage := options.TokenUsage{}
 
 		tokenUsage.Input = tokens.CountTokens(task)
-		var coldBootDetected bool = false
+		var coldBootDetected = false
 
 		for {
 			req, err := http.NewRequest("GET", startResponse.URLs.Get, nil)
 			if err != nil {
 				fmt.Println(err)
-				chan_res <- options.Result{Err: "generation_error"}
+				chanRes <- options.Result{Err: "generation_error"}
 				return
 			}
 
-			req.Header.Set("Authorization", "Token "+m.ReplicateApiKey)
+			req.Header.Set("Authorization", "Token "+m.ReplicateAPIKey)
 			req.Header.Set("Accept", "text/event-stream")
 
 			resp, err := http.DefaultClient.Do(req)
 			if err != nil {
 				fmt.Println(err)
-				chan_res <- options.Result{Err: "generation_error"}
+				chanRes <- options.Result{Err: "generation_error"}
 				return
 			}
 
 			respBody, err := io.ReadAll(resp.Body)
 			if err != nil {
 				fmt.Println(err)
-				chan_res <- options.Result{Err: "generation_error"}
+				chanRes <- options.Result{Err: "generation_error"}
 				return
 			}
 
@@ -70,26 +70,26 @@ func (m ReplicateProvider) NoStream(
 			err = json.Unmarshal(respBody, &output)
 			if err != nil {
 				fmt.Println(err)
-				chan_res <- options.Result{Err: "generation_error"}
+				chanRes <- options.Result{Err: "generation_error"}
 				return
 			}
 
 			if output.Status == "error" {
 				fmt.Println(output)
-				chan_res <- options.Result{Err: "generation_error"}
+				chanRes <- options.Result{Err: "generation_error"}
 				return
 			}
 
 			if output.Status == "starting" && time.Since(replicateStartTime) > 10*time.Second && !coldBootDetected {
 				fmt.Println("cold boot detected")
-				chan_res <- options.Result{Warnings: []string{"The model is taking longer than usual to start up. It's probably due to a cold boot on replicate's side. It will respond enventually but it can take some time."}}
+				chanRes <- options.Result{Warnings: []string{"The model is taking longer than usual to start up. It's probably due to a cold boot on replicate's side. It will respond enventually but it can take some time."}}
 				coldBootDetected = true
 			}
 
 			if output.Status == "succeeded" {
 				completion = output.Output
 				tokenUsage.Output = tokens.CountTokens(completion)
-				chan_res <- options.Result{Result: output.Output, TokenUsage: tokenUsage}
+				chanRes <- options.Result{Result: output.Output, TokenUsage: tokenUsage}
 				break
 			}
 
@@ -105,5 +105,5 @@ func (m ReplicateProvider) NoStream(
 		}
 	}()
 
-	return chan_res
+	return chanRes
 }

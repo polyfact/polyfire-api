@@ -5,16 +5,14 @@ import (
 	llmTokens "github.com/polyfire/api/tokens"
 )
 
-const PROMPT_IDENTIFIER_TOKEN_COUNT int = 5
-
-func CutChatHistory(chat_messages []db.ChatMessage, max_token int) []db.ChatMessage {
+func CutChatHistory(chatMessages []db.ChatMessage, maxToken int) []db.ChatMessage {
 	var res []db.ChatMessage
 	tokens := 0
 
-	for _, item := range chat_messages {
+	for _, item := range chatMessages {
 		textTokens := llmTokens.CountTokens(item.Content)
 
-		if tokens+textTokens > max_token {
+		if tokens+textTokens > maxToken {
 			break
 		}
 
@@ -38,7 +36,7 @@ func ContainsString(list []string, item string) bool {
 type ContextKey string
 
 const (
-	ContextKeyUserID                ContextKey = "user_id"
+	ContextKeyUserID                ContextKey = "userId"
 	ContextKeyRateLimitStatus       ContextKey = "rateLimitStatus"
 	ContextKeyRecordEvent           ContextKey = "recordEvent"
 	ContextKeyRecordEventWithUserID ContextKey = "recordEventWithUserID"

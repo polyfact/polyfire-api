@@ -6,7 +6,7 @@ import (
 	"github.com/polyfire/api/web_request"
 )
 
-var PROMPT_WEB_TEMPLATE = template.Must(
+var promptWebTemplate = template.Must(
 	template.New("web_context").Parse(`Some Content found on the web relevant to your task:
 ==========
 {{range .Data}}{{.}}
@@ -21,5 +21,5 @@ func GetWebContext(task string) (*WebContext, error) {
 		return nil, err
 	}
 
-	return GetTemplateContext(res, *PROMPT_WEB_TEMPLATE)
+	return GetTemplateContext(res, *promptWebTemplate)
 }

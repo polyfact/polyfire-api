@@ -10,7 +10,7 @@ import (
 )
 
 func Get(w http.ResponseWriter, r *http.Request, _ router.Params) {
-	user_id := r.Context().Value(utils.ContextKeyUserID).(string)
+	userID := r.Context().Value(utils.ContextKeyUserID).(string)
 	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
 
 	id := r.URL.Query().Get("key")
@@ -20,7 +20,7 @@ func Get(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		return
 	}
 
-	store, _ := db.GetKV(user_id, id)
+	store, _ := db.GetKV(userID, id)
 
 	if store == nil || store.Value == "" {
 		utils.RespondError(w, record, "data_not_found")
@@ -33,7 +33,7 @@ func Get(w http.ResponseWriter, r *http.Request, _ router.Params) {
 }
 
 func Set(w http.ResponseWriter, r *http.Request, _ router.Params) {
-	user_id := r.Context().Value(utils.ContextKeyUserID).(string)
+	userID := r.Context().Value(utils.ContextKeyUserID).(string)
 	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
 
 	var data struct {
@@ -47,7 +47,7 @@ func Set(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		return
 	}
 
-	err = db.SetKV(user_id, data.Key, data.Value)
+	err = db.SetKV(userID, data.Key, data.Value)
 	if err != nil {
 		utils.RespondError(w, record, "database_error")
 		return
@@ -59,7 +59,7 @@ func Set(w http.ResponseWriter, r *http.Request, _ router.Params) {
 }
 
 func Delete(w http.ResponseWriter, r *http.Request, _ router.Params) {
-	user_id := r.Context().Value(utils.ContextKeyUserID).(string)
+	userID := r.Context().Value(utils.ContextKeyUserID).(string)
 	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
 
 	id := r.URL.Query().Get("key")
@@ -69,7 +69,7 @@ func Delete(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		return
 	}
 
-	err := db.DeleteKV(user_id, id)
+	err := db.DeleteKV(userID, id)
 	if err != nil {
 		utils.RespondError(w, record, "database_error")
 		return
@@ -81,10 +81,10 @@ func Delete(w http.ResponseWriter, r *http.Request, _ router.Params) {
 }
 
 func List(w http.ResponseWriter, r *http.Request, _ router.Params) {
-	user_id := r.Context().Value(utils.ContextKeyUserID).(string)
+	userID := r.Context().Value(utils.ContextKeyUserID).(string)
 	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
 
-	result, err := db.ListKV(user_id)
+	result, err := db.ListKV(userID)
 	if err != nil {
 		utils.RespondError(w, record, "database_error")
 		return

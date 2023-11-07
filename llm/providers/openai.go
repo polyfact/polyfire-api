@@ -51,10 +51,10 @@ func (m OpenAIStreamProvider) Generate(
 	c options.ProviderCallback,
 	opts *options.ProviderOptions,
 ) chan options.Result {
-	chan_res := make(chan options.Result)
+	chanRes := make(chan options.Result)
 
 	go func() {
-		defer close(chan_res)
+		defer close(chanRes)
 		tokenUsage := options.TokenUsage{Input: 0, Output: 0}
 		ctx := context.Background()
 
@@ -78,8 +78,8 @@ func (m OpenAIStreamProvider) Generate(
 		}
 		if opts.Temperature != nil {
 			if *opts.Temperature == 0.0 {
-				var nearly_zero float32 = math.SmallestNonzeroFloat32
-				req.Temperature = nearly_zero // We need to do that bc openai-go omitempty on 0.0
+				var nearlyZero float32 = math.SmallestNonzeroFloat32
+				req.Temperature = nearlyZero // We need to do that bc openai-go omitempty on 0.0
 			} else {
 				req.Temperature = *opts.Temperature
 			}
@@ -90,9 +90,9 @@ func (m OpenAIStreamProvider) Generate(
 		stream, err := m.client.CreateChatCompletionStream(ctx, req)
 		if err != nil {
 			if strings.Contains(err.Error(), "Incorrect API key provided") && m.IsCustomToken {
-				chan_res <- options.Result{Err: "openai_invalid_api_key"}
+				chanRes <- options.Result{Err: "openai_invalid_api_key"}
 			} else {
-				chan_res <- options.Result{Err: "generation_error"}
+				chanRes <- options.Result{Err: "generation_error"}
 			}
 			return
 		}
@@ -119,22 +119,22 @@ func (m OpenAIStreamProvider) Generate(
 
 			totalCompletion += completion.Choices[0].Delta.Content
 
-			chan_res <- result
+			chanRes <- result
 		}
 		if c != nil {
 			(*c)("openai", m.Model, tokenUsage.Input, totalOutput, totalCompletion, nil)
 		}
 	}()
 
-	return chan_res
+	return chanRes
 }
 
-func (m OpenAIStreamProvider) UserAllowed(user_id string) bool {
+func (m OpenAIStreamProvider) UserAllowed(userID string) bool {
 	if m.Model == "gpt-3.5-turbo" || m.Model == "gpt-3.5-turbo-16k" {
 		return true
 	}
 
-	res, _ := db.ProjectIsPremium(user_id)
+	res, _ := db.ProjectIsPremium(userID)
 	return res
 }
 

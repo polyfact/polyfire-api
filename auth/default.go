@@ -73,7 +73,7 @@ func RedirectAuth(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 	http.Redirect(w, r, url, http.StatusFound)
 }
 
-func wrapSupabaseRefreshToken(refreshToken string, projectId string) (string, error) {
+func wrapSupabaseRefreshToken(refreshToken string, projectID string) (string, error) {
 	wrappedRefreshToken := make([]byte, 32)
 	_, err := rand.Read(wrappedRefreshToken)
 	if err != nil {
@@ -84,7 +84,7 @@ func wrapSupabaseRefreshToken(refreshToken string, projectId string) (string, er
 	wrappedRefreshTokenString = strings.ReplaceAll(wrappedRefreshTokenString, "+", "-")
 	wrappedRefreshTokenString = strings.ReplaceAll(wrappedRefreshTokenString, "=", "")
 
-	err = db.CreateRefreshToken(wrappedRefreshTokenString, refreshToken, projectId)
+	err = db.CreateRefreshToken(wrappedRefreshTokenString, refreshToken, projectID)
 	if err != nil {
 		return "", err
 	}
@@ -97,9 +97,9 @@ func CallbackAuth(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 	redirectTo := r.URL.Query().Get("redirect_to")
 	accessToken := r.URL.Query().Get("access_token")
 	refreshToken := r.URL.Query().Get("refresh_token")
-	error := r.URL.Query().Get("error")
+	errorField := r.URL.Query().Get("error")
 
-	if accessToken == "" && error == "" {
+	if accessToken == "" && errorField == "" {
 		// Supabase doesn't return the access_token in the query params but in the hash
 		// to avoid leaking the token to the history. In our case we we'll do a redirect
 		// with the token in the hash and therefore the token cannot leak.
@@ -120,7 +120,7 @@ func CallbackAuth(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 
 	if accessToken == "" {
 		// TODO: Handle errors
-		http.Error(w, error, http.StatusInternalServerError)
+		http.Error(w, errorField, http.StatusInternalServerError)
 		return
 	}
 
@@ -182,7 +182,7 @@ func RefreshToken(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 		return
 	}
 
-	if (*refreshTokenFromDB).ProjectId != project.ID {
+	if (*refreshTokenFromDB).ProjectID != project.ID {
 		http.Error(w, "refresh_token_project_mismatch", http.StatusBadRequest)
 		return
 	}

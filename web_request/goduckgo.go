@@ -13,18 +13,18 @@ import (
 )
 
 const (
-	baseUrl          = "https://html.duckduckgo.com/html/?q=%s&no_redirect=1"
+	baseURL          = "https://html.duckduckgo.com/html/?q=%s&no_redirect=1"
 	duckDuckGoPrefix = "//duckduckgo.com/l/?uddg="
 	maxSitesToVisit  = 7
 	urlPattern       = `read:(https?://[^\s]+)` // Extract URL with "read:" prefix.
 )
 
 var (
-	WebsiteExceedsLimit    error = errors.New("error_website_exceeds_limit")
-	WebsitesContentExceeds error = errors.New("error_websites_content_exceeds")
-	FetchWebpageError      error = errors.New("error_fetch_webpage")
-	ParseContentError      error = errors.New("error_parse_content")
-	VisitBaseURLError      error = errors.New("error_visit_base_url")
+	ErrWebsiteExceedsLimit    = errors.New("error_website_exceeds_limit")
+	ErrWebsitesContentExceeds = errors.New("error_websites_content_exceeds")
+	ErrFetchWebpage           = errors.New("errorFetch_webpage")
+	ErrParseContent           = errors.New("error_parse_content")
+	ErrVisitBaseURL           = errors.New("error_visit_base_url")
 )
 
 func prepareURL(u string) (string, error) {
@@ -47,14 +47,14 @@ func removeUselessWhitespaces(s string) string {
 func fetchContent(link string) (string, error) {
 	res, err := http.Get(link)
 	if err != nil {
-		return "", FetchWebpageError
+		return "", ErrFetchWebpage
 	}
 	defer res.Body.Close()
 
 	r := readability.New()
 	parsed, err := r.Parse(res.Body, link)
 	if err != nil {
-		return "", ParseContentError
+		return "", ErrParseContent
 	}
 
 	return removeUselessWhitespaces(parsed.TextContent), nil
@@ -135,10 +135,10 @@ func WebRequest(query string) ([]string, error) {
 		close(allDone)
 	})
 
-	err := c.Visit(fmt.Sprintf(baseUrl, url.QueryEscape(query)))
+	err := c.Visit(fmt.Sprintf(baseURL, url.QueryEscape(query)))
 	if err != nil {
 		fmt.Println(err)
-		return []string{}, VisitBaseURLError
+		return []string{}, ErrVisitBaseURL
 	}
 
 	<-allDone

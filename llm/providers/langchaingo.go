@@ -54,15 +54,15 @@ func (m LangchainProvider) Generate(
 	c options.ProviderCallback,
 	opts *options.ProviderOptions,
 ) chan options.Result {
-	chan_res := make(chan options.Result)
+	chanRes := make(chan options.Result)
 
-	go func(chan_res chan options.Result) {
-		defer close(chan_res)
+	go func(chanRes chan options.Result) {
+		defer close(chanRes)
 		tokenUsage := options.TokenUsage{Input: 0, Output: 0}
-		input_prompt := task
-		completion, err := m.Call(input_prompt, opts)
+		inputPrompt := task
+		completion, err := m.Call(inputPrompt, opts)
 		if err != nil {
-			chan_res <- options.Result{Err: "generation_error"}
+			chanRes <- options.Result{Err: "generation_error"}
 			return
 		}
 
@@ -70,26 +70,26 @@ func (m LangchainProvider) Generate(
 			(*c)(
 				"cohere",
 				m.ModelName,
-				m.Model.GetNumTokens(input_prompt),
+				m.Model.GetNumTokens(inputPrompt),
 				m.Model.GetNumTokens(completion),
 				completion,
 				nil,
 			)
 		}
 
-		tokenUsage.Input += m.Model.GetNumTokens(input_prompt)
+		tokenUsage.Input += m.Model.GetNumTokens(inputPrompt)
 		tokenUsage.Output += m.Model.GetNumTokens(completion)
 
 		result := options.Result{Result: completion, TokenUsage: tokenUsage}
 
-		chan_res <- result
-	}(chan_res)
+		chanRes <- result
+	}(chanRes)
 
-	return chan_res
+	return chanRes
 }
 
-func (m LangchainProvider) UserAllowed(user_id string) bool {
-	res, _ := db.ProjectIsPremium(user_id)
+func (m LangchainProvider) UserAllowed(userID string) bool {
+	res, _ := db.ProjectIsPremium(userID)
 	return res
 }
 
