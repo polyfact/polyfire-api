@@ -31,7 +31,7 @@ var upgrader = websocket.Upgrader{
 
 func Stream(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
-	user_id := r.Context().Value(utils.ContextKeyUserID).(string)
+	userID := r.Context().Value(utils.ContextKeyUserID).(string)
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		utils.RespondError(w, record, "communication_error")
@@ -53,7 +53,7 @@ func Stream(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	recordEventRequest := r.Context().Value(utils.ContextKeyRecordEventRequest).(utils.RecordRequestFunc)
 
 	record = func(response string, props ...utils.KeyValue) {
-		recordEventRequest(string(p), response, user_id, props...)
+		recordEventRequest(string(p), response, userID, props...)
 	}
 
 	var input GenerateRequestBody
@@ -64,27 +64,27 @@ func Stream(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		return
 	}
 
-	chan_res, err := GenerationStart(r.Context(), user_id, input)
+	chanRes, err := GenerationStart(r.Context(), userID, input)
 	if err != nil {
 		if err != nil {
 			switch err {
-			case webrequest.WebsiteExceedsLimit:
+			case webrequest.ErrWebsiteExceedsLimit:
 				utils.RespondErrorStream(conn, record, "error_website_exceeds_limit")
-			case webrequest.WebsitesContentExceeds:
+			case webrequest.ErrWebsitesContentExceeds:
 				utils.RespondErrorStream(conn, record, "error_websites_content_exceeds")
-			case webrequest.FetchWebpageError:
+			case webrequest.ErrFetchWebpage:
 				utils.RespondErrorStream(conn, record, "error_fetch_webpage")
-			case webrequest.ParseContentError:
+			case webrequest.ErrParseContent:
 				utils.RespondErrorStream(conn, record, "error_parse_content")
-			case webrequest.VisitBaseURLError:
+			case webrequest.ErrVisitBaseURL:
 				utils.RespondErrorStream(conn, record, "error_visit_base_url")
-			case NotFound:
+			case ErrNotFound:
 				utils.RespondErrorStream(conn, record, "not_found")
-			case UnknownModelProvider:
+			case ErrUnknownModelProvider:
 				utils.RespondErrorStream(conn, record, "invalid_model_provider")
-			case RateLimitReached:
+			case ErrRateLimitReached:
 				utils.RespondErrorStream(conn, record, "rate_limit_reached")
-			case ProjectRateLimitReached:
+			case ErrProjectRateLimitReached:
 				utils.RespondErrorStream(conn, record, "project_rate_limit_reached")
 			default:
 				utils.RespondErrorStream(conn, record, "internal_error")
@@ -98,12 +98,12 @@ func Stream(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		TokenUsage: options.TokenUsage{Input: 0, Output: 0},
 	}
 
-	chan_stop := make(chan bool)
+	chanStop := make(chan bool)
 	go func() {
 		for {
 			size, message, _ := conn.ReadMessage()
 			if string(message) == "STOP" {
-				chan_stop <- true
+				chanStop <- true
 			}
 			if size == -1 {
 				break
@@ -111,9 +111,9 @@ func Stream(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		}
 	}()
 
-	total_result := ""
-generation_loop:
-	for v := range *chan_res {
+	totalResult := ""
+generationLoop:
+	for v := range *chanRes {
 		result.Result += v.Result
 		if v.TokenUsage.Input != 0 {
 			result.TokenUsage.Input = v.TokenUsage.Input
@@ -124,8 +124,8 @@ generation_loop:
 			result.Resources = v.Resources
 		}
 		select {
-		case <-chan_stop:
-			break generation_loop
+		case <-chanStop:
+			break generationLoop
 		default:
 		}
 
@@ -138,7 +138,7 @@ generation_loop:
 			result.Warnings = append(result.Warnings, v.Warnings...)
 		}
 
-		total_result += v.Result
+		totalResult += v.Result
 		if v.Result != "" {
 			err = conn.WriteMessage(websocket.TextMessage, []byte(v.Result))
 			if err != nil {
@@ -166,10 +166,10 @@ generation_loop:
 	}
 
 	var recordProps []utils.KeyValue = make([]utils.KeyValue, 0)
-	if input.SystemPromptId != nil {
-		recordProps = append(recordProps, utils.KeyValue{Key: "PromptID", Value: *input.SystemPromptId})
+	if input.SystemPromptID != nil {
+		recordProps = append(recordProps, utils.KeyValue{Key: "PromptID", Value: *input.SystemPromptID})
 	}
-	record(total_result, recordProps...)
+	record(totalResult, recordProps...)
 
 	err = conn.WriteMessage(websocket.TextMessage, []byte(""))
 	if err != nil {

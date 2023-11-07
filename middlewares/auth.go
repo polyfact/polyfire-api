@@ -42,7 +42,7 @@ func createUserContext(
 	newCtx := context.WithValue(r.Context(), utils.ContextKeyUserID, userID)
 	newCtx = context.WithValue(newCtx, utils.ContextKeyRateLimitStatus, rateLimitStatus)
 	if user != nil {
-		newCtx = context.WithValue(newCtx, utils.ContextKeyProjectID, user.ProjectId)
+		newCtx = context.WithValue(newCtx, utils.ContextKeyProjectID, user.ProjectID)
 		if user.OpenaiToken != "" {
 			newCtx = context.WithValue(newCtx, utils.ContextKeyOpenAIToken, user.OpenaiToken)
 			if user.OpenaiOrg != "" {
@@ -91,7 +91,7 @@ func authenticateAndHandle(
 		return
 	}
 
-	var version int = 0
+	var version = 0
 	versionJSON, ok := claims["version"].(float64)
 	if ok {
 		version = int(versionJSON)
@@ -100,7 +100,7 @@ func authenticateAndHandle(
 	log.Println("DB Version / Rate Limit Status In Context")
 	user, rateLimitStatus, err := db.CheckDBVersionRateLimit(userID, version)
 
-	if err == db.DBVersionMismatch {
+	if err == db.ErrDBVersionMismatch {
 		utils.RespondError(w, record, "invalid_token")
 		return
 	}

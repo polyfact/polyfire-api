@@ -22,10 +22,10 @@ func InitDB() {
 }
 
 func CreateClient() (*postgrest.Client, error) {
-	supabaseUrl := os.Getenv("SUPABASE_URL")
+	supabaseURL := os.Getenv("SUPABASE_URL")
 	supabaseKey := os.Getenv("SUPABASE_KEY")
 
-	client := postgrest.NewClient(supabaseUrl+"/rest/v1", "", nil)
+	client := postgrest.NewClient(supabaseURL+"/rest/v1", "", nil)
 
 	if client.ClientError != nil {
 		return nil, client.ClientError

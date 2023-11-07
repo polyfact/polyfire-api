@@ -7,14 +7,14 @@ import (
 	"github.com/polyfire/api/memory"
 )
 
-var MEMORY_TEMPLATE = template.Must(template.New("memory_context").Parse(`Here are some informations you remember:
+var memoryTemplate = template.Must(template.New("memory_context").Parse(`Here are some informations you remember:
 {{range .Data}} - {{.}}
 {{end}}`))
 
 type MemoryContext = TemplateContext
 
-func GetMemory(ctx context.Context, userId string, memoryIds []string, task string) (*MemoryContext, error) {
-	results, err := memory.Embedder(ctx, userId, memoryIds, task)
+func GetMemory(ctx context.Context, userID string, memoryIds []string, task string) (*MemoryContext, error) {
+	results, err := memory.Embedder(ctx, userID, memoryIds, task)
 	if err != nil {
 		return nil, err
 	}
@@ -24,5 +24,5 @@ func GetMemory(ctx context.Context, userId string, memoryIds []string, task stri
 		resultStrings[i] = result.Content
 	}
 
-	return GetTemplateContext(resultStrings, *MEMORY_TEMPLATE)
+	return GetTemplateContext(resultStrings, *memoryTemplate)
 }

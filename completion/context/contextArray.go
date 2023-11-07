@@ -88,14 +88,14 @@ func (m *TemplateContext) GetOrderIndex() int {
 	return 2
 }
 
-func (m *TemplateContext) fillContext(data []string, token_count int) (string, error) {
+func (m *TemplateContext) fillContext(data []string, tokenCount int) (string, error) {
 	memories := []string{}
 	currentTokens := m.ContextGrowth.B
 
 	for _, item := range data {
 		textTokens := tokens.CountTokens(item)
 
-		if currentTokens+textTokens+m.ContextGrowth.A > token_count {
+		if currentTokens+textTokens+m.ContextGrowth.A > tokenCount {
 			break
 		}
 
@@ -122,7 +122,7 @@ func (m *TemplateContext) fillContext(data []string, token_count int) (string, e
 	return context, nil
 }
 
-func (m *TemplateContext) GetContentFittingIn(token_count int) string {
-	context, _ := m.fillContext(m.Data, token_count)
+func (m *TemplateContext) GetContentFittingIn(tokenCount int) string {
+	context, _ := m.fillContext(m.Data, tokenCount)
 	return context
 }

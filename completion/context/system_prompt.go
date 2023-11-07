@@ -18,57 +18,57 @@ type SystemPrompt struct {
 	elements []ParsedSystemPromptElement
 }
 
-func ParseSystemPrompt(system_prompt string) SystemPrompt {
+func ParseSystemPrompt(systemPrompt string) SystemPrompt {
 	result := make([]ParsedSystemPromptElement, 0)
 
-	var literal string = ""
-	var is_var bool = false
+	literal := ""
+	isVar := false
 
-	var last_char rune = 0
+	var lastChar rune
 
-	for _, c := range system_prompt {
-		if c == '\\' && last_char != '\\' {
-			last_char = c
+	for _, c := range systemPrompt {
+		if c == '\\' && lastChar != '\\' {
+			lastChar = c
 			continue
-		} else if c == '{' && last_char == '{' && !is_var {
-			result = append(result, ParsedSystemPromptElement{Literal: literal, IsVar: is_var})
+		} else if c == '{' && lastChar == '{' && !isVar {
+			result = append(result, ParsedSystemPromptElement{Literal: literal, IsVar: isVar})
 			literal = ""
-			is_var = true
-			last_char = 0
+			isVar = true
+			lastChar = 0
 			continue
-		} else if c == '}' && last_char == '}' && is_var {
-			result = append(result, ParsedSystemPromptElement{Literal: strings.TrimSpace(literal), IsVar: is_var})
+		} else if c == '}' && lastChar == '}' && isVar {
+			result = append(result, ParsedSystemPromptElement{Literal: strings.TrimSpace(literal), IsVar: isVar})
 			literal = ""
-			is_var = false
-			last_char = 0
+			isVar = false
+			lastChar = 0
 			continue
-		} else if last_char == '{' || last_char == '}' {
-			last_char = c
-			literal += string(last_char) + string(c)
-		} else if !(c == '}' || c == '{') || last_char == '\\' {
-			last_char = 0
+		} else if lastChar == '{' || lastChar == '}' {
+			lastChar = c
+			literal += string(lastChar) + string(c)
+		} else if !(c == '}' || c == '{') || lastChar == '\\' {
+			lastChar = 0
 			literal += string(c)
 		} else {
-			last_char = c
+			lastChar = c
 		}
 	}
 
-	if last_char == '{' || last_char == '}' {
-		literal += string(last_char)
+	if lastChar == '{' || lastChar == '}' {
+		literal += string(lastChar)
 	}
 
-	if is_var {
+	if isVar {
 		literal = "{{" + literal
-		is_var = false
+		isVar = false
 	}
 
-	result = append(result, ParsedSystemPromptElement{Literal: literal, IsVar: is_var})
+	result = append(result, ParsedSystemPromptElement{Literal: literal, IsVar: isVar})
 
 	return SystemPrompt{elements: result}
 }
 
 func (sp SystemPrompt) ListVars() []string {
-	var result []string = make([]string, 0)
+	var result = make([]string, 0)
 
 	for _, e := range sp.elements {
 		if e.IsVar {
@@ -80,7 +80,7 @@ func (sp SystemPrompt) ListVars() []string {
 }
 
 func (sp SystemPrompt) Render(vars map[string]string) string {
-	var result string = ""
+	var result= ""
 
 	for _, e := range sp.elements {
 		if e.IsVar {
@@ -93,18 +93,18 @@ func (sp SystemPrompt) Render(vars map[string]string) string {
 	return result
 }
 
-func GetVars(user_id string, varList []string) (map[string]string, []string) {
-	var warnings []string = make([]string, 0)
-	var result map[string]string = make(map[string]string)
+func GetVars(userID string, varList []string) (map[string]string, []string) {
+	var warnings = make([]string, 0)
+	var result = make(map[string]string)
 
-	kv_vars := make([]string, 0)
+	kvVars := make([]string, 0)
 	for _, v := range varList {
 		if strings.HasPrefix(v, "kv.") {
-			kv_vars = append(kv_vars, strings.TrimPrefix(v, "kv."))
+			kvVars = append(kvVars, strings.TrimPrefix(v, "kv."))
 		}
 	}
 
-	kv_map, err := db.GetKVMap(user_id, kv_vars)
+	kvMap, err := db.GetKVMap(userID, kvVars)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -112,11 +112,11 @@ func GetVars(user_id string, varList []string) (map[string]string, []string) {
 	for _, v := range varList {
 		if strings.HasPrefix(v, "kv.") {
 			key := strings.TrimPrefix(v, "kv.")
-			if kv_map[key] == "" {
+			if kvMap[key] == "" {
 				warnings = append(warnings, fmt.Sprintf("Unknown var: \"%s\"", v))
 				result[v] = ""
 			}
-			result[v] = kv_map[key]
+			result[v] = kvMap[key]
 		} else {
 			warnings = append(warnings, fmt.Sprintf("Unknown var: \"%s\"", v))
 			result[v] = ""
@@ -131,30 +131,30 @@ type SystemPromptContext struct {
 }
 
 func GetSystemPrompt(
-	user_id string,
-	system_prompt_id *string,
-	system_prompt *string,
-	chat_id *string,
+	userID string,
+	systemPromptID *string,
+	systemPrompt *string,
+	chatID *string,
 ) (*SystemPromptContext, []string, error) {
-	var result string = ""
+	var result = ""
 
-	if system_prompt != nil && len(*system_prompt) > 0 {
-		result = *system_prompt
+	if systemPrompt != nil && len(*systemPrompt) > 0 {
+		result = *systemPrompt
 	}
 
-	if chat_id != nil && len(*chat_id) > 0 {
-		c, err := db.GetChatById(*chat_id)
+	if chatID != nil && len(*chatID) > 0 {
+		c, err := db.GetChatByID(*chatID)
 		if err != nil {
 			return nil, nil, errors.New("Chat not found")
 		}
 
-		if c.SystemPromptId != nil && len(*c.SystemPromptId) > 0 {
-			system_prompt_id = c.SystemPromptId
+		if c.SystemPromptID != nil && len(*c.SystemPromptID) > 0 {
+			systemPromptID = c.SystemPromptID
 		}
 	}
 
-	if system_prompt_id != nil && len(*system_prompt_id) > 0 {
-		p, err := db.GetPromptByIdOrSlug(*system_prompt_id)
+	if systemPromptID != nil && len(*systemPromptID) > 0 {
+		p, err := db.GetPromptByIDOrSlug(*systemPromptID)
 		if err != nil || p == nil {
 			return nil, nil, errors.New("Prompt not found")
 		}
@@ -166,16 +166,16 @@ func GetSystemPrompt(
 		return nil, nil, errors.New("No prompt provided")
 	}
 
-	systemPrompt := ParseSystemPrompt(result)
+	systemPromptCtx := ParseSystemPrompt(result)
 
-	varList := systemPrompt.ListVars()
+	varList := systemPromptCtx.ListVars()
 
-	var warnings []string = nil
+	var warnings []string
 
 	if len(varList) != 0 {
 		var vars map[string]string
-		vars, warnings = GetVars(user_id, varList)
-		result = systemPrompt.Render(vars)
+		vars, warnings = GetVars(userID, varList)
+		result = systemPromptCtx.Render(vars)
 
 		if len(warnings) == 0 {
 			warnings = nil

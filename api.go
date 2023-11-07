@@ -51,7 +51,7 @@ func main() {
 	router.GET("/project/:id/auth/provider/redirect", middlewares.Record(utils.AuthProviderRedirection, auth.RedirectAuth))
 	router.GET("/project/:id/auth/provider/callback", middlewares.Record(utils.AuthProviderCallback, auth.CallbackAuth))
 	router.POST("/project/:id/auth/provider/refresh", middlewares.Record(utils.AuthProviderRefresh, auth.RefreshToken))
-	router.GET("/auth/id", middlewares.Record(utils.AuthID, middlewares.Auth(auth.GetAuthId)))
+	router.GET("/auth/id", middlewares.Record(utils.AuthID, middlewares.Auth(auth.GetAuthID)))
 
 	router.GET("/usage", middlewares.Record(utils.Usage, middlewares.Auth(auth.UserRateLimit)))
 
@@ -65,7 +65,7 @@ func main() {
 	router.POST("/transcribe", middlewares.Record(utils.SpeechToText, middlewares.Auth(stt.Transcribe)))
 
 	// TTS Routes
-	router.POST("/tts", middlewares.Record(utils.TextToSpeech, middlewares.Auth(tts.TTSHandler)))
+	router.POST("/tts", middlewares.Record(utils.TextToSpeech, middlewares.Auth(tts.Handler)))
 
 	// Image Generation Routes
 	router.GET("/image/generate", middlewares.Record(utils.ImageGeneration, middlewares.Auth(imageGeneration.ImageGeneration)))

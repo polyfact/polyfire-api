@@ -84,32 +84,32 @@ func (m ReplicateProvider) Stream(
 	c options.ProviderCallback,
 	opts *options.ProviderOptions,
 ) chan options.Result {
-	chan_res := make(chan options.Result)
+	chanRes := make(chan options.Result)
 
 	go func() {
-		defer close(chan_res)
+		defer close(chanRes)
 		tokenUsage := options.TokenUsage{Input: 0, Output: 0}
 
 		replicateStartTime := time.Now()
 
 		startResponse, errorCode := m.ReplicateStart(task, opts, true)
 		if errorCode != "" {
-			chan_res <- options.Result{Err: errorCode}
+			chanRes <- options.Result{Err: errorCode}
 			return
 		}
 
 		req, err := http.NewRequest("GET", startResponse.URLs.Stream, nil)
 		if err != nil {
-			chan_res <- options.Result{Err: "generation_error"}
+			chanRes <- options.Result{Err: "generation_error"}
 			return
 		}
 
-		req.Header.Set("Authorization", "Token "+m.ReplicateApiKey)
+		req.Header.Set("Authorization", "Token "+m.ReplicateAPIKey)
 		req.Header.Set("Accept", "text/event-stream")
 
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
-			chan_res <- options.Result{Err: "generation_error"}
+			chanRes <- options.Result{Err: "generation_error"}
 			return
 		}
 
@@ -117,7 +117,7 @@ func (m ReplicateProvider) Stream(
 		totalOutputTokens := 0
 
 		totalCompletion := ""
-		var p []byte = make([]byte, 128)
+		p := make([]byte, 128)
 		eventBuffer := ""
 
 	receiver:
@@ -163,7 +163,7 @@ func (m ReplicateProvider) Stream(
 				tokenUsage.Output = tokens.CountTokens(result)
 				totalOutputTokens += tokenUsage.Output
 
-				chan_res <- options.Result{Result: result, TokenUsage: tokenUsage}
+				chanRes <- options.Result{Result: result, TokenUsage: tokenUsage}
 			}
 		}
 
@@ -177,5 +177,5 @@ func (m ReplicateProvider) Stream(
 		}
 	}()
 
-	return chan_res
+	return chanRes
 }

@@ -6,9 +6,9 @@ import (
 )
 
 var (
-	UnknownUserId     = errors.New("Unknown user id")
-	DBVersionMismatch = errors.New("DB version mismatch")
-	DBError           = errors.New("Database error")
+	ErrUnknownUserID     = errors.New("Unknown user id")
+	ErrDBVersionMismatch = errors.New("DB version mismatch")
+	ErrDB                = errors.New("Database error")
 )
 
 type RateLimitStatus string
@@ -24,16 +24,16 @@ type UserInfos struct {
 	DevRateLimit      int         `json:"dev_rate_limit"`
 	DevUsage          int         `json:"dev_usage"`
 	Version           int         `json:"version"`
-	DevAuthId         string      `json:"dev_auth_id"`
+	DevAuthID         string      `json:"dev_auth_id"`
 	OpenaiToken       string      `json:"openai_token"` // Somehow this is case sensitive, don't change to OpenAI
 	OpenaiOrg         string      `json:"openai_org"`
 	ElevenlabsToken   string      `json:"elevenlabs_token"` // Same here, don't change to ElevenLabs
 	ReplicateToken    string      `json:"replicate_token"`
 	AuthorizedDomains StringArray `json:"authorized_domains"`
-	ProjectId         string      `json:"project_id"`
+	ProjectID         string      `json:"project_id"`
 }
 
-func getUserInfos(user_id string) (*UserInfos, error) {
+func getUserInfos(userID string) (*UserInfos, error) {
 	var userInfos UserInfos
 
 	err := DB.Raw(`
@@ -53,7 +53,7 @@ func getUserInfos(user_id string) (*UserInfos, error) {
 		JOIN auth_users as dev_users ON dev_users.id::text = projects.auth_id::text
 		WHERE project_users.id = @id
 		LIMIT 1
-	`, sql.Named("id", user_id)).Scan(&userInfos).Error
+	`, sql.Named("id", userID)).Scan(&userInfos).Error
 	if err != nil {
 		return nil, err
 	}
@@ -61,18 +61,18 @@ func getUserInfos(user_id string) (*UserInfos, error) {
 	return &userInfos, nil
 }
 
-func CheckDBVersionRateLimit(user_id string, version int) (*UserInfos, RateLimitStatus, error) {
-	userInfos, err := getUserInfos(user_id)
+func CheckDBVersionRateLimit(userID string, version int) (*UserInfos, RateLimitStatus, error) {
+	userInfos, err := getUserInfos(userID)
 	if err != nil {
 		return nil, RateLimitStatusNone, err
 	}
 
 	if userInfos == nil {
-		return nil, RateLimitStatusNone, UnknownUserId
+		return nil, RateLimitStatusNone, ErrUnknownUserID
 	}
 
 	if userInfos.Version != version {
-		return nil, RateLimitStatusNone, DBVersionMismatch
+		return nil, RateLimitStatusNone, ErrDBVersionMismatch
 	}
 
 	if userInfos.DevUsage >= userInfos.DevRateLimit {
@@ -85,14 +85,14 @@ func CheckDBVersionRateLimit(user_id string, version int) (*UserInfos, RateLimit
 type RefreshToken struct {
 	RefreshToken         string `json:"refresh_token"`
 	RefreshTokenSupabase string `json:"refresh_token_supabase"`
-	ProjectId            string `json:"project_id"`
+	ProjectID            string `json:"project_id"`
 }
 
-func CreateRefreshToken(refreshToken string, refreshTokenSupabase string, project_id string) error {
+func CreateRefreshToken(refreshToken string, refreshTokenSupabase string, projectID string) error {
 	err := DB.Exec(`
 		INSERT INTO refresh_tokens (refresh_token, refresh_token_supabase, project_id)
 		VALUES (@refresh_token, @refresh_token_supabase, @project_id)
-	`, sql.Named("refresh_token", refreshToken), sql.Named("refresh_token_supabase", refreshTokenSupabase), sql.Named("project_id", project_id)).Error
+	`, sql.Named("refresh_token", refreshToken), sql.Named("refresh_token_supabase", refreshTokenSupabase), sql.Named("project_id", projectID)).Error
 	if err != nil {
 		return err
 	}
@@ -119,10 +119,10 @@ func GetAndDeleteRefreshToken(refreshToken string) (*RefreshToken, error) {
 	return &refreshTokenStruct[0], nil
 }
 
-func GetDevEmail(project_id string) (string, error) {
+func GetDevEmail(projectID string) (string, error) {
 	var devEmail []string
 
-	err := DB.Raw(`SELECT get_dev_email_project_id(@project_id)`, sql.Named("project_id", project_id)).Scan(&devEmail).Error
+	err := DB.Raw(`SELECT get_dev_email_project_id(@project_id)`, sql.Named("project_id", projectID)).Scan(&devEmail).Error
 	if err != nil {
 		return "", err
 	}

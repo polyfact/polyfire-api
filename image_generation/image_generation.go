@@ -1,4 +1,4 @@
-package image_generation
+package imagegeneration
 
 import (
 	"encoding/json"
@@ -17,12 +17,12 @@ type Image struct {
 }
 
 func storeImageBucket(reader io.Reader, path string) (string, error) {
-	supabaseUrl := os.Getenv("SUPABASE_URL")
+	supabaseURL := os.Getenv("SUPABASE_URL")
 	supabaseKey := os.Getenv("SUPABASE_KEY")
 
 	bucket := Bucket{
-		BucketId: "generated_images",
-		BaseURL:  supabaseUrl,
+		BucketID: "generated_images",
+		BaseURL:  supabaseURL,
 		APIKey:   supabaseKey,
 	}
 
@@ -38,14 +38,14 @@ func storeImageBucket(reader io.Reader, path string) (string, error) {
 }
 
 func ImageGeneration(w http.ResponseWriter, r *http.Request, _ router.Params) {
-	user_id := r.Context().Value(utils.ContextKeyUserID).(string)
+	userID := r.Context().Value(utils.ContextKeyUserID).(string)
 	request, _ := json.Marshal(r.URL.Query())
 	prompt := r.URL.Query().Get("p")
 	provider := r.URL.Query().Get("provider")
 	recordEventRequest := r.Context().Value(utils.ContextKeyRecordEventRequest).(utils.RecordRequestFunc)
 
 	var record utils.RecordFunc = func(response string, props ...utils.KeyValue) {
-		recordEventRequest(string(request), response, user_id, props...)
+		recordEventRequest(string(request), response, userID, props...)
 	}
 	rateLimitStatus := r.Context().Value(utils.ContextKeyRateLimitStatus)
 
@@ -63,7 +63,7 @@ func ImageGeneration(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		provider = "openai"
 	}
 
-	// premium, _ := db.ProjectIsPremium(user_id)
+	// premium, _ := db.ProjectIsPremium(userID)
 
 	// if !premium {
 	// 	utils.RespondError(w, record, "project_not_premium_model")
@@ -79,7 +79,7 @@ func ImageGeneration(w http.ResponseWriter, r *http.Request, _ router.Params) {
 
 	db.LogRequests(
 		r.Context().Value(utils.ContextKeyEventID).(string),
-		user_id, "openai", "dalle-2", 0, 0, "image", true)
+		userID, "openai", "dalle-2", 0, 0, "image", true)
 
 	if err != nil {
 		utils.RespondError(w, record, "image_generation_error")

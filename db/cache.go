@@ -40,7 +40,14 @@ func GetCompletionCacheByInput(provider string, model string, input []float32) (
 	embeddingstr = strings.TrimRight(embeddingstr, ",") + "]"
 
 	var cache []CompletionCache
-	err := DB.Find(&cache, "input <-> ? < 0.15 ORDER BY input <-> ? ASC", embeddingstr, embeddingstr).Error
+	err := DB.Find(
+		&cache,
+		"provider = ? AND model = ? AND input <-> ? < 0.15 ORDER BY input <-> ? ASC",
+		provider,
+		model,
+		embeddingstr,
+		embeddingstr,
+	).Error
 	if err != nil {
 		return nil, err
 	}

@@ -2,30 +2,25 @@ package completion
 
 import (
 	"context"
-	"encoding/json"
+	"errors"
 	"log"
-	"net/http"
-	"sync"
 
-	router "github.com/julienschmidt/httprouter"
-	completionContext "github.com/polyfire/api/completion/context"
 	db "github.com/polyfire/api/db"
 	llm "github.com/polyfire/api/llm"
 	options "github.com/polyfire/api/llm/providers/options"
 	utils "github.com/polyfire/api/utils"
-	webrequest "github.com/polyfire/api/web_request"
 )
 
 type GenerateRequestBody struct {
 	Task           string      `json:"task"`
 	Provider       string      `json:"provider,omitempty"`
 	Model          *string     `json:"model,omitempty"`
-	MemoryId       interface{} `json:"memory_id,omitempty"`
-	ChatId         *string     `json:"chat_id,omitempty"`
+	MemoryID       interface{} `json:"memory_id,omitempty"`
+	ChatID         *string     `json:"chat_id,omitempty"`
 	Stop           *[]string   `json:"stop,omitempty"`
 	Temperature    *float32    `json:"temperature,omitempty"`
 	Stream         bool        `json:"stream,omitempty"`
-	SystemPromptId *string     `json:"system_prompt_id,omitempty"`
+	SystemPromptID *string     `json:"system_prompt_id,omitempty"`
 	SystemPrompt   *string     `json:"system_prompt,omitempty"`
 	WebRequest     bool        `json:"web,omitempty"`
 	Language       *string     `json:"language,omitempty"`
@@ -40,36 +35,24 @@ func getLanguageCompletion(language *string) string {
 	return ""
 }
 
-func parseMemoryIdArray(memoryId interface{}) []string {
-	var memoryIdArray []string
-
-	if str, ok := memoryId.(string); ok {
-		memoryIdArray = append(memoryIdArray, str)
-	} else if array, ok := memoryId.([]interface{}); ok {
-		for _, item := range array {
-			if str, ok := item.(string); ok {
-				memoryIdArray = append(memoryIdArray, str)
-			}
-		}
-	}
-	return memoryIdArray
-}
-
-func GenerationStart(ctx context.Context, user_id string, input GenerateRequestBody) (*chan options.Result, error) {
+func GenerationStart(ctx context.Context, userID string, input GenerateRequestBody) (*chan options.Result, error) {
 	resources := []db.MatchResult{}
 
 	log.Println("Init provider")
+
+	// Get provider
 	provider, err := llm.NewProvider(ctx, input.Provider, input.Model)
-	if err == llm.ErrUnknownModel {
-		return nil, UnknownModelProvider
+	if errors.Is(err, llm.ErrUnknownModel) {
+		return nil, ErrUnknownModelProvider
 	}
 
 	if err != nil {
-		return nil, InternalServerError
+		return nil, ErrInternalServerError
 	}
 
-	provider_name, model_name := provider.ProviderModel()
+	providerName, modelName := provider.ProviderModel()
 
+	// Check Rate Limit
 	if provider.DoesFollowRateLimit() {
 		log.Println("Check Rate Limit")
 		err = CheckRateLimit(ctx)
@@ -78,73 +61,27 @@ func GenerationStart(ctx context.Context, user_id string, input GenerateRequestB
 		}
 	}
 
-	callback := func(provider_name string, model_name string, input_count int, output_count int, _completion string, credit *int) {
+	// Init log request callbacks
+	callback := func(providerName string, modelName string, inputCount int, outputCount int, _ string, credit *int) {
 		if credit != nil && provider.DoesFollowRateLimit() {
 			db.LogRequestsCredits(
 				ctx.Value(utils.ContextKeyEventID).(string),
-				user_id, provider_name, model_name, *credit, input_count, output_count, "completion")
+				userID, modelName, *credit, inputCount, outputCount, "completion")
 		} else {
 			db.LogRequests(
 				ctx.Value(utils.ContextKeyEventID).(string),
-				user_id,
-				provider_name,
-				model_name,
-				input_count,
-				output_count,
+				userID,
+				providerName,
+				modelName,
+				inputCount,
+				outputCount,
 				"completion",
 				provider.DoesFollowRateLimit(),
 			)
 		}
 	}
 
-	var wg sync.WaitGroup
-	var contextElements []completionContext.ContentElement = make([]completionContext.ContentElement, 0)
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-
-		memory, err := completionContext.GetMemory(ctx, user_id, parseMemoryIdArray(input.MemoryId), input.Task)
-		if err != nil || memory == nil {
-			return
-		}
-
-		contextElements = append(contextElements, memory)
-	}()
-
-	wg.Add(1)
-	var warnings []string = nil
-	go func() {
-		defer wg.Done()
-		var system_prompt completionContext.ContentElement
-		var err error
-		system_prompt, warnings, err = completionContext.GetSystemPrompt(
-			user_id,
-			input.SystemPromptId,
-			input.SystemPrompt,
-			input.ChatId,
-		)
-		if err != nil {
-			return
-		}
-
-		contextElements = append(contextElements, system_prompt)
-	}()
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		if !input.WebRequest {
-			return
-		}
-		web, err := completionContext.GetWebContext(input.Task)
-		if err != nil {
-			return
-		}
-
-		contextElements = append(contextElements, web)
-	}()
-
+	// Get Options
 	opts := options.ProviderOptions{}
 	if input.Stop != nil {
 		opts.StopWords = input.Stop
@@ -153,159 +90,47 @@ func GenerationStart(ctx context.Context, user_id string, input GenerateRequestB
 		opts.Temperature = input.Temperature
 	}
 
-	log.Println("Get ContextTask")
-	if input.ChatId != nil && len(*input.ChatId) > 0 {
-		err := AddToChatHistory(user_id, input.Task, *input.ChatId, &callback, &opts)
-		if err != nil {
-			return nil, err
-		}
-
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			chat, err := completionContext.GetChatHistoryContext(user_id, *input.ChatId)
-			if err != nil {
-				return
-			}
-
-			contextElements = append(contextElements, chat)
-		}()
-	}
-
-	wg.Wait()
-
-	contextString, err := completionContext.GetContext(contextElements, 1000)
+	// Get Context elements
+	contextString, warnings, err := GetContextString(ctx, userID, input, &callback, opts)
 	if err != nil {
 		return nil, err
 	}
 
+	// Get Language prompt
 	prompt := getLanguageCompletion(input.Language) + contextString + "\n" + input.Task
 
+	var result chan options.Result
 	var embeddings []float32
 
+	// Check for cache hits
 	if input.Cache {
-		embeddings, err = llm.Embed(ctx, prompt, nil)
+		result, embeddings, err = CheckCache(ctx, prompt, providerName, modelName)
 		if err != nil {
 			return nil, err
 		}
-
-		cache, err := db.GetCompletionCacheByInput(provider_name, model_name, embeddings)
-		if err != nil {
-			return nil, err
-		}
-
-		if cache != nil {
-			log.Println("Cache hit")
-
-			result := make(chan options.Result)
-			go func() {
-				defer close(result)
-				result <- options.Result{Resources: resources}
-				result <- options.Result{Result: cache.Result}
-			}()
+		if result != nil {
 			return &result, nil
 		}
 	}
 
+	// Generate
 	log.Println("Generate")
-	res_chan := provider.Generate(prompt, &callback, &opts)
+	resChan := provider.Generate(prompt, &callback, &opts)
 
-	result := make(chan options.Result)
+	result = make(chan options.Result)
 
+	// Add warnings and cache at the end of the generation
 	go func() {
 		defer close(result)
 		totalCompletion := ""
-		for res := range res_chan {
+		for res := range resChan {
 			result <- res
 			totalCompletion += res.Result
 		}
 		result <- options.Result{Resources: resources, Warnings: warnings}
 		if input.Cache {
-			_ = db.AddCompletionCache(embeddings, totalCompletion, provider_name, model_name)
+			_ = db.AddCompletionCache(embeddings, totalCompletion, providerName, modelName)
 		}
 	}()
 	return &result, nil
-}
-
-func Generate(w http.ResponseWriter, r *http.Request, _ router.Params) {
-	user_id := r.Context().Value(utils.ContextKeyUserID).(string)
-	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
-
-	if len(r.Header["Content-Type"]) == 0 || r.Header["Content-Type"][0] != "application/json" {
-		utils.RespondError(w, record, "invalid_content_type")
-		return
-	}
-
-	var input GenerateRequestBody
-
-	err := json.NewDecoder(r.Body).Decode(&input)
-	if err != nil {
-		utils.RespondError(w, record, "invalid_json")
-		return
-	}
-
-	res_chan, err := GenerationStart(r.Context(), user_id, input)
-	if err != nil {
-		switch err {
-		case webrequest.WebsiteExceedsLimit:
-			utils.RespondError(w, record, "error_website_exceeds_limit")
-		case webrequest.WebsitesContentExceeds:
-			utils.RespondError(w, record, "error_websites_content_exceeds")
-		case webrequest.FetchWebpageError:
-			utils.RespondError(w, record, "error_fetch_webpage")
-		case webrequest.ParseContentError:
-			utils.RespondError(w, record, "error_parse_content")
-		case webrequest.VisitBaseURLError:
-			utils.RespondError(w, record, "error_visit_base_url")
-		case NotFound:
-			utils.RespondError(w, record, "not_found")
-		case UnknownModelProvider:
-			utils.RespondError(w, record, "invalid_model_provider")
-		case RateLimitReached:
-			utils.RespondError(w, record, "rate_limit_reached")
-		case ProjectRateLimitReached:
-			utils.RespondError(w, record, "project_rate_limit_reached")
-		case ProjectNotPremiumModel:
-			utils.RespondError(w, record, "project_not_premium_model")
-		default:
-			utils.RespondError(w, record, "internal_error", err.Error())
-		}
-		return
-	}
-
-	result := options.Result{
-		Result:     "",
-		TokenUsage: options.TokenUsage{Input: 0, Output: 0},
-	}
-
-	inputTokens := 0
-
-	for v := range *res_chan {
-		result.Result += v.Result
-		if inputTokens == 0 && v.TokenUsage.Input > 0 {
-			inputTokens = v.TokenUsage.Input
-			result.TokenUsage.Input = v.TokenUsage.Input
-		}
-		result.TokenUsage.Output += v.TokenUsage.Output
-
-		if len(v.Resources) > 0 || v.Warnings != nil && len(v.Warnings) > 0 {
-			result.Resources = v.Resources
-			result.Warnings = v.Warnings
-		}
-
-		if v.Err != "" {
-			result.Err = v.Err
-		}
-	}
-
-	w.Header()["Content-Type"] = []string{"application/json"}
-
-	response, _ := result.JSON()
-	var recordProps []utils.KeyValue = make([]utils.KeyValue, 0)
-	if input.SystemPromptId != nil {
-		recordProps = append(recordProps, utils.KeyValue{Key: "PromptID", Value: *input.SystemPromptId})
-	}
-	record(string(response), recordProps...)
-
-	_, _ = w.Write(response)
 }

@@ -1,4 +1,4 @@
-package image_generation
+package imagegeneration
 
 import (
 	"bufio"
@@ -10,7 +10,7 @@ import (
 )
 
 type Bucket struct {
-	BucketId string
+	BucketID string
 	BaseURL  string
 	APIKey   string
 }
@@ -35,7 +35,7 @@ func DefaultFileUploadOptions() FileUploadOptions {
 
 func (f *Bucket) Upload(path string, data io.Reader, opts FileUploadOptions) (string, error) {
 	body := bufio.NewReader(data)
-	_path := f.BucketId + "/" + path
+	_path := f.BucketID + "/" + path
 	client := &http.Client{}
 
 	var method string

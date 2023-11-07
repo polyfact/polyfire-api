@@ -368,8 +368,8 @@ func RespondError(w http.ResponseWriter, record RecordFunc, errorCode string, me
 	}
 
 	log.Println(apiError)
-	error_bytes, _ := json.Marshal(&apiError)
-	record(string(error_bytes), KeyValue{Key: "Error", Value: "true"})
+	errorBytes, _ := json.Marshal(&apiError)
+	record(string(errorBytes), KeyValue{Key: "Error", Value: "true"})
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(apiError.StatusCode)
@@ -396,8 +396,8 @@ func RespondErrorStream(
 	}
 
 	log.Println(apiError)
-	error_bytes, _ := json.Marshal(&apiError)
-	record(string(error_bytes), KeyValue{Key: "Error", Value: "true"})
+	errorBytes, _ := json.Marshal(&apiError)
+	record(string(errorBytes), KeyValue{Key: "Error", Value: "true"})
 
 	res, _ := json.Marshal(apiError)
 

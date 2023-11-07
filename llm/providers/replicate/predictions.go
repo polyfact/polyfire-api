@@ -12,8 +12,8 @@ import (
 
 type ReplicateProvider struct {
 	Model            string
-	ReplicateApiKey  string
-	IsCustomApiKey   bool
+	ReplicateAPIKey  string
+	IsCustomAPIKey   bool
 	Version          string
 	CreditsPerSecond float64
 }
@@ -79,7 +79,7 @@ func (m ReplicateProvider) ReplicateStart(
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Token "+m.ReplicateApiKey)
+	req.Header.Set("Authorization", "Token "+m.ReplicateAPIKey)
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -102,11 +102,11 @@ func (m ReplicateProvider) ReplicateStart(
 			return ReplicateStartResponse{}, "generation_error"
 		}
 
-		if errorResponse.Title == "Unauthenticated" && m.IsCustomApiKey {
+		if errorResponse.Title == "Unauthenticated" && m.IsCustomAPIKey {
 			return ReplicateStartResponse{}, "replicate_unauthenticated"
 		}
 
-		if errorResponse.Title == "Invalid version or not permitted" && m.IsCustomApiKey {
+		if errorResponse.Title == "Invalid version or not permitted" && m.IsCustomAPIKey {
 			return ReplicateStartResponse{}, "replicate_invalid_version_or_forbidden"
 		}
 

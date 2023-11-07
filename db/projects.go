@@ -83,10 +83,10 @@ func GetProjectUserByID(id string) (*ProjectUser, error) {
 	return &results[0], nil
 }
 
-func GetProjectForUserId(user_id string) (*string, error) {
+func GetProjectForUserID(userID string) (*string, error) {
 	var results []ProjectUser
 
-	DB.Find(&results, "id = ?", user_id)
+	DB.Find(&results, "id = ?", userID)
 
 	if len(results) == 0 {
 		return nil, nil
@@ -107,14 +107,14 @@ type AuthUserProject struct {
 	UserID string `json:"param_user_id"`
 }
 
-func GetDevAuthUserForUserIDProject(user_id string) (AuthUser, error) {
+func GetDevAuthUserForUserIDProject(userID string) (AuthUser, error) {
 	client, err := CreateClient()
 	if err != nil {
 		return AuthUser{}, err
 	}
 
 	params := AuthUserProject{
-		UserID: user_id,
+		UserID: userID,
 	}
 
 	response := client.Rpc("get_monthly_token_usage_user_id_projects", "", params)
@@ -132,22 +132,22 @@ func GetDevAuthUserForUserIDProject(user_id string) (AuthUser, error) {
 	return result, nil
 }
 
-func ProjectReachedRateLimit(user_id string) (bool, error) {
-	usage_rate_limit, err := GetDevAuthUserForUserIDProject(user_id)
+func ProjectReachedRateLimit(userID string) (bool, error) {
+	usageRateLimit, err := GetDevAuthUserForUserIDProject(userID)
 	if err != nil {
 		return false, err
 	}
 
-	return usage_rate_limit.Usage >= usage_rate_limit.RateLimit, nil
+	return usageRateLimit.Usage >= usageRateLimit.RateLimit, nil
 }
 
-func ProjectIsPremium(user_id string) (bool, error) {
-	auth_users, err := GetDevAuthUserForUserIDProject(user_id)
+func ProjectIsPremium(userID string) (bool, error) {
+	authUsers, err := GetDevAuthUserForUserIDProject(userID)
 	if err != nil {
 		return false, err
 	}
 
-	return auth_users.Premium, nil
+	return authUsers.Premium, nil
 }
 
 type Model struct {
@@ -160,13 +160,13 @@ func (Model) TableName() string {
 	return "models"
 }
 
-func GetModelByAliasAndProjectId(alias string, project_id string, modelType string) (*Model, error) {
+func GetModelByAliasAndProjectID(alias string, projectID string, modelType string) (*Model, error) {
 	model := &Model{}
 
 	err := DB.Raw(
 		"SELECT models.* FROM models JOIN model_aliases ON model_aliases.model_id = models.id WHERE model_aliases.alias = ? AND model_aliases.project_id = ? AND models.type = ?",
 		alias,
-		project_id,
+		projectID,
 		modelType,
 	).Scan(model).Error
 	if err != nil {
