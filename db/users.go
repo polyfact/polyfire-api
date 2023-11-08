@@ -21,16 +21,18 @@ var (
 )
 
 type UserInfos struct {
-	DevRateLimit      int         `json:"dev_rate_limit"`
-	DevUsage          int         `json:"dev_usage"`
-	Version           int         `json:"version"`
-	DevAuthID         string      `json:"dev_auth_id"`
-	OpenaiToken       string      `json:"openai_token"` // Somehow this is case sensitive, don't change to OpenAI
-	OpenaiOrg         string      `json:"openai_org"`
-	ElevenlabsToken   string      `json:"elevenlabs_token"` // Same here, don't change to ElevenLabs
-	ReplicateToken    string      `json:"replicate_token"`
-	AuthorizedDomains StringArray `json:"authorized_domains"`
-	ProjectID         string      `json:"project_id"`
+	DevRateLimit         int         `json:"dev_rate_limit"`
+	DevUsage             int         `json:"dev_usage"`
+	ProjectUserRateLimit *int        `json:"project_user_rate_limit"`
+	ProjectUserUsage     int         `json:"project_user_usage"`
+	Version              int         `json:"version"`
+	DevAuthID            string      `json:"dev_auth_id"`
+	OpenaiToken          string      `json:"openai_token"` // Somehow this is case sensitive, don't change to OpenAI
+	OpenaiOrg            string      `json:"openai_org"`
+	ElevenlabsToken      string      `json:"elevenlabs_token"` // Same here, don't change to ElevenLabs
+	ReplicateToken       string      `json:"replicate_token"`
+	AuthorizedDomains    StringArray `json:"authorized_domains"`
+	ProjectID            string      `json:"project_id"`
 }
 
 func getUserInfos(userID string) (*UserInfos, error) {
@@ -47,6 +49,8 @@ func getUserInfos(userID string) (*UserInfos, error) {
 			dev_users.replicate_token as replicate_token,
 			dev_users.elevenlabs_token as elevenlabs_token,
 			projects.authorized_domains as authorized_domains,
+			COALESCE(project_users.monthly_credit_rate_limit, default_monthly_credit_rate_limit) as project_user_rate_limit,
+			get_monthly_credit_usage(project_users.id::text) as project_user_usage,
 			projects.id as project_id
 		FROM project_users
 		JOIN projects ON project_users.project_id = projects.id
@@ -77,6 +81,10 @@ func CheckDBVersionRateLimit(userID string, version int) (*UserInfos, RateLimitS
 
 	if userInfos.DevUsage >= userInfos.DevRateLimit {
 		return userInfos, RateLimitStatusProjectReached, nil
+	}
+
+	if userInfos.ProjectUserRateLimit != nil && userInfos.ProjectUserUsage >= *userInfos.ProjectUserRateLimit {
+		return userInfos, RateLimitStatusReached, nil
 	}
 
 	return userInfos, RateLimitStatusOk, nil

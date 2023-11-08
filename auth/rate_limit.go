@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	router "github.com/julienschmidt/httprouter"
-	db "github.com/polyfire/api/db"
 	"github.com/polyfire/api/utils"
 )
 
@@ -15,24 +14,13 @@ type UserRateLimitResponse struct {
 }
 
 func UserRateLimit(w http.ResponseWriter, r *http.Request, _ router.Params) {
-	userID := r.Context().Value(utils.ContextKeyUserID).(string)
 	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
-
-	tokenUsage, err := db.GetUserIDMonthlyTokenUsage(userID)
-	if err != nil {
-		utils.RespondError(w, record, "internal_error")
-		return
-	}
-
-	projectUser, err := db.GetProjectUserByID(userID)
-	var rateLimit *int
-	if projectUser != nil && err == nil {
-		rateLimit = projectUser.MonthlyTokenRateLimit
-	}
+	usage := r.Context().Value(utils.ContextKeyProjectUserUsage).(int)
+	rateLimit := r.Context().Value(utils.ContextKeyProjectUserRateLimit).(*int)
 
 	result := UserRateLimitResponse{
-		Usage:     tokenUsage,
-		RateLimit: rateLimit, // TODO: Change to credit once we migrated from token rate limit to credit rate limit
+		Usage:     usage,
+		RateLimit: rateLimit,
 	}
 
 	response, _ := json.Marshal(&result)
