@@ -21,7 +21,7 @@ import (
 var (
 	ErrRateLimitReached        = errors.New("Rate limit reached")
 	ErrProjectRateLimitReached = errors.New("Project rate limit reached")
-	ErrUnknown            = errors.New("Unknown error")
+	ErrUnknown                 = errors.New("Unknown error")
 )
 
 func TextToSpeech(ctx context.Context, w io.Writer, text string, voiceID string) error {
@@ -90,4 +90,6 @@ func Handler(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		utils.RespondError(w, record, "elevenlabs_error")
 		return
 	}
+
+	record("[Raw audio]")
 }
