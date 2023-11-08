@@ -28,6 +28,7 @@ func (m ReplicateProvider) NoStream(
 		defer close(chanRes)
 
 		replicateStartTime := time.Now()
+		replicateAfterBootTime := time.Now()
 
 		startResponse, errorCode := m.ReplicateStart(task, opts, false)
 		if errorCode != "" {
@@ -39,7 +40,7 @@ func (m ReplicateProvider) NoStream(
 		tokenUsage := options.TokenUsage{}
 
 		tokenUsage.Input = tokens.CountTokens(task)
-		var coldBootDetected = false
+		coldBootDetected := false
 
 		for {
 			req, err := http.NewRequest("GET", startResponse.URLs.Get, nil)
@@ -79,11 +80,13 @@ func (m ReplicateProvider) NoStream(
 				chanRes <- options.Result{Err: "generation_error"}
 				return
 			}
-
-			if output.Status == "starting" && time.Since(replicateStartTime) > 10*time.Second && !coldBootDetected {
-				fmt.Println("cold boot detected")
-				chanRes <- options.Result{Warnings: []string{"The model is taking longer than usual to start up. It's probably due to a cold boot on replicate's side. It will respond enventually but it can take some time."}}
-				coldBootDetected = true
+			if output.Status == "starting" {
+				replicateAfterBootTime = time.Now()
+				if time.Since(replicateStartTime) > 10*time.Second && !coldBootDetected {
+					fmt.Println("cold boot detected")
+					chanRes <- options.Result{Warnings: []string{"The model is taking longer than usual to start up. It's probably due to a cold boot on replicate's side. It will respond enventually but it can take some time."}}
+					coldBootDetected = true
+				}
 			}
 
 			if output.Status == "succeeded" {
@@ -97,7 +100,7 @@ func (m ReplicateProvider) NoStream(
 		}
 
 		replicateEndTime := time.Now()
-		duration := replicateEndTime.Sub(replicateStartTime)
+		duration := replicateEndTime.Sub(replicateAfterBootTime)
 
 		if c != nil {
 			credits := int(duration.Seconds()*m.CreditsPerSecond) + 1

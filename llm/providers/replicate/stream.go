@@ -90,8 +90,6 @@ func (m ReplicateProvider) Stream(
 		defer close(chanRes)
 		tokenUsage := options.TokenUsage{Input: 0, Output: 0}
 
-		replicateStartTime := time.Now()
-
 		startResponse, errorCode := m.ReplicateStart(task, opts, true)
 		if errorCode != "" {
 			chanRes <- options.Result{Err: errorCode}
@@ -120,6 +118,8 @@ func (m ReplicateProvider) Stream(
 		p := make([]byte, 128)
 		eventBuffer := ""
 
+		var replicateAfterBootTime *time.Time = nil
+
 	receiver:
 		for {
 			var eventString string
@@ -143,15 +143,16 @@ func (m ReplicateProvider) Stream(
 				continue
 			}
 
-			if event.Event == "" {
-				continue
-			}
-
 			if event.Event == "done" {
 				break
 			}
 
 			if event.Event == "output" {
+				if replicateAfterBootTime == nil {
+					now := time.Now()
+					replicateAfterBootTime = &now
+				}
+
 				if event.Data == nil {
 					continue
 				}
@@ -169,7 +170,10 @@ func (m ReplicateProvider) Stream(
 
 		replicateEndTime := time.Now()
 
-		duration := replicateEndTime.Sub(replicateStartTime)
+		var duration time.Duration
+		if replicateAfterBootTime != nil {
+			duration = replicateEndTime.Sub(*replicateAfterBootTime)
+		}
 
 		if c != nil {
 			credits := int(duration.Seconds()*m.CreditsPerSecond) + 1
