@@ -89,7 +89,7 @@ func AddToChatHistory(
 		_ = db.AddChatMessage(chat.ID, false, completion)
 	}
 
-	opts.StopWords = &[]string{"AI:", "Human:"}
+	opts.StopWords = &[]string{"User:", "You:"}
 
 	return nil
 }
