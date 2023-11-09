@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 )
 
 var (
@@ -33,6 +34,7 @@ type UserInfos struct {
 	ReplicateToken       string      `json:"replicate_token"`
 	AuthorizedDomains    StringArray `json:"authorized_domains"`
 	ProjectID            string      `json:"project_id"`
+	ProjectUserID        string      `json:"project_user_id"`
 }
 
 func getUserInfos(userID string) (*UserInfos, error) {
@@ -49,9 +51,10 @@ func getUserInfos(userID string) (*UserInfos, error) {
 			dev_users.replicate_token as replicate_token,
 			dev_users.elevenlabs_token as elevenlabs_token,
 			projects.authorized_domains as authorized_domains,
-			COALESCE(project_users.monthly_credit_rate_limit, default_monthly_credit_rate_limit) as project_user_rate_limit,
+			CASE WHEN projects.dev_rate_limit IS false AND projects.auth_id::text = project_users.auth_id THEN projects.premium_monthly_credit_rate_limit WHEN project_users.monthly_credit_rate_limit IS NOT NULL THEN project_users.monthly_credit_rate_limit WHEN project_users.premium IS true THEN NULL ELSE projects.default_monthly_credit_rate_limit END as project_user_rate_limit,
 			get_monthly_credit_usage(project_users.id::text) as project_user_usage,
-			projects.id as project_id
+			projects.id as project_id,
+			project_users.id as project_user_id
 		FROM project_users
 		JOIN projects ON project_users.project_id = projects.id
 		JOIN auth_users as dev_users ON dev_users.id::text = projects.auth_id::text
@@ -83,6 +86,8 @@ func CheckDBVersionRateLimit(userID string, version int) (*UserInfos, RateLimitS
 		return userInfos, RateLimitStatusProjectReached, nil
 	}
 
+	fmt.Println("ProjectID", userInfos.ProjectID)
+	fmt.Println("ProjectUserID", userInfos.ProjectUserID)
 	if userInfos.ProjectUserRateLimit != nil && userInfos.ProjectUserUsage >= *userInfos.ProjectUserRateLimit {
 		return userInfos, RateLimitStatusReached, nil
 	}
