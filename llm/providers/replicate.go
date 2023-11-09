@@ -38,6 +38,8 @@ func (m ReplicateProvider) GetCreditsPerSecond() float64 {
 		return 11500.0
 	case "wizard-mega-13b-awq":
 		return 7250.0
+	case "airoboros-llama-2-70b":
+		return 14000.0
 	default:
 		fmt.Printf("Invalid model: %v\n", m.Model)
 		return 0.0
@@ -52,6 +54,8 @@ func (m ReplicateProvider) GetVersion() (string, bool, error) {
 		return "b84f4c074b807211cd75e3e8b1589b6399052125b4c27106e43d47189e8415ad", true, nil
 	case "wizard-mega-13b-awq":
 		return "a4be2a7c75e51c53b22167d44de3333436f1aa9253a201d2619cf74286478599", false, nil
+	case "airoboros-llama-2-70b":
+		return "ae090a64e6b4468d7fa85c6ca33c979b3cd941c12b1cfa2a237b4a7aa6ebaac4", true, nil
 	default:
 		return "", false, errors.New("Invalid model")
 	}

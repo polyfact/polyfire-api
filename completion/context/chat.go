@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"text/template"
+	"strings"
 
 	"github.com/polyfire/api/db"
 )
@@ -12,7 +13,7 @@ var chatHistoryTemplate = template.Must(
 	template.New("chat_history_context").Parse(`Here's the previous conversation history:
 ==========
 {{range .Data}}{{.}}
-{{end}}==========
+{{end}}
 `),
 )
 
@@ -30,10 +31,12 @@ func GetChatHistoryContext(userID string, chatID string) (*ChatHistoryContext, e
 
 	var messages []string
 	for _, message := range allHistory {
-		if message.IsUserMessage {
-			messages = append(messages, fmt.Sprintf("User: %s", message.Content))
-		} else {
-			messages = append(messages, fmt.Sprintf("AI: %s", message.Content))
+		if strings.TrimSpace(message.Content) != "" {
+			if message.IsUserMessage {
+				messages = append(messages, fmt.Sprintf("User:\n%s", message.Content))
+			} else {
+				messages = append(messages, fmt.Sprintf("You:\n%s", message.Content))
+			}
 		}
 	}
 

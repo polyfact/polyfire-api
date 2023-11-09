@@ -46,6 +46,8 @@ func getAvailableModels(model string) (string, string) {
 		return "replicate", "replit-code-v1-3b"
 	case "wizard-mega-13b-awq":
 		return "replicate", "wizard-mega-13b-awq"
+	case "airoboros-llama-2-70b":
+		return "replicate", "airoboros-llama-2-70b"
 	}
 	return "", ""
 }
@@ -133,7 +135,7 @@ func NewProvider(ctx context.Context, provider string, model *string) (Provider,
 			m = *model
 		}
 
-		if m != "llama-2-70b-chat" && m != "replit-code-v1-3b" && m != "wizard-mega-13b-awq" {
+		if m != "llama-2-70b-chat" && m != "replit-code-v1-3b" && m != "wizard-mega-13b-awq" && m != "airoboros-llama-2-70b" {
 			return nil, ErrUnknownModel
 		}
 
