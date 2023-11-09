@@ -1,6 +1,7 @@
 package providers
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -79,6 +80,11 @@ func ParseReplicateEvent(str string) (ReplicateEvent, error) {
 	return ReplicateEvent{}, errors.New("Invalid event \"" + str + "\"")
 }
 
+type ReplicateStreamPredictionOutput struct {
+	ID     string `json:"id"`
+	Status string `json:"status"`
+}
+
 func (m ReplicateProvider) Stream(
 	task string,
 	c options.ProviderCallback,
@@ -96,76 +102,141 @@ func (m ReplicateProvider) Stream(
 			return
 		}
 
-		req, err := http.NewRequest("GET", startResponse.URLs.Stream, nil)
-		if err != nil {
-			chanRes <- options.Result{Err: "generation_error"}
-			return
-		}
-
-		req.Header.Set("Authorization", "Token "+m.ReplicateAPIKey)
-		req.Header.Set("Accept", "text/event-stream")
-
-		resp, err := http.DefaultClient.Do(req)
-		if err != nil {
-			chanRes <- options.Result{Err: "generation_error"}
-			return
-		}
-
-		tokenUsage.Input += tokens.CountTokens(task)
-		totalOutputTokens := 0
-
-		totalCompletion := ""
-		p := make([]byte, 128)
-		eventBuffer := ""
-
 		var replicateAfterBootTime *time.Time
 
-	receiver:
+		totalOutputTokens := 0
+		totalCompletion := ""
+		stopWords := opts.StopWords
+		stopWordsCache := ""
+	mainloop:
 		for {
-			var eventString string
-			for {
-				if strings.Contains(eventBuffer, "\n\n") {
-					eventString = eventBuffer[:strings.Index(eventBuffer, "\n\n")+2]
-					eventBuffer = eventBuffer[strings.Index(eventBuffer, "\n\n")+2:]
-					break
-				}
-
-				nb, err := resp.Body.Read(p)
-				if errors.Is(err, io.EOF) || err != nil {
-					break receiver
-				}
-				eventBuffer += string(p[:nb])
-			}
-
-			event, err := ParseReplicateEvent(eventString)
+			req, err := http.NewRequest("GET", startResponse.URLs.Stream, nil)
 			if err != nil {
-				fmt.Printf("%v\n", err)
-				continue
+				chanRes <- options.Result{Err: "generation_error"}
+				return
 			}
 
-			if event.Event == "done" {
-				break
+			req.Header.Set("Authorization", "Token "+m.ReplicateAPIKey)
+			req.Header.Set("Accept", "text/event-stream")
+
+			resp, err := http.DefaultClient.Do(req)
+			if err != nil {
+				chanRes <- options.Result{Err: "generation_error"}
+				return
 			}
 
-			if event.Event == "output" {
-				if replicateAfterBootTime == nil {
-					now := time.Now()
-					replicateAfterBootTime = &now
+			tokenUsage.Input += tokens.CountTokens(task)
+			p := make([]byte, 128)
+			eventBuffer := ""
+
+		receiver:
+			for {
+				var eventString string
+				for {
+					if strings.Contains(eventBuffer, "\n\n") {
+						eventString = eventBuffer[:strings.Index(eventBuffer, "\n\n")+2]
+						eventBuffer = eventBuffer[strings.Index(eventBuffer, "\n\n")+2:]
+						break
+					}
+
+					nb, err := resp.Body.Read(p)
+					if errors.Is(err, io.EOF) || err != nil {
+						break receiver
+					}
+					eventBuffer += string(p[:nb])
 				}
 
-				if event.Data == nil {
+				event, err := ParseReplicateEvent(eventString)
+				if err != nil {
+					fmt.Printf("%v\n", err)
 					continue
 				}
 
-				result := *event.Data
+				if event.Event == "done" {
+					break
+				}
 
-				totalCompletion += result
+				if event.Event == "output" {
+					if replicateAfterBootTime == nil {
+						now := time.Now()
+						replicateAfterBootTime = &now
+					}
 
-				tokenUsage.Output = tokens.CountTokens(result)
-				totalOutputTokens += tokenUsage.Output
+					if event.Data == nil {
+						continue
+					}
 
-				chanRes <- options.Result{Result: result, TokenUsage: tokenUsage}
+					stopWordsCache += *event.Data
+
+					if stopWords != nil {
+						fmt.Printf("stopWordsCache: %v\n", stopWordsCache)
+						for _, stopWord := range *stopWords {
+							if stopWord == strings.TrimSpace(stopWordsCache) || strings.HasPrefix(strings.TrimSpace(stopWordsCache), stopWord) {
+								fmt.Println("stopWord:", stopWord, "is equal to stopWordsCache:", stopWordsCache)
+								break mainloop
+							}
+							if strings.HasPrefix(stopWord, strings.TrimSpace(stopWordsCache)) {
+								fmt.Println("stopWord:", stopWord, "has prefix stopWordsCache:", stopWordsCache)
+								continue receiver
+							}
+						}
+					}
+					fmt.Println("stopWordsCache:", stopWordsCache, "is not a stop word")
+
+					result := stopWordsCache
+					stopWordsCache = ""
+
+					totalCompletion += result
+
+					tokenUsage.Output = tokens.CountTokens(result)
+					totalOutputTokens += tokenUsage.Output
+
+					chanRes <- options.Result{Result: result, TokenUsage: tokenUsage}
+				}
 			}
+
+			req, err = http.NewRequest("GET", startResponse.URLs.Get, nil)
+			if err != nil {
+				fmt.Println(err)
+				chanRes <- options.Result{Err: "generation_error"}
+				return
+			}
+
+			req.Header.Set("Authorization", "Token "+m.ReplicateAPIKey)
+			req.Header.Set("Accept", "text/event-stream")
+
+			resp, err = http.DefaultClient.Do(req)
+			if err != nil {
+				fmt.Println(err)
+				chanRes <- options.Result{Err: "generation_error"}
+				return
+			}
+
+			respBody, err := io.ReadAll(resp.Body)
+			if err != nil {
+				fmt.Println(err)
+				chanRes <- options.Result{Err: "generation_error"}
+				return
+			}
+
+			var output ReplicateStreamPredictionOutput
+			err = json.Unmarshal(respBody, &output)
+			if err != nil {
+				fmt.Println(err)
+				chanRes <- options.Result{Err: "generation_error"}
+				return
+			}
+
+			if output.Status != "starting" && output.Status != "succeeded" {
+				chanRes <- options.Result{Err: "generation_error"}
+				return
+			}
+
+			if output.Status == "succeeded" {
+				break
+			}
+
+			fmt.Println("Waiting for model to start...", output.Status, output)
 		}
 
 		replicateEndTime := time.Now()

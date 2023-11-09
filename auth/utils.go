@@ -138,6 +138,7 @@ func TokenExchangeHandler(
 
 		userToken, err := ExchangeToken(token, *project, getUserFromToken)
 		if err != nil {
+			fmt.Println(err)
 			utils.RespondError(w, record, "token_exchange_failed")
 			return
 		}
