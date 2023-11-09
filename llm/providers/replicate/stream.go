@@ -118,7 +118,7 @@ func (m ReplicateProvider) Stream(
 		p := make([]byte, 128)
 		eventBuffer := ""
 
-		var replicateAfterBootTime *time.Time = nil
+		var replicateAfterBootTime *time.Time
 
 	receiver:
 		for {

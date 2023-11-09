@@ -44,7 +44,6 @@ func CreateProjectUser(
 	authID string,
 	email string,
 	projectID string,
-	monthlyTokenRateLimit *int,
 	monthlyCreditRateLimit *int,
 ) (*string, error) {
 	client, err := db.CreateClient()
@@ -57,7 +56,6 @@ func CreateProjectUser(
 	_, err = client.From("project_users").Insert(db.ProjectUserInsert{
 		AuthID:                 authID,
 		ProjectID:              projectID,
-		MonthlyTokenRateLimit:  monthlyTokenRateLimit,
 		MonthlyCreditRateLimit: monthlyCreditRateLimit,
 	}, false, "", "", "exact").Single().ExecuteTo(&result)
 
@@ -94,7 +92,6 @@ func ExchangeToken(
 			authID,
 			email,
 			project.ID,
-			project.DefaultMonthlyTokenRateLimit,
 			project.DefaultMonthlyCreditRateLimit,
 		)
 		if err != nil {
