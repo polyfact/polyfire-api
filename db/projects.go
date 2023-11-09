@@ -10,7 +10,6 @@ type ProjectUser struct {
 	ID                     string `json:"id"`
 	AuthID                 string `json:"auth_id"`
 	ProjectID              string `json:"project_id"`
-	MonthlyTokenRateLimit  *int   `json:"monthly_token_rate_limit"` // Deprecated
 	MonthlyCreditRateLimit *int   `json:"monthly_credit_rate_limit"`
 }
 
@@ -21,7 +20,6 @@ func (ProjectUser) TableName() string {
 type ProjectUserInsert struct {
 	AuthID                 string `json:"auth_id"`
 	ProjectID              string `json:"project_id"`
-	MonthlyTokenRateLimit  *int   `json:"monthly_token_rate_limit"` // Deprecated
 	MonthlyCreditRateLimit *int   `json:"monthly_credit_rate_limit"`
 }
 
@@ -34,7 +32,6 @@ type Project struct {
 	Name                          string      `json:"name"`
 	AuthID                        string      `json:"auth_id"`
 	FreeUserInit                  bool        `json:"free_user_init"`
-	DefaultMonthlyTokenRateLimit  *int        `json:"default_monthly_token_rate_limit"` // Deprecated
 	DefaultMonthlyCreditRateLimit *int        `json:"default_monthly_credit_rate_limit"`
 	FirebaseProjectID             string      `json:"firebase_project_id"`
 	CustomAuthPublicKey           string      `json:"custom_auth_public_key"`
