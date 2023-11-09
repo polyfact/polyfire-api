@@ -2,7 +2,6 @@ package db
 
 import (
 	"database/sql"
-	"strconv"
 )
 
 type Kind string
@@ -105,58 +104,6 @@ func LogRequestsCredits(
 	if err != nil {
 		panic(err)
 	}
-}
-
-type UsageParams struct {
-	UserID string `json:"userid"`
-}
-
-func GetUserIDMonthlyTokenUsage(userID string) (int, error) {
-	params := UsageParams{
-		UserID: userID,
-	}
-
-	client, err := CreateClient()
-	if err != nil {
-		return 0, err
-	}
-
-	response := client.Rpc("get_monthly_token_usage", "", params)
-
-	if response == "null" {
-		return 0, nil
-	}
-
-	usage, err := strconv.Atoi(response)
-	if err != nil {
-		return 0, err
-	}
-
-	return usage, nil
-}
-
-func GetUserIDMonthlyCreditUsage(userID string) (int, error) {
-	params := UsageParams{
-		UserID: userID,
-	}
-
-	client, err := CreateClient()
-	if err != nil {
-		return 0, err
-	}
-
-	response := client.Rpc("get_monthly_credit_usage", "", params)
-
-	if response == "null" {
-		return 0, nil
-	}
-
-	usage, err := strconv.Atoi(response)
-	if err != nil {
-		return 0, err
-	}
-
-	return usage, nil
 }
 
 type Event struct {

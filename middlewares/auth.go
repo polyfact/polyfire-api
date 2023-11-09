@@ -41,9 +41,9 @@ func createUserContext(
 	recordEventWithUserID := r.Context().Value(utils.ContextKeyRecordEventWithUserID).(utils.RecordWithUserIDFunc)
 	newCtx := context.WithValue(r.Context(), utils.ContextKeyUserID, userID)
 	newCtx = context.WithValue(newCtx, utils.ContextKeyRateLimitStatus, rateLimitStatus)
-	newCtx = context.WithValue(newCtx, utils.ContextKeyProjectUserUsage, user.ProjectUserUsage)
-	newCtx = context.WithValue(newCtx, utils.ContextKeyProjectUserRateLimit, user.ProjectUserRateLimit)
 	if user != nil {
+		newCtx = context.WithValue(newCtx, utils.ContextKeyProjectUserUsage, user.ProjectUserUsage)
+		newCtx = context.WithValue(newCtx, utils.ContextKeyProjectUserRateLimit, user.ProjectUserRateLimit)
 		newCtx = context.WithValue(newCtx, utils.ContextKeyProjectID, user.ProjectID)
 		if user.OpenaiToken != "" {
 			newCtx = context.WithValue(newCtx, utils.ContextKeyOpenAIToken, user.OpenaiToken)
