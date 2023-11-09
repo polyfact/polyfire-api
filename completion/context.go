@@ -44,14 +44,14 @@ func launchContextFillingGoRouting(
 	}()
 }
 
-const MaxContentLength = 1000
+const MaxContentLength = 4000
 
 func GetContextString(
 	ctx context.Context,
 	userID string,
 	input GenerateRequestBody,
 	callback options.ProviderCallback,
-	opts options.ProviderOptions,
+	opts *options.ProviderOptions,
 ) (string, []string, error) {
 	var wg sync.WaitGroup
 	contextElements := make([]completionContext.ContentElement, 0)
@@ -80,7 +80,7 @@ func GetContextString(
 	}
 
 	if input.ChatID != nil && len(*input.ChatID) > 0 {
-		err := AddToChatHistory(userID, input.Task, *input.ChatID, callback, &opts)
+		err := AddToChatHistory(userID, input.Task, *input.ChatID, callback, opts)
 		if err != nil {
 			return "", warnings, err
 		}

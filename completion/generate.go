@@ -3,6 +3,7 @@ package completion
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 
 	db "github.com/polyfire/api/db"
@@ -91,13 +92,15 @@ func GenerationStart(ctx context.Context, userID string, input GenerateRequestBo
 	}
 
 	// Get Context elements
-	contextString, warnings, err := GetContextString(ctx, userID, input, &callback, opts)
+	contextString, warnings, err := GetContextString(ctx, userID, input, &callback, &opts)
 	if err != nil {
 		return nil, err
 	}
 
 	// Get Language prompt
-	prompt := getLanguageCompletion(input.Language) + contextString + "\n" + input.Task
+	prompt := getLanguageCompletion(input.Language) + contextString + "\nUser:\n" + input.Task + "\nYou:\n"
+
+	fmt.Println("Prompt: " + prompt)
 
 	var result chan options.Result
 	var embeddings []float32
