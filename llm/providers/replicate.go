@@ -90,10 +90,6 @@ func (m ReplicateProvider) Generate(
 	return chanRes
 }
 
-func (m ReplicateProvider) UserAllowed(_ string) bool {
-	return true
-}
-
 func (m ReplicateProvider) Name() string {
 	return "replicate"
 }

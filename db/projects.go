@@ -1,7 +1,6 @@
 package db
 
 import (
-	"encoding/json"
 	"fmt"
 	"regexp"
 )
@@ -102,49 +101,6 @@ type AuthUser struct {
 
 type AuthUserProject struct {
 	UserID string `json:"param_user_id"`
-}
-
-func GetDevAuthUserForUserIDProject(userID string) (AuthUser, error) {
-	client, err := CreateClient()
-	if err != nil {
-		return AuthUser{}, err
-	}
-
-	params := AuthUserProject{
-		UserID: userID,
-	}
-
-	response := client.Rpc("get_monthly_token_usage_user_id_projects", "", params)
-
-	var result AuthUser
-	err = json.Unmarshal([]byte(response), &result)
-	if err != nil {
-		return AuthUser{}, err
-	}
-
-	if result.RateLimit == 0 {
-		result.RateLimit = 50_000_000
-	}
-
-	return result, nil
-}
-
-func ProjectReachedRateLimit(userID string) (bool, error) {
-	usageRateLimit, err := GetDevAuthUserForUserIDProject(userID)
-	if err != nil {
-		return false, err
-	}
-
-	return usageRateLimit.Usage >= usageRateLimit.RateLimit, nil
-}
-
-func ProjectIsPremium(userID string) (bool, error) {
-	authUsers, err := GetDevAuthUserForUserIDProject(userID)
-	if err != nil {
-		return false, err
-	}
-
-	return authUsers.Premium, nil
 }
 
 type Model struct {

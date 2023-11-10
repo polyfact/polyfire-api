@@ -3,8 +3,6 @@ package providers
 import (
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"time"
 
 	"github.com/polyfire/api/llm/providers/options"
@@ -43,24 +41,7 @@ func (m ReplicateProvider) NoStream(
 		coldBootDetected := false
 
 		for {
-			req, err := http.NewRequest("GET", startResponse.URLs.Get, nil)
-			if err != nil {
-				fmt.Println(err)
-				chanRes <- options.Result{Err: "generation_error"}
-				return
-			}
-
-			req.Header.Set("Authorization", "Token "+m.ReplicateAPIKey)
-			req.Header.Set("Accept", "text/event-stream")
-
-			resp, err := http.DefaultClient.Do(req)
-			if err != nil {
-				fmt.Println(err)
-				chanRes <- options.Result{Err: "generation_error"}
-				return
-			}
-
-			respBody, err := io.ReadAll(resp.Body)
+			respBody, err := m.SendRequest(startResponse.URLs.Get)
 			if err != nil {
 				fmt.Println(err)
 				chanRes <- options.Result{Err: "generation_error"}
@@ -68,18 +49,13 @@ func (m ReplicateProvider) NoStream(
 			}
 
 			var output ReplicatePredictionOutput
-			err = json.Unmarshal(respBody, &output)
-			if err != nil {
+			err = json.NewDecoder(respBody).Decode(&output)
+			if err != nil || output.Status == "error" {
 				fmt.Println(err)
 				chanRes <- options.Result{Err: "generation_error"}
 				return
 			}
 
-			if output.Status == "error" {
-				fmt.Println(output)
-				chanRes <- options.Result{Err: "generation_error"}
-				return
-			}
 			if output.Status == "starting" {
 				replicateAfterBootTime = time.Now()
 				if time.Since(replicateStartTime) > 10*time.Second && !coldBootDetected {

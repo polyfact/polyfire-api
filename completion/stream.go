@@ -2,6 +2,8 @@ package completion
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/gorilla/websocket"
@@ -15,18 +17,73 @@ var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
 	CheckOrigin:     func(r *http.Request) bool { return true }, // For now, allow all origins
+}
 
-	// CheckOrigin: func(r *http.Request) bool {
-	// 	allowedOrigins := []string{"http://localhost:3000"}
-	// 	origin := r.Header["Origin"][0]
-	// 	for _, allowedOrigin := range allowedOrigins {
-	// 		if origin == allowedOrigin {
-	// 			return true
-	// 		}
-	// 	}
-	// 	return false
-	// },
+func ReturnErrorsStream(conn *websocket.Conn, record utils.RecordFunc, err error) {
+	switch err {
+	case webrequest.ErrWebsiteExceedsLimit:
+		utils.RespondErrorStream(conn, record, "error_website_exceeds_limit")
+	case webrequest.ErrWebsitesContentExceeds:
+		utils.RespondErrorStream(conn, record, "error_websites_content_exceeds")
+	case webrequest.ErrFetchWebpage:
+		utils.RespondErrorStream(conn, record, "error_fetch_webpage")
+	case webrequest.ErrParseContent:
+		utils.RespondErrorStream(conn, record, "error_parse_content")
+	case webrequest.ErrVisitBaseURL:
+		utils.RespondErrorStream(conn, record, "error_visit_base_url")
+	case ErrNotFound:
+		utils.RespondErrorStream(conn, record, "not_found")
+	case ErrUnknownModelProvider:
+		utils.RespondErrorStream(conn, record, "invalid_model_provider")
+	case ErrRateLimitReached:
+		utils.RespondErrorStream(conn, record, "rate_limit_reached")
+	case ErrProjectRateLimitReached:
+		utils.RespondErrorStream(conn, record, "project_rate_limit_reached")
+	default:
+		utils.RespondErrorStream(conn, record, "internal_error")
+	}
+}
 
+func WriteToWebSocketConn(
+	chanRes *chan options.Result,
+	result *options.Result,
+	conn *websocket.Conn,
+	chanStop chan bool,
+) (string, error) {
+	totalResult := ""
+	for v := range *chanRes {
+		result.Result += v.Result
+		if v.TokenUsage.Input != 0 {
+			result.TokenUsage.Input = v.TokenUsage.Input
+		}
+		result.TokenUsage.Output += v.TokenUsage.Output
+
+		if len(v.Resources) > 0 {
+			result.Resources = v.Resources
+		}
+		select {
+		case <-chanStop:
+			break
+		default:
+		}
+
+		if v.Err != "" {
+			return "", errors.New(v.Err)
+		}
+
+		if v.Warnings != nil && len(v.Warnings) > 0 {
+			result.Warnings = append(result.Warnings, v.Warnings...)
+		}
+
+		totalResult += v.Result
+		if v.Result != "" {
+			err := conn.WriteMessage(websocket.TextMessage, []byte(v.Result))
+			if err != nil {
+				return "", errors.New("write_result_error")
+			}
+		}
+	}
+	return totalResult, nil
 }
 
 func Stream(w http.ResponseWriter, r *http.Request, _ router.Params) {
@@ -66,31 +123,9 @@ func Stream(w http.ResponseWriter, r *http.Request, _ router.Params) {
 
 	chanRes, err := GenerationStart(r.Context(), userID, input)
 	if err != nil {
-		if err != nil {
-			switch err {
-			case webrequest.ErrWebsiteExceedsLimit:
-				utils.RespondErrorStream(conn, record, "error_website_exceeds_limit")
-			case webrequest.ErrWebsitesContentExceeds:
-				utils.RespondErrorStream(conn, record, "error_websites_content_exceeds")
-			case webrequest.ErrFetchWebpage:
-				utils.RespondErrorStream(conn, record, "error_fetch_webpage")
-			case webrequest.ErrParseContent:
-				utils.RespondErrorStream(conn, record, "error_parse_content")
-			case webrequest.ErrVisitBaseURL:
-				utils.RespondErrorStream(conn, record, "error_visit_base_url")
-			case ErrNotFound:
-				utils.RespondErrorStream(conn, record, "not_found")
-			case ErrUnknownModelProvider:
-				utils.RespondErrorStream(conn, record, "invalid_model_provider")
-			case ErrRateLimitReached:
-				utils.RespondErrorStream(conn, record, "rate_limit_reached")
-			case ErrProjectRateLimitReached:
-				utils.RespondErrorStream(conn, record, "project_rate_limit_reached")
-			default:
-				utils.RespondErrorStream(conn, record, "internal_error")
-			}
-			return
-		}
+		fmt.Println(err)
+		ReturnErrorsStream(conn, record, err)
+		return
 	}
 
 	result := options.Result{
@@ -111,41 +146,10 @@ func Stream(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		}
 	}()
 
-	totalResult := ""
-generationLoop:
-	for v := range *chanRes {
-		result.Result += v.Result
-		if v.TokenUsage.Input != 0 {
-			result.TokenUsage.Input = v.TokenUsage.Input
-		}
-		result.TokenUsage.Output += v.TokenUsage.Output
-
-		if len(v.Resources) > 0 {
-			result.Resources = v.Resources
-		}
-		select {
-		case <-chanStop:
-			break generationLoop
-		default:
-		}
-
-		if v.Err != "" {
-			utils.RespondErrorStream(conn, record, v.Err)
-			return
-		}
-
-		if v.Warnings != nil && len(v.Warnings) > 0 {
-			result.Warnings = append(result.Warnings, v.Warnings...)
-		}
-
-		totalResult += v.Result
-		if v.Result != "" {
-			err = conn.WriteMessage(websocket.TextMessage, []byte(v.Result))
-			if err != nil {
-				utils.RespondErrorStream(conn, record, "write_message_error")
-				return
-			}
-		}
+	totalResult, err := WriteToWebSocketConn(chanRes, &result, conn, chanStop)
+	if err != nil {
+		utils.RespondErrorStream(conn, record, err.Error())
+		return
 	}
 
 	if input.Infos {

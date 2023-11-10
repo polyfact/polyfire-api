@@ -12,17 +12,6 @@ func (Chat) TableName() string {
 	return "chats"
 }
 
-func GetChatForUser(userID string) ([]Chat, error) {
-	var results []Chat
-
-	err := DB.Find(&results, "user_id = ?", userID).Error
-	if err != nil {
-		return nil, err
-	}
-
-	return results, nil
-}
-
 func GetChatByID(id string) (*Chat, error) {
 	var result *Chat
 

@@ -9,7 +9,6 @@ import (
 	"os"
 	"strings"
 
-	db "github.com/polyfire/api/db"
 	"github.com/polyfire/api/llm/providers/options"
 	tokens "github.com/polyfire/api/tokens"
 	utils "github.com/polyfire/api/utils"
@@ -127,15 +126,6 @@ func (m OpenAIStreamProvider) Generate(
 	}()
 
 	return chanRes
-}
-
-func (m OpenAIStreamProvider) UserAllowed(userID string) bool {
-	if m.Model == "gpt-3.5-turbo" || m.Model == "gpt-3.5-turbo-16k" {
-		return true
-	}
-
-	res, _ := db.ProjectIsPremium(userID)
-	return res
 }
 
 func (m OpenAIStreamProvider) Name() string {
