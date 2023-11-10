@@ -39,6 +39,7 @@ type ReplicateStartResponse struct {
 	URLs   struct {
 		Stream string `json:"stream"`
 		Get    string `json:"get"`
+		Cancel string `json:"cancel"`
 	} `json:"urls"`
 }
 

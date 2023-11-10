@@ -239,6 +239,24 @@ func (m ReplicateProvider) Stream(
 			fmt.Println("Waiting for model to start...", output.Status, output)
 		}
 
+		// Cancel the task
+		req, err := http.NewRequest("POST", startResponse.URLs.Cancel, nil)
+		if err != nil {
+			fmt.Println(err)
+			chanRes <- options.Result{Err: "generation_error"}
+			return
+		}
+
+		req.Header.Set("Authorization", "Token "+m.ReplicateAPIKey)
+		req.Header.Set("Accept", "text/event-stream")
+
+		_, err = http.DefaultClient.Do(req)
+		if err != nil {
+			fmt.Println(err)
+			chanRes <- options.Result{Err: "generation_error"}
+			return
+		}
+
 		replicateEndTime := time.Now()
 
 		var duration time.Duration
