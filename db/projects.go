@@ -158,17 +158,17 @@ func (Model) TableName() string {
 }
 
 func GetModelByAliasAndProjectID(alias string, projectID string, modelType string) (*Model, error) {
-	model := &Model{}
+	model := Model{}
 
 	err := DB.Raw(
-		"SELECT models.* FROM models JOIN model_aliases ON model_aliases.model_id = models.id WHERE model_aliases.alias = ? AND (model_aliases.project_id = ? OR model_aliases.project_id IS NULL) AND models.type = ?",
+		"SELECT models.* FROM models JOIN model_aliases ON model_aliases.model_id = models.id WHERE model_aliases.alias = ? AND (model_aliases.project_id = ? OR model_aliases.project_id IS NULL) AND models.type = ? LIMIT 1",
 		alias,
 		projectID,
 		modelType,
-	).Scan(model).Error
+	).First(&model).Error
 	if err != nil {
 		return nil, err
 	}
 
-	return model, nil
+	return &model, nil
 }
