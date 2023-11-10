@@ -161,7 +161,7 @@ func GetModelByAliasAndProjectID(alias string, projectID string, modelType strin
 	model := &Model{}
 
 	err := DB.Raw(
-		"SELECT models.* FROM models JOIN model_aliases ON model_aliases.model_id = models.id WHERE model_aliases.alias = ? AND model_aliases.project_id = ? AND models.type = ?",
+		"SELECT models.* FROM models JOIN model_aliases ON model_aliases.model_id = models.id WHERE model_aliases.alias = ? AND (model_aliases.project_id = ? OR model_aliases.project_id IS NULL) AND models.type = ?",
 		alias,
 		projectID,
 		modelType,
