@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 
-	db "github.com/polyfire/api/db"
 	"github.com/polyfire/api/llm/providers/options"
 	"github.com/tmc/langchaingo/llms"
 	"github.com/tmc/langchaingo/schema"
@@ -86,11 +85,6 @@ func (m LangchainProvider) Generate(
 	}(chanRes)
 
 	return chanRes
-}
-
-func (m LangchainProvider) UserAllowed(userID string) bool {
-	res, _ := db.ProjectIsPremium(userID)
-	return res
 }
 
 func (m LangchainProvider) Name() string {

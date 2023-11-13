@@ -18,7 +18,6 @@ type Provider interface {
 	Name() string
 	ProviderModel() (string, string)
 	Generate(prompt string, c options.ProviderCallback, opts *options.ProviderOptions) chan options.Result
-	UserAllowed(userID string) bool
 	DoesFollowRateLimit() bool
 }
 
@@ -48,6 +47,8 @@ func getAvailableModels(model string) (string, string) {
 		return "replicate", "wizard-mega-13b-awq"
 	case "airoboros-llama-2-70b":
 		return "replicate", "airoboros-llama-2-70b"
+	case "":
+		return "openai", "gpt-3.5-turbo"
 	}
 	return "", ""
 }
@@ -55,7 +56,6 @@ func getAvailableModels(model string) (string, string) {
 func getModelWithAliases(modelAlias string, projectID string) (string, string) {
 	provider, model := getAvailableModels(modelAlias)
 
-	fmt.Println("Project ID: ", projectID)
 	if model == "" {
 		newModel, err := db.GetModelByAliasAndProjectID(modelAlias, projectID, "completion")
 		if err != nil {
@@ -69,37 +69,18 @@ func getModelWithAliases(modelAlias string, projectID string) (string, string) {
 	return provider, model
 }
 
-func NewProvider(ctx context.Context, provider string, model *string) (Provider, error) {
-	if provider == "" && model == nil {
-		provider = "openai"
-	}
+func NewProvider(ctx context.Context, modelInput string) (Provider, error) {
+	projectID, _ := ctx.Value(utils.ContextKeyProjectID).(string)
+	fmt.Println("Project ID: ", projectID)
 
-	if provider == "" && model != nil {
-		projectID, _ := ctx.Value(utils.ContextKeyProjectID).(string)
-
-		var newModel string
-		provider, newModel = getModelWithAliases(*model, projectID)
-		model = &newModel
-	}
+	provider, model := getModelWithAliases(modelInput, projectID)
 
 	fmt.Println("Provider: ", provider)
 
 	switch provider {
 	case "openai":
 		fmt.Println("Using OpenAI")
-		var m string
-
-		if model == nil {
-			m = "gpt-3.5-turbo"
-		} else {
-			m = *model
-		}
-
-		if m != "gpt-3.5-turbo" && m != "gpt-3.5-turbo-16k" && m != "gpt-4" && m != "gpt-4-32k" {
-			return nil, ErrUnknownModel
-		}
-
-		llm := providers.NewOpenAIStreamProvider(ctx, m)
+		llm := providers.NewOpenAIStreamProvider(ctx, model)
 
 		return llm, nil
 	case "cohere":
@@ -110,36 +91,12 @@ func NewProvider(ctx context.Context, provider string, model *string) (Provider,
 		}
 		return providers.LangchainProvider{Model: llm, ModelName: "cohere_command"}, nil
 	case "llama":
-		fmt.Println("Using LLama")
-		var m string
-
-		if model == nil {
-			m = "llama"
-		} else {
-			m = *model
-		}
-
-		if m != "llama" && m != "llama2" && m != "codellama" {
-			return nil, ErrUnknownModel
-		}
-
 		return providers.LLaMaProvider{
-			Model: m,
+			Model: model,
 		}, nil
 	case "replicate":
 		fmt.Println("Using Replicate")
-		var m string
-		if model == nil {
-			m = "llama-2-70b-chat"
-		} else {
-			m = *model
-		}
-
-		if m != "llama-2-70b-chat" && m != "replit-code-v1-3b" && m != "wizard-mega-13b-awq" && m != "airoboros-llama-2-70b" {
-			return nil, ErrUnknownModel
-		}
-
-		llm := providers.NewReplicateProvider(ctx, m)
+		llm := providers.NewReplicateProvider(ctx, model)
 		return llm, nil
 	default:
 		return nil, ErrUnknownModel

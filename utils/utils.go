@@ -1,28 +1,5 @@
 package utils
 
-import (
-	db "github.com/polyfire/api/db"
-	llmTokens "github.com/polyfire/api/tokens"
-)
-
-func CutChatHistory(chatMessages []db.ChatMessage, maxToken int) []db.ChatMessage {
-	var res []db.ChatMessage
-	tokens := 0
-
-	for _, item := range chatMessages {
-		textTokens := llmTokens.CountTokens(item.Content)
-
-		if tokens+textTokens > maxToken {
-			break
-		}
-
-		res = append(res, item)
-		tokens += textTokens
-	}
-
-	return res
-}
-
 func ContainsString(list []string, item string) bool {
 	for _, i := range list {
 		if i == item {

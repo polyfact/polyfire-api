@@ -2,7 +2,6 @@ package completion
 
 import (
 	"encoding/json"
-	"errors"
 	"net/http"
 
 	router "github.com/julienschmidt/httprouter"
@@ -10,6 +9,31 @@ import (
 	utils "github.com/polyfire/api/utils"
 	webrequest "github.com/polyfire/api/web_request"
 )
+
+func ReturnErrors(w http.ResponseWriter, record utils.RecordFunc, err error) {
+	switch err {
+	case webrequest.ErrWebsiteExceedsLimit:
+		utils.RespondError(w, record, "error_website_exceeds_limit")
+	case webrequest.ErrWebsitesContentExceeds:
+		utils.RespondError(w, record, "error_websites_content_exceeds")
+	case webrequest.ErrFetchWebpage:
+		utils.RespondError(w, record, "error_fetch_webpage")
+	case webrequest.ErrParseContent:
+		utils.RespondError(w, record, "error_parse_content")
+	case webrequest.ErrVisitBaseURL:
+		utils.RespondError(w, record, "error_visit_base_url")
+	case ErrNotFound:
+		utils.RespondError(w, record, "not_found")
+	case ErrUnknownModelProvider:
+		utils.RespondError(w, record, "invalid_model_provider")
+	case ErrRateLimitReached:
+		utils.RespondError(w, record, "rate_limit_reached")
+	case ErrProjectRateLimitReached:
+		utils.RespondError(w, record, "project_rate_limit_reached")
+	default:
+		utils.RespondError(w, record, "internal_error")
+	}
+}
 
 func Generate(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	userID := r.Context().Value(utils.ContextKeyUserID).(string)
@@ -30,29 +54,7 @@ func Generate(w http.ResponseWriter, r *http.Request, _ router.Params) {
 
 	resChan, err := GenerationStart(r.Context(), userID, input)
 	if err != nil {
-		if errors.Is(err, webrequest.ErrWebsiteExceedsLimit) {
-			utils.RespondError(w, record, "error_website_exceeds_limit")
-		} else if errors.Is(err, webrequest.ErrWebsitesContentExceeds) {
-			utils.RespondError(w, record, "error_websites_content_exceeds")
-		} else if errors.Is(err, webrequest.ErrFetchWebpage) {
-			utils.RespondError(w, record, "error_fetch_webpage")
-		} else if errors.Is(err, webrequest.ErrParseContent) {
-			utils.RespondError(w, record, "error_parse_content")
-		} else if errors.Is(err, webrequest.ErrVisitBaseURL) {
-			utils.RespondError(w, record, "error_visit_base_url")
-		} else if errors.Is(err, ErrNotFound) {
-			utils.RespondError(w, record, "not_found")
-		} else if errors.Is(err, ErrUnknownModelProvider) {
-			utils.RespondError(w, record, "invalid_model_provider")
-		} else if errors.Is(err, ErrRateLimitReached) {
-			utils.RespondError(w, record, "rate_limit_reached")
-		} else if errors.Is(err, ErrProjectRateLimitReached) {
-			utils.RespondError(w, record, "project_rate_limit_reached")
-		} else if errors.Is(err, ErrProjectNotPremiumModel) {
-			utils.RespondError(w, record, "project_not_premium_model")
-		} else {
-			utils.RespondError(w, record, "internal_error", err.Error())
-		}
+		ReturnErrors(w, record, err)
 		return
 	}
 

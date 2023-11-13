@@ -90,4 +90,11 @@ clean:
 fmt:
 	go fmt $$(go list ./...)
 
-.PHONY: clean fmt check-env deploy
+schema.sql:
+	( pg_dump -Osx ${SUPABASE_PG_URI} && pg_dump -at models ${SUPABASE_PG_URI} ) > schema.sql
+
+create-dev-db: schema.sql
+	psql ${POSTGRES_URI} -f schema.sql
+	echo "INSERT INTO public.auth_users (id) VALUES ('12345678-9101-1121-8141-516171819202');	INSERT INTO public.projects (id, name, auth_id, free_user_init, slug, allow_anonymous_auth, dev_rate_limit) VALUES ('98765432-1012-3456-889a-987654321012', 'Default Project', '12345678-9101-1121-8141-516171819202', true, 'default', true, false);	INSERT INTO public.projects (id, name, auth_id, free_user_init, slug, allow_anonymous_auth, dev_rate_limit) VALUES ('00000000-0000-0000-0000-000000000000', '', '12345678-9101-1121-8141-516171819202', false, '', false, false); INSERT INTO auth.users (id, email) VALUES ('12345678-9101-1121-8141-516171819202', 'example@example.com');" | psql ${POSTGRES_URI}
+
+.PHONY: clean fmt check-env deploy create-dev-db

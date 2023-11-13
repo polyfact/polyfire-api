@@ -30,16 +30,13 @@ func ParseSystemPrompt(systemPrompt string) SystemPrompt {
 		if c == '\\' && lastChar != '\\' {
 			lastChar = c
 			continue
-		} else if c == '{' && lastChar == '{' && !isVar {
+		} else if c == '{' && lastChar == '{' {
+			if isVar {
+				literal = strings.TrimSpace(literal)
+			}
 			result = append(result, ParsedSystemPromptElement{Literal: literal, IsVar: isVar})
 			literal = ""
-			isVar = true
-			lastChar = 0
-			continue
-		} else if c == '}' && lastChar == '}' && isVar {
-			result = append(result, ParsedSystemPromptElement{Literal: strings.TrimSpace(literal), IsVar: isVar})
-			literal = ""
-			isVar = false
+			isVar = !isVar
 			lastChar = 0
 			continue
 		} else if lastChar == '{' || lastChar == '}' {
@@ -68,7 +65,7 @@ func ParseSystemPrompt(systemPrompt string) SystemPrompt {
 }
 
 func (sp SystemPrompt) ListVars() []string {
-	var result = make([]string, 0)
+	result := make([]string, 0)
 
 	for _, e := range sp.elements {
 		if e.IsVar {
@@ -80,7 +77,7 @@ func (sp SystemPrompt) ListVars() []string {
 }
 
 func (sp SystemPrompt) Render(vars map[string]string) string {
-	var result= ""
+	result := ""
 
 	for _, e := range sp.elements {
 		if e.IsVar {
@@ -94,8 +91,8 @@ func (sp SystemPrompt) Render(vars map[string]string) string {
 }
 
 func GetVars(userID string, varList []string) (map[string]string, []string) {
-	var warnings = make([]string, 0)
-	var result = make(map[string]string)
+	warnings := make([]string, 0)
+	result := make(map[string]string)
 
 	kvVars := make([]string, 0)
 	for _, v := range varList {
@@ -136,7 +133,7 @@ func GetSystemPrompt(
 	systemPrompt *string,
 	chatID *string,
 ) (*SystemPromptContext, []string, error) {
-	var result = ""
+	result := ""
 
 	if systemPrompt != nil && len(*systemPrompt) > 0 {
 		result = *systemPrompt

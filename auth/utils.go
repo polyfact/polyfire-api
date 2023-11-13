@@ -14,19 +14,9 @@ import (
 )
 
 func GetUserIDFromProjectAuthID(project string, authID string, email string) (*string, error) {
-	client, err := db.CreateClient()
-	if err != nil {
-		return nil, err
-	}
-
 	var results []db.ProjectUser
 
-	_, err = client.From("project_users").
-		Select("*", "exact", false).
-		Eq("auth_id", authID).
-		Eq("project_id", project).
-		ExecuteTo(&results)
-
+	err := db.DB.Find(&results, "auth_id = ? AND project_id = ?", authID, project).Error
 	if err != nil {
 		return nil, err
 	}
@@ -46,19 +36,14 @@ func CreateProjectUser(
 	projectID string,
 	monthlyCreditRateLimit *int,
 ) (*string, error) {
-	client, err := db.CreateClient()
-	if err != nil {
-		return nil, err
-	}
-
 	var result *db.ProjectUser
 
-	_, err = client.From("project_users").Insert(db.ProjectUserInsert{
+	fmt.Println("Creating project user", authID, projectID, monthlyCreditRateLimit)
+	err := db.DB.Create(&db.ProjectUserInsert{
 		AuthID:                 authID,
 		ProjectID:              projectID,
 		MonthlyCreditRateLimit: monthlyCreditRateLimit,
-	}, false, "", "", "exact").Single().ExecuteTo(&result)
-
+	}).Scan(&result).Error
 	if err != nil {
 		return nil, err
 	}
@@ -88,6 +73,7 @@ func ExchangeToken(
 		if !project.FreeUserInit {
 			return "", fmt.Errorf("free_user_init_disabled")
 		}
+		fmt.Println("Creating user on project", project.ID)
 		userID, err = CreateProjectUser(
 			authID,
 			email,
