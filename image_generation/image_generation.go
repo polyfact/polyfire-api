@@ -63,13 +63,6 @@ func ImageGeneration(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		provider = "openai"
 	}
 
-	// premium, _ := db.ProjectIsPremium(userID)
-
-	// if !premium {
-	// 	utils.RespondError(w, record, "project_not_premium_model")
-	// 	return
-	// }
-
 	if provider != "openai" {
 		utils.RespondError(w, record, "unknown_model_provider")
 		return

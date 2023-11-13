@@ -3,3 +3,4 @@ build/
 app.yaml
 vectorizer.json
 tmp/
+schema.sql

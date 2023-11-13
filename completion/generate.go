@@ -14,8 +14,7 @@ import (
 
 type GenerateRequestBody struct {
 	Task           string      `json:"task"`
-	Provider       string      `json:"provider,omitempty"`
-	Model          *string     `json:"model,omitempty"`
+	Model          string      `json:"model,omitempty"`
 	MemoryID       interface{} `json:"memory_id,omitempty"`
 	ChatID         *string     `json:"chat_id,omitempty"`
 	Stop           *[]string   `json:"stop,omitempty"`
@@ -42,7 +41,7 @@ func GenerationStart(ctx context.Context, userID string, input GenerateRequestBo
 	log.Println("Init provider")
 
 	// Get provider
-	provider, err := llm.NewProvider(ctx, input.Provider, input.Model)
+	provider, err := llm.NewProvider(ctx, input.Model)
 	if errors.Is(err, llm.ErrUnknownModel) {
 		return nil, ErrUnknownModelProvider
 	}
@@ -52,6 +51,7 @@ func GenerationStart(ctx context.Context, userID string, input GenerateRequestBo
 	}
 
 	providerName, modelName := provider.ProviderModel()
+	fmt.Println("Provider: " + providerName)
 
 	// Check Rate Limit
 	if provider.DoesFollowRateLimit() {

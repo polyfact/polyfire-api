@@ -69,10 +69,6 @@ func (m LLaMaProvider) Generate(task string, c options.ProviderCallback, opts *o
 	return chanRes
 }
 
-func (m LLaMaProvider) UserAllowed(_ string) bool {
-	return true
-}
-
 func (m LLaMaProvider) Name() string {
 	return "llama"
 }
