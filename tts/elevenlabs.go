@@ -21,6 +21,7 @@ import (
 var (
 	ErrRateLimitReached        = errors.New("Rate limit reached")
 	ErrProjectRateLimitReached = errors.New("Project rate limit reached")
+	ErrCreditsUsedUp           = errors.New("Credits Used Up")
 	ErrUnknown                 = errors.New("Unknown error")
 )
 
@@ -32,6 +33,13 @@ func TextToSpeech(ctx context.Context, w io.Writer, text string, voiceID string)
 		if rateLimitStatus != db.RateLimitStatusOk {
 			return ErrRateLimitReached
 		}
+
+		creditsStatus := ctx.Value(utils.ContextKeyCreditsStatus)
+
+		if creditsStatus == db.CreditsStatusUsedUp {
+			return ErrCreditsUsedUp
+		}
+
 	}
 
 	client := elevenlabs.NewClient(context.Background(), customToken, 30*time.Second)
