@@ -15,6 +15,7 @@ type ContextKey string
 const (
 	ContextKeyUserID                ContextKey = "userId"
 	ContextKeyRateLimitStatus       ContextKey = "rateLimitStatus"
+	ContextKeyCreditsStatus         ContextKey = "creditsStatus"
 	ContextKeyRecordEvent           ContextKey = "recordEvent"
 	ContextKeyRecordEventWithUserID ContextKey = "recordEventWithUserID"
 	ContextKeyRecordEventRequest    ContextKey = "recordEventRequest"

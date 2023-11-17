@@ -10,19 +10,29 @@ var (
 	ErrUnknownUserID     = errors.New("Unknown user id")
 	ErrDBVersionMismatch = errors.New("DB version mismatch")
 	ErrDB                = errors.New("Database error")
+	ErrDevNotPremium     = errors.New("Dev not premium")
 )
 
 type RateLimitStatus string
 
 var (
-	RateLimitStatusReached        = RateLimitStatus("rate_limit_reached")
-	RateLimitStatusProjectReached = RateLimitStatus("project_rate_limit_reached")
-	RateLimitStatusOk             = RateLimitStatus("ok")
-	RateLimitStatusNone           = RateLimitStatus("")
+	RateLimitStatusReached = RateLimitStatus("rate_limit_reached")
+	RateLimitStatusOk      = RateLimitStatus("ok")
+	RateLimitStatusNone    = RateLimitStatus("")
+)
+
+type CreditsStatus string
+
+var (
+	CreditsStatusOk         = CreditsStatus("ok")
+	CreditsStatusUsedUp     = CreditsStatus("used_up")
+	CreditsStatusNotPremium = CreditsStatus("not_premium")
+	CreditsStatusNone       = CreditsStatus("")
 )
 
 type UserInfos struct {
-	DevRateLimit         int         `json:"dev_rate_limit"`
+	Premium              bool        `json:"premium"`
+	Credits              int         `json:"credits"`
 	DevUsage             int         `json:"dev_usage"`
 	ProjectUserRateLimit *int        `json:"project_user_rate_limit"`
 	ProjectUserUsage     int         `json:"project_user_usage"`
@@ -42,10 +52,11 @@ func getUserInfos(userID string) (*UserInfos, error) {
 
 	err := DB.Raw(`
 		SELECT
-			COALESCE(dev_users.rate_limit, 50000000) as dev_rate_limit,
+			dev_users.premium as premium,
 			COALESCE((SELECT SUM(credits) FROM get_logs_per_projects(dev_users.id, now()::timestamp, (now() - interval '1' month)::timestamp)), 0) as dev_usage,
 			project_users.version as version,
 			dev_users.id as dev_auth_id,
+			dev_users.credits as credits,
 			dev_users.openai_token as openai_token,
 			dev_users.openai_org as openai_org,
 			dev_users.replicate_token as replicate_token,
@@ -68,31 +79,46 @@ func getUserInfos(userID string) (*UserInfos, error) {
 	return &userInfos, nil
 }
 
-func CheckDBVersionRateLimit(userID string, version int) (*UserInfos, RateLimitStatus, error) {
+func CheckDBVersionRateLimit(userID string, version int) (*UserInfos, RateLimitStatus, CreditsStatus, error) {
 	userInfos, err := getUserInfos(userID)
 	if err != nil {
-		return nil, RateLimitStatusNone, err
+		return nil, RateLimitStatusNone, CreditsStatusNone, err
 	}
 
 	if userInfos == nil {
-		return nil, RateLimitStatusNone, ErrUnknownUserID
+		return nil, RateLimitStatusNone, CreditsStatusNone, ErrUnknownUserID
 	}
 
 	if userInfos.Version != version {
-		return nil, RateLimitStatusNone, ErrDBVersionMismatch
+		return nil, RateLimitStatusNone, CreditsStatusNone, ErrDBVersionMismatch
 	}
 
-	if userInfos.DevUsage >= userInfos.DevRateLimit {
-		return userInfos, RateLimitStatusProjectReached, nil
-	}
-
-	fmt.Println("ProjectID", userInfos.ProjectID)
-	fmt.Println("ProjectUserID", userInfos.ProjectUserID)
+	var rateLimitStatus = RateLimitStatusOk
 	if userInfos.ProjectUserRateLimit != nil && userInfos.ProjectUserUsage >= *userInfos.ProjectUserRateLimit {
-		return userInfos, RateLimitStatusReached, nil
+		rateLimitStatus = RateLimitStatusReached
 	}
 
-	return userInfos, RateLimitStatusOk, nil
+	var creditsStatus = CreditsStatusOk
+	if !userInfos.Premium {
+		return nil, rateLimitStatus, CreditsStatusNotPremium, ErrDevNotPremium
+	} else if userInfos.Credits <= 0 {
+		creditsStatus = CreditsStatusUsedUp
+	}
+
+	fmt.Println("devAuthID:", userInfos.DevAuthID)
+	fmt.Println("projectUserID:", userInfos.ProjectUserID)
+	fmt.Println("projectID:", userInfos.ProjectID)
+	fmt.Println("rateLimitStatus:", rateLimitStatus, ", creditsStatus:", creditsStatus)
+
+	return userInfos, rateLimitStatus, creditsStatus, nil
+}
+
+func RemoveCreditsFromDev(userID string, credits int) error {
+	return DB.Exec(
+		`UPDATE auth_users SET credits = credits - ? WHERE id = (SELECT auth_users.id FROM project_users JOIN projects ON project_users.project_id = projects.id JOIN auth_users ON auth_users.id = projects.auth_id::text WHERE project_users.id = try_cast_uuid(?) LIMIT 1)`,
+		credits,
+		userID,
+	).Error
 }
 
 type RefreshToken struct {

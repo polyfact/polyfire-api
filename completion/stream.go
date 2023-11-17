@@ -37,6 +37,8 @@ func ReturnErrorsStream(conn *websocket.Conn, record utils.RecordFunc, err error
 		utils.RespondErrorStream(conn, record, "invalid_model_provider")
 	case ErrRateLimitReached:
 		utils.RespondErrorStream(conn, record, "rate_limit_reached")
+	case ErrCreditsUsedUp:
+		utils.RespondErrorStream(conn, record, "credits_used_up")
 	case ErrProjectRateLimitReached:
 		utils.RespondErrorStream(conn, record, "project_rate_limit_reached")
 	default:

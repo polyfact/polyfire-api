@@ -18,8 +18,10 @@ func CheckRateLimit(ctx context.Context) error {
 		return ErrRateLimitReached
 	}
 
-	if rateLimitStatus == db.RateLimitStatusProjectReached {
-		return ErrProjectRateLimitReached
+	creditsStatus := ctx.Value(utils.ContextKeyCreditsStatus)
+
+	if creditsStatus == db.CreditsStatusUsedUp {
+		return ErrCreditsUsedUp
 	}
 
 	return ErrUnknownError
