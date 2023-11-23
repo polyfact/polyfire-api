@@ -26,6 +26,7 @@ type GenerateRequestBody struct {
 	Language       *string     `json:"language,omitempty"`
 	Cache          bool        `json:"cache,omitempty"`
 	Infos          bool        `json:"infos,omitempty"`
+	AutoComplete   bool        `json:"auto_complete,omitempty"`
 }
 
 func getLanguageCompletion(language *string) string {
@@ -97,8 +98,20 @@ func GenerationStart(ctx context.Context, userID string, input GenerateRequestBo
 		return nil, err
 	}
 
-	// Get Language prompt
-	prompt := getLanguageCompletion(input.Language) + contextString + "\nUser:\n" + input.Task + "\nYou:\n"
+	/*
+		If the autocomplete flag is on, we skip the question/answer prompt and put
+		the LLM "cursor" at the end of the task, effectively asking it to complete
+		the text instead of answering a question.
+
+		This might not be enough for some models retrained to answer chat questions
+		instead of just completing a text. The systemPrompt should also be ajusted.
+	*/
+	var prompt string
+	if input.AutoComplete {
+		prompt = getLanguageCompletion(input.Language) + contextString + "\n" + input.Task
+	} else {
+		prompt = getLanguageCompletion(input.Language) + contextString + "\nUser:\n" + input.Task + "\nYou:\n"
+	}
 
 	fmt.Println("Prompt: " + prompt)
 
