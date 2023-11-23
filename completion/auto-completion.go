@@ -2,7 +2,6 @@ package completion
 
 import (
 	_ "embed"
-	"fmt"
 	"strings"
 	"unicode"
 
@@ -25,7 +24,7 @@ import (
 //go:embed 10000-english-words.txt
 var englishWordsListString string
 
-var englishWordsSet map[string]bool = getSetFromWordListString()
+var englishWordsSet = getSetFromWordListString()
 
 func getSetFromWordListString() map[string]bool {
 	words := strings.Split(englishWordsListString, "\n")
