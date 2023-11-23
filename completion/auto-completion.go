@@ -67,7 +67,7 @@ func AddSpaceIfNeeded(prompt string, input chan options.Result) chan options.Res
 			firstOutputWord = <-input
 		}
 
-		if _, ok := englishWordsSet[lastPromptWord+firstOutputWord.Result]; !ok {
+		if _, ok := englishWordsSet[strings.ToLower(lastPromptWord+firstOutputWord.Result)]; !ok {
 			firstOutputWord.Result = " " + firstOutputWord.Result
 		}
 
