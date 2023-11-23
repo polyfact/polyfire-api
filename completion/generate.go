@@ -133,6 +133,10 @@ func GenerationStart(ctx context.Context, userID string, input GenerateRequestBo
 	log.Println("Generate")
 	resChan := provider.Generate(prompt, &callback, &opts)
 
+	if input.AutoComplete {
+		resChan = AddSpaceIfNeeded(prompt, resChan)
+	}
+
 	result = make(chan options.Result)
 
 	// Add warnings and cache at the end of the generation
