@@ -69,6 +69,11 @@ var ErrorMessages = map[string]APIError{
 		Message:    "You have reached the rate limit for this project",
 		StatusCode: http.StatusTooManyRequests,
 	},
+	"credits_used_up": {
+		Code:       "credits_used_up",
+		Message:    "This project doesn't have any credit left, please contact the developper.",
+		StatusCode: http.StatusTooManyRequests,
+	},
 	"project_rate_limit_reached": {
 		Code:       "project_rate_limit_reached",
 		Message:    "This project has reached its monthly rate limit",

@@ -67,7 +67,9 @@ func LogRequests(
 		credits = 0
 	}
 
-	err := DB.Exec(
+	err1 := RemoveCreditsFromDev(userID, credits)
+
+	err2 := DB.Exec(
 		"INSERT INTO request_logs (user_id, model_name, kind, input_token_count, output_token_count, credits, event_id) VALUES (?::uuid, ?, ?, ?, ?, ?, try_cast_uuid(?))",
 		userID,
 		modelName,
@@ -77,8 +79,11 @@ func LogRequests(
 		credits,
 		eventID,
 	).Error
-	if err != nil {
-		panic(err)
+	if err1 != nil {
+		panic(err1)
+	}
+	if err2 != nil {
+		panic(err2)
 	}
 }
 
@@ -91,7 +96,8 @@ func LogRequestsCredits(
 	outputTokenCount int,
 	kind Kind,
 ) {
-	err := DB.Exec(
+	err1 := RemoveCreditsFromDev(userID, credits)
+	err2 := DB.Exec(
 		"INSERT INTO request_logs (user_id, model_name, kind, input_token_count, output_token_count, credits, event_id) VALUES (?::uuid, ?, ?, ?, ?, ?, try_cast_uuid(?))",
 		userID,
 		modelName,
@@ -101,8 +107,11 @@ func LogRequestsCredits(
 		credits,
 		eventID,
 	).Error
-	if err != nil {
-		panic(err)
+	if err1 != nil {
+		panic(err1)
+	}
+	if err2 != nil {
+		panic(err2)
 	}
 }
 
