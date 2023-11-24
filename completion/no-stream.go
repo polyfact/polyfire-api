@@ -28,6 +28,8 @@ func ReturnErrors(w http.ResponseWriter, record utils.RecordFunc, err error) {
 		utils.RespondError(w, record, "invalid_model_provider")
 	case ErrRateLimitReached:
 		utils.RespondError(w, record, "rate_limit_reached")
+	case ErrCreditsUsedUp:
+		utils.RespondError(w, record, "credits_used_up")
 	case ErrProjectRateLimitReached:
 		utils.RespondError(w, record, "project_rate_limit_reached")
 	default:

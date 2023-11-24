@@ -54,8 +54,10 @@ func ImageGeneration(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		return
 	}
 
-	if rateLimitStatus == db.RateLimitStatusProjectReached {
-		utils.RespondError(w, record, "project_rate_limit_reached")
+	creditsStatus := r.Context().Value(utils.ContextKeyCreditsStatus)
+
+	if creditsStatus == db.CreditsStatusUsedUp {
+		utils.RespondError(w, record, "credits_used_up")
 		return
 	}
 

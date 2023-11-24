@@ -81,7 +81,7 @@ func SplitFile(file io.Reader) ([]io.Reader, int, func(), error) {
 		return nil, 0, nil, err
 	}
 
-	var res = make([]io.Reader, 0)
+	res := make([]io.Reader, 0)
 	for _, file := range files {
 		if file.Name() != "audio-file" && file.Name() != "audio-file.mpeg" {
 			err := exec.Command("ffmpeg", "-i", "/tmp/"+id+"/"+file.Name(), "/tmp/"+id+"/"+file.Name()+".mp3").Run()
@@ -133,15 +133,17 @@ func Transcribe(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		return
 	}
 
-	if rateLimitStatus == db.RateLimitStatusProjectReached {
-		utils.RespondError(w, record, "project_rate_limit_reached")
+	creditsStatus := ctx.Value(utils.ContextKeyCreditsStatus)
+
+	if creditsStatus == db.CreditsStatusUsedUp {
+		utils.RespondError(w, record, "credits_used_up")
 		return
 	}
 
 	contentType := r.Header.Get("Content-Type")
 	var fileBufReader io.Reader
 
-	var providerName = ""
+	providerName := ""
 	if contentType == "application/json" {
 		var input TranscribeRequestBody
 

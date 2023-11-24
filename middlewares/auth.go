@@ -37,10 +37,12 @@ func createUserContext(
 	userID string,
 	user *db.UserInfos,
 	rateLimitStatus db.RateLimitStatus,
+	creditsStatus db.CreditsStatus,
 ) context.Context {
 	recordEventWithUserID := r.Context().Value(utils.ContextKeyRecordEventWithUserID).(utils.RecordWithUserIDFunc)
 	newCtx := context.WithValue(r.Context(), utils.ContextKeyUserID, userID)
 	newCtx = context.WithValue(newCtx, utils.ContextKeyRateLimitStatus, rateLimitStatus)
+	newCtx = context.WithValue(newCtx, utils.ContextKeyCreditsStatus, creditsStatus)
 	if user != nil {
 		newCtx = context.WithValue(newCtx, utils.ContextKeyProjectUserUsage, user.ProjectUserUsage)
 		newCtx = context.WithValue(newCtx, utils.ContextKeyProjectUserRateLimit, user.ProjectUserRateLimit)
@@ -100,7 +102,7 @@ func authenticateAndHandle(
 	}
 
 	log.Println("DB Version / Rate Limit Status In Context")
-	user, rateLimitStatus, err := db.CheckDBVersionRateLimit(userID, version)
+	user, rateLimitStatus, creditsStatus, err := db.CheckDBVersionRateLimit(userID, version)
 
 	if err == db.ErrDBVersionMismatch {
 		utils.RespondError(w, record, "invalid_token")
@@ -120,7 +122,7 @@ func authenticateAndHandle(
 		}
 	}
 
-	ctx := createUserContext(r, userID, user, rateLimitStatus)
+	ctx := createUserContext(r, userID, user, rateLimitStatus, creditsStatus)
 	handler(w, r.WithContext(ctx), params)
 }
 
