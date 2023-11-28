@@ -49,6 +49,9 @@ const (
 	Generate    EventType = "models.completion.generate"
 	ChatHistory EventType = "models.chat.history"
 	ChatCreate  EventType = "models.chat.create"
+	ChatUpdate  EventType = "models.chat.update"
+	ChatDelete  EventType = "models.chat.delete"
+	ChatList    EventType = "models.chat.list"
 
 	SpeechToText EventType = "models.stt.transcribe"
 	TextToSpeech EventType = "models.tts.synthesize"
