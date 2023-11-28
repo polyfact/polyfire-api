@@ -78,7 +78,7 @@ func DeleteChat(w http.ResponseWriter, r *http.Request, ps router.Params) {
 		return
 	}
 
-	w.Write([]byte("{\"success\":true}"))
+	_, _ = w.Write([]byte("{\"success\":true}"))
 }
 
 func ListChat(w http.ResponseWriter, r *http.Request, _ router.Params) {
