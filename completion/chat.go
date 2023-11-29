@@ -18,6 +18,7 @@ func CreateChat(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	var requestBody struct {
 		SystemPrompt   *string `json:"system_prompt"`
 		SystemPromptID *string `json:"system_prompt_id"`
+		Name           *string `json:"name"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -26,7 +27,7 @@ func CreateChat(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		return
 	}
 
-	chat, err := db.CreateChat(userID, requestBody.SystemPrompt, requestBody.SystemPromptID)
+	chat, err := db.CreateChat(userID, requestBody.SystemPrompt, requestBody.SystemPromptID, requestBody.Name)
 	if err != nil {
 		log.Printf("Error creating chat for user %s : %v", userID, err)
 		utils.RespondError(w, record, "error_create_chat", err.Error())
@@ -37,6 +38,63 @@ func CreateChat(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	record(string(response))
 
 	_ = json.NewEncoder(w).Encode(chat)
+}
+
+func UpdateChat(w http.ResponseWriter, r *http.Request, ps router.Params) {
+	id := ps.ByName("id")
+	userID := r.Context().Value(utils.ContextKeyUserID).(string)
+	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
+
+	var requestBody struct {
+		Name string `json:"name"`
+	}
+
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&requestBody); err != nil {
+		utils.RespondError(w, record, "decode_error")
+		return
+	}
+
+	chat, err := db.UpdateChat(userID, id, requestBody.Name)
+	if err != nil {
+		utils.RespondError(w, record, "error_update_chat", err.Error())
+		return
+	}
+
+	response, _ := json.Marshal(&chat)
+	record(string(response))
+
+	_ = json.NewEncoder(w).Encode(chat)
+}
+
+func DeleteChat(w http.ResponseWriter, r *http.Request, ps router.Params) {
+	id := ps.ByName("id")
+	userID := r.Context().Value(utils.ContextKeyUserID).(string)
+	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
+
+	err := db.DeleteChat(userID, id)
+	if err != nil {
+		utils.RespondError(w, record, "error_delete_chat", err.Error())
+		return
+	}
+
+	_, _ = w.Write([]byte("{\"success\":true}"))
+}
+
+func ListChat(w http.ResponseWriter, r *http.Request, _ router.Params) {
+	userID := r.Context().Value(utils.ContextKeyUserID).(string)
+	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
+
+	chats, err := db.ListChats(userID)
+	if err != nil {
+		utils.RespondError(w, record, "error_list_chat", err.Error())
+		return
+	}
+
+	response, _ := json.Marshal(&chats)
+	record(string(response))
+
+	_ = json.NewEncoder(w).Encode(chats)
 }
 
 func GetChatHistory(w http.ResponseWriter, r *http.Request, ps router.Params) {
