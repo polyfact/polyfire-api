@@ -27,14 +27,14 @@ func CreateChat(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		return
 	}
 
-	systemPromptId, err := db.RetrieveSystemPromptID(requestBody.SystemPromptID)
+	systemPromptID, err := db.RetrieveSystemPromptID(requestBody.SystemPromptID)
 
 	if err != nil {
 		utils.RespondError(w, record, "error_retrieving_system_prompt_id")
 		return
 	}
 
-	chat, err := db.CreateChat(userID, requestBody.SystemPrompt, systemPromptId, requestBody.Name)
+	chat, err := db.CreateChat(userID, requestBody.SystemPrompt, systemPromptID, requestBody.Name)
 	if err != nil {
 		log.Printf("Error creating chat for user %s : %v", userID, err)
 		utils.RespondError(w, record, "error_create_chat", err.Error())
