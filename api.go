@@ -58,7 +58,10 @@ func main() {
 	// Completion Routes
 	router.POST("/generate", middlewares.Record(utils.Generate, middlewares.Auth(completion.Generate)))
 	router.GET("/chat/:id/history", middlewares.Record(utils.ChatHistory, middlewares.Auth(completion.GetChatHistory)))
+	router.GET("/chats", middlewares.Record(utils.ChatList, middlewares.Auth(completion.ListChat)))
 	router.POST("/chats", middlewares.Record(utils.ChatCreate, middlewares.Auth(completion.CreateChat)))
+	router.PUT("/chat/:id", middlewares.Record(utils.ChatUpdate, middlewares.Auth(completion.UpdateChat)))
+	router.DELETE("/chat/:id", middlewares.Record(utils.ChatDelete, middlewares.Auth(completion.DeleteChat)))
 	router.GET("/stream", middlewares.Record(utils.Generate, middlewares.AuthStream(completion.Stream)))
 
 	// Transcription Routes

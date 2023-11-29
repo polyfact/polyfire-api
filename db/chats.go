@@ -5,7 +5,8 @@ type Chat struct {
 	UserID         string        `json:"user_id"`
 	SystemPrompt   *string       `json:"system_prompt"`
 	SystemPromptID *string       `json:"system_prompt_id"`
-	ChatMessages   []ChatMessage `json:"chat_messages"`
+	ChatMessages   []ChatMessage `json:"chat_messages,omitempty"`
+	Name           *string       `json:"name"`
 }
 
 func (Chat) TableName() string {
@@ -23,10 +24,10 @@ func GetChatByID(id string) (*Chat, error) {
 	return result, nil
 }
 
-func CreateChat(userID string, systemPrompt *string, SystemPromptID *string) (*Chat, error) {
+func CreateChat(userID string, systemPrompt *string, SystemPromptID *string, name *string) (*Chat, error) {
 	var result *Chat
 
-	err := DB.Raw("INSERT INTO chats (user_id, system_prompt, system_prompt_id) VALUES (?::uuid, ?, ?) RETURNING *", userID, systemPrompt, SystemPromptID).
+	err := DB.Raw("INSERT INTO chats (user_id, system_prompt, system_prompt_id, name) VALUES (?::uuid, ?, ?, ?) RETURNING *", userID, systemPrompt, SystemPromptID, name).
 		Scan(&result).
 		Error
 	if err != nil {
@@ -34,6 +35,34 @@ func CreateChat(userID string, systemPrompt *string, SystemPromptID *string) (*C
 	}
 
 	return result, nil
+}
+
+func ListChats(userID string) ([]Chat, error) {
+	var result []Chat
+
+	err := DB.Raw("SELECT * FROM chats WHERE user_id = ?", userID).Scan(&result).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func DeleteChat(userID string, id string) error {
+	err := DB.Exec("DELETE FROM chats WHERE id = ? AND user_id = ?", id, userID).Error
+
+	return err
+}
+
+func UpdateChat(userID string, id string, name string) (*Chat, error) {
+	var result *Chat
+
+	err := DB.Raw("UPDATE chats SET name = ? WHERE id = ? AND user_id = ? RETURNING *", name, id, userID).Scan(&result).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return result, err
 }
 
 type ChatMessage struct {
@@ -45,7 +74,7 @@ type ChatMessage struct {
 }
 
 func GetChatMessages(userID string, chatID string) ([]ChatMessage, error) {
-	var results = make([]ChatMessage, 0)
+	results := make([]ChatMessage, 0)
 
 	err := DB.Raw("SELECT chat_messages.* FROM chat_messages JOIN chats ON chats.id = chat_messages.chat_id WHERE chats.id = ? AND chats.user_id = ? ORDER BY chat_messages.created_at DESC LIMIT 20", chatID, userID).
 		Scan(&results).
