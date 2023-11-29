@@ -62,7 +62,13 @@ func getUserInfos(userID string) (*UserInfos, error) {
 			dev_users.replicate_token as replicate_token,
 			dev_users.elevenlabs_token as elevenlabs_token,
 			projects.authorized_domains as authorized_domains,
-			CASE WHEN projects.dev_rate_limit IS false AND projects.auth_id::text = project_users.auth_id THEN projects.premium_monthly_credit_rate_limit WHEN project_users.monthly_credit_rate_limit IS NOT NULL THEN project_users.monthly_credit_rate_limit WHEN project_users.premium IS true THEN NULL ELSE projects.default_monthly_credit_rate_limit END as project_user_rate_limit,
+			CASE
+				WHEN projects.dev_rate_limit IS false AND projects.auth_id::text = project_users.auth_id
+					THEN NULL
+				WHEN project_users.premium IS true
+					THEN projects.premium_monthly_credit_rate_limit
+				ELSE projects.default_monthly_credit_rate_limit
+			END as project_user_rate_limit,
 			get_monthly_credit_usage(project_users.id::text) as project_user_usage,
 			projects.id as project_id,
 			project_users.id as project_user_id
@@ -93,12 +99,12 @@ func CheckDBVersionRateLimit(userID string, version int) (*UserInfos, RateLimitS
 		return nil, RateLimitStatusNone, CreditsStatusNone, ErrDBVersionMismatch
 	}
 
-	var rateLimitStatus = RateLimitStatusOk
+	rateLimitStatus := RateLimitStatusOk
 	if userInfos.ProjectUserRateLimit != nil && userInfos.ProjectUserUsage >= *userInfos.ProjectUserRateLimit {
 		rateLimitStatus = RateLimitStatusReached
 	}
 
-	var creditsStatus = CreditsStatusOk
+	creditsStatus := CreditsStatusOk
 	if !userInfos.Premium {
 		return nil, rateLimitStatus, CreditsStatusNotPremium, ErrDevNotPremium
 	} else if userInfos.Credits <= 0 {
