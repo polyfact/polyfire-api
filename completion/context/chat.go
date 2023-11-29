@@ -3,8 +3,8 @@ package context
 import (
 	"bytes"
 	"fmt"
-	"text/template"
 	"strings"
+	"text/template"
 
 	"github.com/polyfire/api/db"
 )
