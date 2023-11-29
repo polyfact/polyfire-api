@@ -78,25 +78,25 @@ func GetPromptByIDOrSlug(id string) (*Prompt, error) {
 	return prompt, nil
 }
 
-func RetrieveSystemPromptID(systemPromptIdOrSlug *string) (*string, error) {
+func RetrieveSystemPromptID(systemPromptIDOrSlug *string) (*string, error) {
 	var prompt Prompt
 
-	if systemPromptIdOrSlug == nil {
+	if systemPromptIDOrSlug == nil {
 		return nil, nil
 	}
 
-	matchUUID, _ := regexp.MatchString(UUIDRegexp, *systemPromptIdOrSlug)
-	matchSlug, _ := regexp.MatchString(SlugRegexp, *systemPromptIdOrSlug)
+	matchUUID, _ := regexp.MatchString(UUIDRegexp, *systemPromptIDOrSlug)
+	matchSlug, _ := regexp.MatchString(SlugRegexp, *systemPromptIDOrSlug)
 
 	if !matchUUID && !matchSlug {
 		return nil, fmt.Errorf("Invalid identifier")
 	}
 
 	if matchUUID {
-		return systemPromptIdOrSlug, nil
+		return systemPromptIDOrSlug, nil
 	}
 
-	err := DB.Table("prompts").Select("id").Where("slug = ?", systemPromptIdOrSlug).First(&prompt).Error
+	err := DB.Table("prompts").Select("id").Where("slug = ?", systemPromptIDOrSlug).First(&prompt).Error
 
 	if err != nil {
 		return nil, err
