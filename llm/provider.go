@@ -29,6 +29,8 @@ func getAvailableModels(model string) (string, string) {
 		return "openai", "gpt-3.5-turbo"
 	case "best":
 		return "openai", "gpt-4"
+	case "uncensored":
+		return "replicate", "wizard-mega-13b-awq"
 	case "gpt-3.5-turbo":
 		return "openai", "gpt-3.5-turbo"
 	case "gpt-3.5-turbo-16k":
