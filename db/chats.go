@@ -12,7 +12,7 @@ type Chat struct {
 type ChatWithLatestMessage struct {
 	Chat
 	LatestMessageContent *string `json:"latest_message_content,omitempty"`
-	LatestMessageTime    *string `json:"latest_message_time,omitempty"`
+	LatestMessageTime    *string `json:"latest_message_created_at,omitempty"`
 }
 
 func (Chat) TableName() string {
