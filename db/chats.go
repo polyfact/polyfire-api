@@ -40,7 +40,18 @@ func CreateChat(userID string, systemPrompt *string, SystemPromptID *string, nam
 func ListChats(userID string) ([]Chat, error) {
 	var result []Chat
 
-	err := DB.Raw("SELECT * FROM chats WHERE user_id = ?", userID).Scan(&result).Error
+	err := DB.Raw(`
+	SELECT c.*, cm.content AS latest_message_content, cm.created_at AS latest_message_created_at
+	FROM chats c
+	LEFT JOIN LATERAL (
+		SELECT cm.content, cm.created_at
+		FROM chat_messages cm
+		WHERE cm.chat_id = c.id
+		ORDER BY cm.created_at DESC
+		LIMIT 1
+	) cm ON true
+	WHERE c.user_id = ?
+	`, userID).Scan(&result).Error
 	if err != nil {
 		return nil, err
 	}
