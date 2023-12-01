@@ -9,7 +9,17 @@ type Chat struct {
 	Name           *string       `json:"name"`
 }
 
+type ChatWithLatestMessage struct {
+	Chat
+	LatestMessageContent *string `json:"latest_message_content,omitempty"`
+	LatestMessageTime    *string `json:"latest_message_time,omitempty"`
+}
+
 func (Chat) TableName() string {
+	return "chats"
+}
+
+func (ChatWithLatestMessage) TableName() string {
 	return "chats"
 }
 
@@ -37,8 +47,8 @@ func CreateChat(userID string, systemPrompt *string, SystemPromptID *string, nam
 	return result, nil
 }
 
-func ListChats(userID string) ([]Chat, error) {
-	var result []Chat
+func ListChats(userID string) ([]ChatWithLatestMessage, error) {
+	var result []ChatWithLatestMessage
 
 	err := DB.Raw(`
 	SELECT c.*, cm.content AS latest_message_content, cm.created_at AS latest_message_created_at
