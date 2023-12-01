@@ -1,5 +1,9 @@
 package db
 
+import (
+	"time"
+)
+
 type Chat struct {
 	ID             string        `json:"id,omitempty"`
 	UserID         string        `json:"user_id"`
@@ -11,8 +15,8 @@ type Chat struct {
 
 type ChatWithLatestMessage struct {
 	Chat
-	LatestMessageContent *string `json:"latest_message_content,omitempty"`
-	LatestMessageTime    *string `json:"latest_message_created_at,omitempty"`
+	LatestMessageContent   *string   `json:"latest_message_content,omitempty"`
+	LatestMessageCreatedAt time.Time `json:"latest_message_created_at,omitempty"`
 }
 
 func (Chat) TableName() string {
@@ -62,6 +66,7 @@ func ListChats(userID string) ([]ChatWithLatestMessage, error) {
 	) cm ON true
 	WHERE c.user_id = ?
 	`, userID).Scan(&result).Error
+
 	if err != nil {
 		return nil, err
 	}
