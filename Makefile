@@ -100,6 +100,7 @@ create-dev-db: schema.sql
 	echo "INSERT INTO public.auth_users (id) VALUES ('12345678-9101-1121-8141-516171819202');	INSERT INTO public.projects (id, name, auth_id, free_user_init, slug, allow_anonymous_auth, dev_rate_limit) VALUES ('98765432-1012-3456-889a-987654321012', 'Default Project', '12345678-9101-1121-8141-516171819202', true, 'default', true, false);	INSERT INTO public.projects (id, name, auth_id, free_user_init, slug, allow_anonymous_auth, dev_rate_limit) VALUES ('00000000-0000-0000-0000-000000000000', '', '12345678-9101-1121-8141-516171819202', false, '', false, false); INSERT INTO auth.users (id, email) VALUES ('12345678-9101-1121-8141-516171819202', 'example@example.com');" | psql ${POSTGRES_URI}
 
 $(CODEGEN_DIRECTORY)/openrouter-models.json:
+	mkdir -p $(CODEGEN_DIRECTORY)
 	curl -s "https://openrouter.ai/api/v1/models" > $(CODEGEN_DIRECTORY)/openrouter-models.json
 
 $(CODEGEN_DIRECTORY)/openrouter-models.csv: $(CODEGEN_DIRECTORY)/openrouter-models.json
@@ -107,7 +108,6 @@ $(CODEGEN_DIRECTORY)/openrouter-models.csv: $(CODEGEN_DIRECTORY)/openrouter-mode
 	cat codegen/openrouter-models.json  | jq -r '.data[] | select(.id != "openrouter/auto") | .id+",openrouter,"+(((.pricing.prompt|tonumber)/0.0000001|ceil)|tostring)+",token_input_output,completion,"+(((.pricing.completion|tonumber)/0.0000001|ceil)|tostring)+",/openrouter.webp,OpenRouter,true,true,true,true"' >> $(CODEGEN_DIRECTORY)/openrouter-models.csv
 
 $(CODEGEN_DIRECTORY)/openrouter-models.go: $(CODEGEN_DIRECTORY)/openrouter-models.json
-	mkdir -p $(CODEGEN_DIRECTORY)
 	echo -e "// This code has been generated automatically, any change made here will be lost \npackage codegen\n\nfunc OpenRouterPrices(model string, inputTokenCount int, outputTokenCount int) int {\n\tswitch model {" > $(CODEGEN_DIRECTORY)/openrouter-models.go
 	cat $(CODEGEN_DIRECTORY)/openrouter-models.json | jq -r '.data[] | select(.id != "openrouter/auto") | "\tcase \""+ .id +"\":\n\t\treturn (inputTokenCount * "+(((.pricing.prompt|tonumber) / 0.0000001)|ceil|tostring)+") + (outputTokenCount * "+(((.pricing.completion|tonumber) / 0.0000001)|ceil|tostring)+")"' >> $(CODEGEN_DIRECTORY)/openrouter-models.go
 	echo -e "\t}\n\treturn 0\n}\n\nfunc IsOpenRouterModel(model string) bool {\n\tswitch model {" >> $(CODEGEN_DIRECTORY)/openrouter-models.go
