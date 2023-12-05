@@ -2,6 +2,8 @@ package db
 
 import (
 	"database/sql"
+
+	"github.com/polyfire/api/codegen"
 )
 
 type Kind string
@@ -38,6 +40,8 @@ func tokenToCredit(providerName string, modelName string, inputTokenCount int, o
 		case "dalle-2":
 			return 200000
 		}
+	case "openrouter":
+		return codegen.OpenRouterPrices(modelName, inputTokenCount, outputTokenCount)
 	case "llama":
 		return 0
 	case "cohere":

@@ -8,6 +8,8 @@ BIN_NAME = server_start
 
 BUILD_DIRECTORY = build
 
+CODEGEN_DIRECTORY = codegen
+
 ifndef OS
 	ifeq ($(UNAME), Linux)
 		OS = linux
@@ -18,10 +20,10 @@ endif
 
 .DEFAULT_GOAL := all
 
-all: fmt $(BUILD_DIRECTORY)/$(BIN_NAME)
+all: $(CODEGEN_DIRECTORY)/openrouter-models.go fmt $(BUILD_DIRECTORY)/$(BIN_NAME)
 
 $(BUILD_DIRECTORY)/$(BIN_NAME): api.go ./**/*.go
-	mkdir -p build
+	mkdir -p $(BUILD_DIRECTORY)
 	GOOS=$(OS) GOARCH="$(GOARCH)" go build -o $(BUILD_DIRECTORY)/$(BIN_NAME) api.go
 
 app.yaml: app.dev.yaml check-env
@@ -85,7 +87,7 @@ deploy: app.yaml
 	gcloud app deploy --quiet --version v1
 
 clean:
-	rm -f ./build/* app.yaml
+	rm -f $(BUILD_DIRECTORY)/* app.yaml $(CODEGEN_DIRECTORY)/*
 
 fmt:
 	go fmt $$(go list ./...)
@@ -97,4 +99,22 @@ create-dev-db: schema.sql
 	psql ${POSTGRES_URI} -f schema.sql
 	echo "INSERT INTO public.auth_users (id) VALUES ('12345678-9101-1121-8141-516171819202');	INSERT INTO public.projects (id, name, auth_id, free_user_init, slug, allow_anonymous_auth, dev_rate_limit) VALUES ('98765432-1012-3456-889a-987654321012', 'Default Project', '12345678-9101-1121-8141-516171819202', true, 'default', true, false);	INSERT INTO public.projects (id, name, auth_id, free_user_init, slug, allow_anonymous_auth, dev_rate_limit) VALUES ('00000000-0000-0000-0000-000000000000', '', '12345678-9101-1121-8141-516171819202', false, '', false, false); INSERT INTO auth.users (id, email) VALUES ('12345678-9101-1121-8141-516171819202', 'example@example.com');" | psql ${POSTGRES_URI}
 
-.PHONY: clean fmt check-env deploy create-dev-db
+$(CODEGEN_DIRECTORY)/openrouter-models.json:
+	curl -s "https://openrouter.ai/api/v1/models" > $(CODEGEN_DIRECTORY)/openrouter-models.json
+
+$(CODEGEN_DIRECTORY)/openrouter-models.csv: $(CODEGEN_DIRECTORY)/openrouter-models.json
+	echo "model,provider,credit_input,credit_type,type,credit_output,image_url,official_name,hidden,option_stream,option_temperature,option_stop" > $(CODEGEN_DIRECTORY)/openrouter-models.csv
+	cat codegen/openrouter-models.json  | jq -r '.data[] | select(.id != "openrouter/auto") | .id+",openrouter,"+(((.pricing.prompt|tonumber)/0.0000001|ceil)|tostring)+",token_input_output,completion,"+(((.pricing.completion|tonumber)/0.0000001|ceil)|tostring)+",/openrouter.webp,OpenRouter,true,true,true,true"' >> $(CODEGEN_DIRECTORY)/openrouter-models.csv
+
+$(CODEGEN_DIRECTORY)/openrouter-models.go: $(CODEGEN_DIRECTORY)/openrouter-models.json
+	mkdir -p $(CODEGEN_DIRECTORY)
+	echo -e "// This code has been generated automatically, any change made here will be lost \npackage codegen\n\nfunc OpenRouterPrices(model string, inputTokenCount int, outputTokenCount int) int {\n\tswitch model {" > $(CODEGEN_DIRECTORY)/openrouter-models.go
+	cat $(CODEGEN_DIRECTORY)/openrouter-models.json | jq -r '.data[] | select(.id != "openrouter/auto") | "\tcase \""+ .id +"\":\n\t\treturn (inputTokenCount * "+(((.pricing.prompt|tonumber) / 0.0000001)|ceil|tostring)+") + (outputTokenCount * "+(((.pricing.completion|tonumber) / 0.0000001)|ceil|tostring)+")"' >> $(CODEGEN_DIRECTORY)/openrouter-models.go
+	echo -e "\t}\n\treturn 0\n}\n\nfunc IsOpenRouterModel(model string) bool {\n\tswitch model {" >> $(CODEGEN_DIRECTORY)/openrouter-models.go
+	cat $(CODEGEN_DIRECTORY)/openrouter-models.json | jq -r '.data[] | select(.id != "openrouter/auto") | "\tcase \""+ .id +"\":\n\t\treturn true"' >> $(CODEGEN_DIRECTORY)/openrouter-models.go
+	echo -e "\t}\n\t return false\n}" >> $(CODEGEN_DIRECTORY)/openrouter-models.go
+
+update-operouter-models: check-env $(CODEGEN_DIRECTORY)/openrouter-models.csv
+	psql ${POSTGRES_URI} -f scripts/update_openrouter_models.sql
+
+.PHONY: clean fmt check-env deploy create-dev-db update-openrouter-models

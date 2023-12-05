@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/polyfire/api/codegen"
 	"github.com/polyfire/api/db"
 	"github.com/polyfire/api/llm/providers"
 	"github.com/polyfire/api/llm/providers/options"
@@ -49,6 +50,9 @@ func getAvailableModels(model string) (string, string) {
 		return "replicate", "airoboros-llama-2-70b"
 	case "":
 		return "openai", "gpt-3.5-turbo"
+	}
+	if codegen.IsOpenRouterModel(model) {
+		return "openrouter", model
 	}
 	return "", ""
 }
@@ -97,6 +101,11 @@ func NewProvider(ctx context.Context, modelInput string) (Provider, error) {
 	case "replicate":
 		fmt.Println("Using Replicate")
 		llm := providers.NewReplicateProvider(ctx, model)
+		return llm, nil
+	case "openrouter":
+		fmt.Println("Using OpenRouter")
+		llm := providers.NewOpenRouterProvider(ctx, model)
+
 		return llm, nil
 	default:
 		return nil, ErrUnknownModel
