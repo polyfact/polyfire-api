@@ -117,4 +117,6 @@ $(CODEGEN_DIRECTORY)/openrouter-models.go: $(CODEGEN_DIRECTORY)/openrouter-model
 update-operouter-models: check-env $(CODEGEN_DIRECTORY)/openrouter-models.csv
 	psql ${POSTGRES_URI} -f scripts/update_openrouter_models.sql
 
-.PHONY: clean fmt check-env deploy create-dev-db update-openrouter-models
+codegen: $(CODEGEN_DIRECTORY)/openrouter-models.go
+
+.PHONY: clean fmt check-env deploy create-dev-db update-openrouter-models codegen
