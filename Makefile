@@ -31,6 +31,7 @@ app.yaml: app.dev.yaml check-env
 	| sed "s#{{SUPABASE_URL}}#${SUPABASE_URL}#" \
 	| sed "s/{{SUPABASE_KEY}}/${SUPABASE_KEY}/" \
 	| sed "s/{{OPENAI_API_KEY}}/${OPENAI_API_KEY}/" \
+	| sed "s/{{OPENROUTER_API_KEY}}/${OPENROUTER_API_KEY}/" \
 	| sed "s/{{COHERE_API_KEY}}/${COHERE_API_KEY}/" \
 	| sed "s/{{OPENAI_ORGANIZATION}}/${OPENAI_ORGANIZATION}/" \
 	| sed "s/{{POSTHOG_API_KEY}}/${POSTHOG_API_KEY}/" \
@@ -51,6 +52,9 @@ ifndef SUPABASE_KEY
 endif
 ifndef OPENAI_API_KEY
 	$(error OPENAI_API_KEY is undefined)
+endif
+ifndef OPENROUTER_API_KEY
+	$(error OPENROUTER_API_KEY is undefined)
 endif
 ifndef COHERE_API_KEY
 	$(error COHERE_API_KEY is undefined)
