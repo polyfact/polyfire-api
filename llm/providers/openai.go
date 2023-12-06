@@ -19,6 +19,7 @@ type OpenAIStreamProvider struct {
 	client        goOpenai.Client
 	Model         string
 	IsCustomToken bool
+	Provider      string
 }
 
 func NewOpenAIStreamProvider(ctx context.Context, model string) OpenAIStreamProvider {
@@ -38,10 +39,12 @@ func NewOpenAIStreamProvider(ctx context.Context, model string) OpenAIStreamProv
 		config.OrgID = os.Getenv("OPENAI_ORGANIZATION")
 		isCustomToken = false
 	}
+
 	return OpenAIStreamProvider{
 		client:        *goOpenai.NewClientWithConfig(config),
 		Model:         model,
 		IsCustomToken: isCustomToken,
+		Provider:      "openai",
 	}
 }
 
@@ -121,7 +124,7 @@ func (m OpenAIStreamProvider) Generate(
 			chanRes <- result
 		}
 		if c != nil {
-			(*c)("openai", m.Model, tokenUsage.Input, totalOutput, totalCompletion, nil)
+			(*c)(m.Provider, m.Model, tokenUsage.Input, totalOutput, totalCompletion, nil)
 		}
 	}()
 
@@ -129,11 +132,11 @@ func (m OpenAIStreamProvider) Generate(
 }
 
 func (m OpenAIStreamProvider) Name() string {
-	return "openai"
+	return m.Provider
 }
 
 func (m OpenAIStreamProvider) ProviderModel() (string, string) {
-	return "openai", m.Model
+	return m.Provider, m.Model
 }
 
 func (m OpenAIStreamProvider) DoesFollowRateLimit() bool {
