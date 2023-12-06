@@ -109,7 +109,7 @@ $(CODEGEN_DIRECTORY)/openrouter-models.json:
 
 $(CODEGEN_DIRECTORY)/openrouter-models.csv: $(CODEGEN_DIRECTORY)/openrouter-models.json
 	printf "model,provider,credit_input,credit_type,type,credit_output,image_url,official_name,hidden,option_stream,option_temperature,option_stop" > $(CODEGEN_DIRECTORY)/openrouter-models.csv
-	cat codegen/openrouter-models.json  | jq -r '.data[] | select(.id != "openrouter/auto") | .id+",openrouter,"+(((.pricing.prompt|tonumber)/0.0000001|ceil)|tostring)+",token_input_output,completion,"+(((.pricing.completion|tonumber)/0.0000001|ceil)|tostring)+",/openrouter.webp,OpenRouter,true,true,true,true"' >> $(CODEGEN_DIRECTORY)/openrouter-models.csv
+	cat codegen/openrouter-models.json  | jq -r '.data[] | select(.id != "openrouter/auto") | .id+",openrouter,"+(((.pricing.prompt|tonumber)/0.0000001|ceil)|tostring)+",token_input_output,completion,"+(((.pricing.completion|tonumber)/0.0000001|ceil)|tostring)+",/openrouter.webp,OpenRouter,false,true,true,true"' >> $(CODEGEN_DIRECTORY)/openrouter-models.csv
 
 $(CODEGEN_DIRECTORY)/openrouter-models.go: $(CODEGEN_DIRECTORY)/openrouter-models.json
 	printf "// This code has been generated automatically, any change made here will be lost \npackage codegen\n\nfunc OpenRouterPrices(model string, inputTokenCount int, outputTokenCount int) int {\n\tswitch model {" > $(CODEGEN_DIRECTORY)/openrouter-models.go
@@ -118,7 +118,7 @@ $(CODEGEN_DIRECTORY)/openrouter-models.go: $(CODEGEN_DIRECTORY)/openrouter-model
 	cat $(CODEGEN_DIRECTORY)/openrouter-models.json | jq -r '.data[] | select(.id != "openrouter/auto") | "\tcase \""+ .id +"\":\n\t\treturn true"' >> $(CODEGEN_DIRECTORY)/openrouter-models.go
 	 printf "\t}\n\t return false\n}" >> $(CODEGEN_DIRECTORY)/openrouter-models.go
 
-update-operouter-models: check-env $(CODEGEN_DIRECTORY)/openrouter-models.csv
+update-openrouter-models: check-env $(CODEGEN_DIRECTORY)/openrouter-models.csv
 	psql ${POSTGRES_URI} -f scripts/update_openrouter_models.sql
 
 codegen: $(CODEGEN_DIRECTORY)/openrouter-models.go
