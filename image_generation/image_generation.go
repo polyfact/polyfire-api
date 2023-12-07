@@ -41,7 +41,7 @@ func ImageGeneration(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	userID := r.Context().Value(utils.ContextKeyUserID).(string)
 	request, _ := json.Marshal(r.URL.Query())
 	prompt := r.URL.Query().Get("p")
-	provider := r.URL.Query().Get("provider")
+	model := r.URL.Query().Get("model")
 	recordEventRequest := r.Context().Value(utils.ContextKeyRecordEventRequest).(utils.RecordRequestFunc)
 
 	var record utils.RecordFunc = func(response string, props ...utils.KeyValue) {
@@ -61,16 +61,16 @@ func ImageGeneration(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		return
 	}
 
-	if provider == "" {
-		provider = "openai"
+	if model == "" {
+		model = "dalle-2"
 	}
 
-	if provider != "openai" {
-		utils.RespondError(w, record, "unknown_model_provider")
+	if model != "dalle-2" && model != "dalle-3" {
+		utils.RespondError(w, record, "unknown_model")
 		return
 	}
 
-	reader, err := DALLEGenerate(r.Context(), prompt)
+	reader, err := DALLEGenerate(r.Context(), prompt, model)
 
 	db.LogRequests(
 		r.Context().Value(utils.ContextKeyEventID).(string),

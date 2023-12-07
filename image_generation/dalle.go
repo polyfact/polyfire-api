@@ -1,44 +1,63 @@
 package imagegeneration
 
 import (
+	"bytes"
 	"context"
+	"encoding/base64"
+	"fmt"
 	"io"
 	"os"
-	"time"
 
 	"github.com/polyfire/api/utils"
-	openai "github.com/rakyll/openai-go"
-	image "github.com/rakyll/openai-go/image"
+	openai "github.com/sashabaranov/go-openai"
 )
 
-func DALLEGenerate(ctx context.Context, prompt string) (io.Reader, error) {
-	var session *openai.Session
+func ModelToOpenAIFormat(model string) string {
+	switch model {
+	case "dalle-2":
+		return "dall-e-2"
+	case "dalle-3":
+		return "dall-e-3"
+	}
+	return "dall-e-2"
+}
+
+func DALLEGenerate(ctx context.Context, prompt string, model string) (io.Reader, error) {
+	var config openai.ClientConfig
 	customToken, ok := ctx.Value(utils.ContextKeyOpenAIToken).(string)
 	if ok {
-		session = openai.NewSession(customToken)
+		config = openai.DefaultConfig(customToken)
 		customOrg, ok := ctx.Value(utils.ContextKeyOpenAIOrg).(string)
 		if ok {
-			(*session).OrganizationID = customOrg
+			config.OrgID = customOrg
 		}
 	} else {
-		session = openai.NewSession(os.Getenv("OPENAI_API_KEY"))
-		(*session).OrganizationID = os.Getenv("OPENAI_ORGANIZATION")
+		config = openai.DefaultConfig(os.Getenv("OPENAI_API_KEY"))
+		config.OrgID = os.Getenv("OPENAI_ORGANIZATION")
+	}
+	client := openai.NewClientWithConfig(config)
+
+	req := openai.ImageRequest{
+		Prompt:         prompt,
+		Model:          ModelToOpenAIFormat(model),
+		Size:           openai.CreateImageSize1024x1024,
+		ResponseFormat: openai.CreateImageResponseFormatB64JSON,
+		N:              1,
 	}
 
-	(*((*session).HTTPClient)).Timeout = 600 * time.Second
-
-	client := image.NewClient(session)
-
-	params := image.CreateParams{
-		Prompt: prompt,
-	}
-
-	imageGenerationCtx := context.Background()
-
-	response, err := client.Create(imageGenerationCtx, &params)
+	respBase64, err := client.CreateImage(ctx, req)
 	if err != nil {
+		fmt.Println(err)
 		return nil, err
 	}
 
-	return (response.Data[0]).Reader()
+	imgBytes, err := base64.StdEncoding.DecodeString(respBase64.Data[0].B64JSON)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+
+	r := bytes.NewReader(imgBytes)
+
+	return r, nil
 }
