@@ -87,7 +87,7 @@ ifndef DEEPGRAM_API_KEY
 	$(error DEEPGRAM_API_KEY is undefined)
 endif
 
-deploy: app.yaml
+deploy: app.yaml codegen
 	gcloud app deploy --quiet --version v1
 
 clean:
