@@ -29,7 +29,7 @@ func DALLEGenerate(ctx context.Context, prompt string, model string) (io.Reader,
 
 	req := openai.ImageRequest{
 		Prompt:         prompt,
-		Model:          ModelToOpenAIFormat(model),
+		Model:          model,
 		Size:           openai.CreateImageSize1024x1024,
 		ResponseFormat: openai.CreateImageResponseFormatB64JSON,
 		N:              1,
