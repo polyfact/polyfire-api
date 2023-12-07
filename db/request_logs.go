@@ -37,8 +37,10 @@ func tokenToCredit(providerName string, modelName string, inputTokenCount int, o
 			return (inputTokenCount * 600) + (outputTokenCount * 1200)
 		case "text-embedding-ada-002":
 			return inputTokenCount * 1
-		case "dalle-2":
+		case "dall-e-2":
 			return 200000
+		case "dall-e-3":
+			return 800000
 		}
 	case "openrouter":
 		return codegen.OpenRouterPrices(modelName, inputTokenCount, outputTokenCount)
