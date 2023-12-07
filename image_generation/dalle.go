@@ -12,16 +12,6 @@ import (
 	openai "github.com/sashabaranov/go-openai"
 )
 
-func ModelToOpenAIFormat(model string) string {
-	switch model {
-	case "dalle-2":
-		return "dall-e-2"
-	case "dalle-3":
-		return "dall-e-3"
-	}
-	return "dall-e-2"
-}
-
 func DALLEGenerate(ctx context.Context, prompt string, model string) (io.Reader, error) {
 	var config openai.ClientConfig
 	customToken, ok := ctx.Value(utils.ContextKeyOpenAIToken).(string)

@@ -62,10 +62,10 @@ func ImageGeneration(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	}
 
 	if model == "" {
-		model = "dalle-2"
+		model = "dall-e-2"
 	}
 
-	if model != "dalle-2" && model != "dalle-3" {
+	if model != "dall-e-2" && model != "dall-e-3" {
 		utils.RespondError(w, record, "unknown_model")
 		return
 	}
@@ -74,7 +74,7 @@ func ImageGeneration(w http.ResponseWriter, r *http.Request, _ router.Params) {
 
 	db.LogRequests(
 		r.Context().Value(utils.ContextKeyEventID).(string),
-		userID, "openai", "dalle-2", 0, 0, "image", true)
+		userID, "openai", model, 0, 0, "image", true)
 
 	if err != nil {
 		utils.RespondError(w, record, "image_generation_error")
