@@ -66,7 +66,6 @@ func ListChats(userID string) ([]ChatWithLatestMessage, error) {
 	) cm ON true
 	WHERE c.user_id = ?
 	`, userID).Scan(&result).Error
-
 	if err != nil {
 		return nil, err
 	}
@@ -99,12 +98,27 @@ type ChatMessage struct {
 	CreatedAt     string  `json:"created_at"`
 }
 
-func GetChatMessages(userID string, chatID string) ([]ChatMessage, error) {
-	results := make([]ChatMessage, 0)
+func (ChatMessage) TableName() string {
+	return "chat_messages"
+}
 
-	err := DB.Raw("SELECT chat_messages.* FROM chat_messages JOIN chats ON chats.id = chat_messages.chat_id WHERE chats.id = ? AND chats.user_id = ? ORDER BY chat_messages.created_at DESC LIMIT 20", chatID, userID).
-		Scan(&results).
-		Error
+func GetChatMessages(userID string, chatID string, orderByDESC bool, limit int, offset int) ([]ChatMessage, error) {
+	var results []ChatMessage
+
+	query := DB.
+		Select("chat_messages.*").
+		Joins("JOIN chats ON chats.id = chat_messages.chat_id").
+		Where("chats.id = ? AND chats.user_id = ?", chatID, userID)
+
+	if orderByDESC {
+		query = query.Order("chat_messages.created_at DESC")
+	} else {
+		query = query.Order("chat_messages.created_at ASC")
+	}
+
+	query = query.Limit(limit).Offset(offset)
+
+	err := query.Find(&results).Error
 	if err != nil {
 		return nil, err
 	}

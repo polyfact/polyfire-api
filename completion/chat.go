@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strconv"
+	"strings"
 
 	router "github.com/julienschmidt/httprouter"
 	"github.com/polyfire/api/db"
@@ -28,7 +30,6 @@ func CreateChat(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	}
 
 	systemPromptID, err := db.RetrieveSystemPromptID(requestBody.SystemPromptID)
-
 	if err != nil {
 		utils.RespondError(w, record, "error_retrieving_system_prompt_id")
 		return
@@ -106,10 +107,26 @@ func ListChat(w http.ResponseWriter, r *http.Request, _ router.Params) {
 
 func GetChatHistory(w http.ResponseWriter, r *http.Request, ps router.Params) {
 	id := ps.ByName("id")
+	orderByParam := r.URL.Query().Get("orderBy")
+	limitParam := r.URL.Query().Get("limit")
+	offsetParam := r.URL.Query().Get("offset")
+
 	userID := r.Context().Value(utils.ContextKeyUserID).(string)
 	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
 
-	messages, err := db.GetChatMessages(userID, id)
+	orderByDESC := true
+	if strings.ToLower(orderByParam) == "asc" || orderByParam == "1" {
+		orderByDESC = false
+	}
+
+	limit := 20
+	if val, err := strconv.Atoi(limitParam); err == nil {
+		limit = val
+	}
+
+	offset, _ := strconv.Atoi(offsetParam)
+
+	messages, err := db.GetChatMessages(userID, id, orderByDESC, limit, offset)
 	if err != nil {
 		utils.RespondError(w, record, "error_chat_history")
 		return
