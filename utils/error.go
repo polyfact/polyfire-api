@@ -84,6 +84,11 @@ var ErrorMessages = map[string]APIError{
 		Message:    "This model can only be accessed by premium projects",
 		StatusCode: http.StatusForbidden,
 	},
+	"dev_not_premium": {
+		Code:       "dev_not_premium",
+		Message:    "The Polyfire developper account needs to be premium to make this request. If your seeing this without being the app developper, please contact the app developper.",
+		StatusCode: http.StatusUnauthorized,
+	},
 	"invalid_origin": {
 		Code:       "invalid_origin",
 		Message:    "The origin of the request is not allowed for this project",

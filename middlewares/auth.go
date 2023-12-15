@@ -109,7 +109,13 @@ func authenticateAndHandle(
 		return
 	}
 
+	if err == db.ErrDevNotPremium {
+		utils.RespondError(w, record, "dev_not_premium")
+		return
+	}
+
 	if err != nil {
+		fmt.Println(err)
 		utils.RespondError(w, record, "database_error")
 		return
 	}
