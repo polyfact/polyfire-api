@@ -17,7 +17,6 @@ UPDATE models
 SET
 	credit_input = openrouter_models.credit_input,
   credit_output = openrouter_models.credit_output,
-  hidden = openrouter_models.hidden,
   option_stream = openrouter_models.option_stream,
   option_temperature = openrouter_models.option_temperature,
   option_stop = openrouter_models.option_stop
