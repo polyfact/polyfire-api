@@ -13,6 +13,7 @@ import (
 	kv "github.com/polyfire/api/kv"
 	memory "github.com/polyfire/api/memory"
 	middlewares "github.com/polyfire/api/middlewares"
+	stripe "github.com/polyfire/api/stripe"
 	stt "github.com/polyfire/api/stt"
 	tts "github.com/polyfire/api/tts"
 	utils "github.com/polyfire/api/utils"
@@ -54,6 +55,8 @@ func main() {
 	router.GET("/auth/id", middlewares.Record(utils.AuthID, middlewares.Auth(auth.GetAuthID)))
 
 	router.GET("/usage", middlewares.Record(utils.Usage, middlewares.Auth(auth.UserRateLimit)))
+
+	router.GET("/stripe/payment-link", middlewares.Record(utils.StripePaymentLink, middlewares.Auth(stripe.PaymentLink)))
 
 	// Completion Routes
 	router.POST("/generate", middlewares.Record(utils.Generate, middlewares.Auth(completion.Generate)))

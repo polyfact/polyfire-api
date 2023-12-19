@@ -74,4 +74,6 @@ const (
 	PromptCreate EventType = "data.prompt.create"
 	PromptUpdate EventType = "data.prompt.update"
 	PromptDelete EventType = "data.prompt.delete"
+
+	StripePaymentLink EventType = "stripe.paymentlink"
 )
