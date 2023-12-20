@@ -10,7 +10,7 @@ import (
 )
 
 type PaymentLinkResponse struct {
-	url string `json:"url"`
+	URL string `json:"url"`
 }
 
 func PaymentLink(w http.ResponseWriter, r *http.Request, _ router.Params) {
@@ -24,7 +24,7 @@ func PaymentLink(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	}
 
 	result := PaymentLinkResponse{
-		url: project.StripePaymentLink,
+		URL: project.StripePaymentLink,
 	}
 
 	response, _ := json.Marshal(&result)
