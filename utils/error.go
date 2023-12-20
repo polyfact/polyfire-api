@@ -101,11 +101,6 @@ var ErrorMessages = map[string]APIError{
 		Message:    "Failed to establish communication. Please try again later.",
 		StatusCode: http.StatusBadRequest,
 	},
-	"invalid_content_type": {
-		Code:       "invalid_content_type",
-		Message:    "Expected 'application/json' content type.",
-		StatusCode: http.StatusBadRequest,
-	},
 	"invalid_json": {
 		Code:       "invalid_json",
 		Message:    "Failed to decode request body. Ensure valid JSON format.",

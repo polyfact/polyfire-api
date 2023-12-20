@@ -24,7 +24,8 @@ type GenerateRequestBody struct {
 	SystemPrompt   *string     `json:"system_prompt,omitempty"`
 	WebRequest     bool        `json:"web,omitempty"`
 	Language       *string     `json:"language,omitempty"`
-	Cache          bool        `json:"cache,omitempty"`
+	FuzzyCache     bool        `json:"fuzzy_cache,omitempty"`
+	Cache          *bool       `json:"cache,omitempty"`
 	Infos          bool        `json:"infos,omitempty"`
 	AutoComplete   bool        `json:"auto_complete,omitempty"`
 }
@@ -116,20 +117,36 @@ func GenerationStart(ctx context.Context, userID string, input GenerateRequestBo
 	fmt.Println("Prompt: " + prompt)
 
 	var result chan options.Result
+
 	var embeddings []float32
 
-	// Check for cache hits
-	if input.Cache {
-		result, embeddings, err = CheckCache(ctx, prompt, providerName, modelName)
-		if err != nil {
-			return nil, err
-		}
-		if result != nil {
-			return &result, nil
-		}
+	if input.Temperature != nil && *(input.Temperature) == 0.0 && (input.Cache == nil || *(input.Cache)) {
+		result, err = CheckExactCache(prompt, providerName, modelName)
 	}
 
-	// Generate
+	if err != nil {
+		return nil, err
+	}
+
+	if result != nil {
+		return &result, nil
+	}
+
+	// The fuzzy cache check for "close enough" embeddings.
+	// It can reduce costs a lot in some cases but might lead to data leakage.
+	// It should never be used in places with user personnal informations.
+	if input.FuzzyCache {
+		result, embeddings, err = CheckFuzzyCache(ctx, prompt, providerName, modelName)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	if result != nil {
+		return &result, nil
+	}
+
 	log.Println("Generate")
 	resChan := provider.Generate(prompt, &callback, &opts)
 
@@ -148,8 +165,9 @@ func GenerationStart(ctx context.Context, userID string, input GenerateRequestBo
 			totalCompletion += res.Result
 		}
 		result <- options.Result{Resources: resources, Warnings: warnings}
-		if input.Cache {
-			_ = db.AddCompletionCache(embeddings, totalCompletion, providerName, modelName)
+		if (input.Temperature != nil && *(input.Temperature) == 0.0 && (input.Cache == nil || *(input.Cache))) ||
+			input.FuzzyCache {
+			_ = db.AddCompletionCache(embeddings, prompt, totalCompletion, providerName, modelName, input.FuzzyCache)
 		}
 	}()
 	return &result, nil

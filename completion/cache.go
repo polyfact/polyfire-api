@@ -9,7 +9,7 @@ import (
 	options "github.com/polyfire/api/llm/providers/options"
 )
 
-func CheckCache(
+func CheckFuzzyCache(
 	ctx context.Context,
 	prompt string,
 	providerName string,
@@ -26,7 +26,7 @@ func CheckCache(
 	}
 
 	if cache != nil {
-		log.Println("Cache hit")
+		log.Println("Fuzzy Cache hit")
 
 		result := make(chan options.Result)
 		go func() {
@@ -37,4 +37,28 @@ func CheckCache(
 	}
 
 	return nil, embeddings, nil
+}
+
+func CheckExactCache(
+	prompt string,
+	providerName string,
+	modelName string,
+) (chan options.Result, error) {
+	cache, err := db.GetExactCompletionCacheByHash(providerName, modelName, prompt)
+	if err != nil {
+		return nil, err
+	}
+
+	if cache != nil {
+		log.Println("Cache hit")
+
+		result := make(chan options.Result)
+		go func() {
+			defer close(result)
+			result <- options.Result{Result: cache.Result}
+		}()
+		return result, nil
+	}
+
+	return nil, nil
 }

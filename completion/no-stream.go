@@ -41,11 +41,6 @@ func Generate(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	userID := r.Context().Value(utils.ContextKeyUserID).(string)
 	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
 
-	if len(r.Header["Content-Type"]) == 0 || r.Header["Content-Type"][0] != "application/json" {
-		utils.RespondError(w, record, "invalid_content_type")
-		return
-	}
-
 	var input GenerateRequestBody
 
 	err := json.NewDecoder(r.Body).Decode(&input)
