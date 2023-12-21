@@ -47,7 +47,14 @@ func RedirectAuth(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 
 	project, err := db.GetProjectByID(projectID)
 	if err != nil {
-		http.Error(w, "This project was not found", http.StatusBadRequest)
+		http.Error(
+			w,
+			fmt.Sprintf(
+				"The project \"%s\" was not found.\n\nIf you're not the app developer, please contact the developer.\n\nIf you are the developer, please check your project-id. If you're using React, it should be in the PolyfireProvider \"project\" props. You can find it on https://beta.polyfire.com/.\n",
+				projectID,
+			),
+			http.StatusBadRequest,
+		)
 		return
 	}
 
