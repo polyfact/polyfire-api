@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/polyfire/api/codegen"
-	"github.com/polyfire/api/db"
+	database "github.com/polyfire/api/db"
 	"github.com/polyfire/api/llm/providers"
 	"github.com/polyfire/api/llm/providers/options"
 	"github.com/polyfire/api/utils"
@@ -59,7 +59,8 @@ func getAvailableModels(model string) (string, string) {
 	return "", ""
 }
 
-func getModelWithAliases(modelAlias string, projectID string) (string, string) {
+func getModelWithAliases(ctx context.Context, modelAlias string, projectID string) (string, string) {
+	db := ctx.Value(utils.ContextKeyDB).(database.DB)
 	provider, model := getAvailableModels(modelAlias)
 
 	if model == "" {
@@ -79,7 +80,7 @@ func NewProvider(ctx context.Context, modelInput string) (Provider, error) {
 	projectID, _ := ctx.Value(utils.ContextKeyProjectID).(string)
 	fmt.Println("Project ID: ", projectID)
 
-	provider, model := getModelWithAliases(modelInput, projectID)
+	provider, model := getModelWithAliases(ctx, modelInput, projectID)
 
 	fmt.Println("Provider: ", provider)
 

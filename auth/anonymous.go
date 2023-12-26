@@ -1,15 +1,18 @@
 package auth
 
 import (
+	"context"
 	"encoding/base64"
 	"fmt"
 	"net/mail"
 	"strings"
 
-	db "github.com/polyfire/api/db"
+	database "github.com/polyfire/api/db"
+	"github.com/polyfire/api/utils"
 )
 
-func getUserFromAnonymousToken(token string, projectID string) (string, string, error) {
+func getUserFromAnonymousToken(ctx context.Context, token string, projectID string) (string, string, error) {
+	db := ctx.Value(utils.ContextKeyDB).(database.DB)
 	project, err := db.GetProjectByID(projectID)
 	if err != nil {
 		return "", "", err

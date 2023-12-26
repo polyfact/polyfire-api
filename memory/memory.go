@@ -10,7 +10,7 @@ import (
 	router "github.com/julienschmidt/httprouter"
 	textsplitter "github.com/tmc/langchaingo/textsplitter"
 
-	db "github.com/polyfire/api/db"
+	database "github.com/polyfire/api/db"
 	"github.com/polyfire/api/llm"
 	"github.com/polyfire/api/utils"
 )
@@ -18,6 +18,7 @@ import (
 const BatchSize int = 512
 
 func Create(w http.ResponseWriter, r *http.Request, _ router.Params) {
+	db := r.Context().Value(utils.ContextKeyDB).(database.DB)
 	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
 	userID, ok := r.Context().Value(utils.ContextKeyUserID).(string)
 	if !ok {
@@ -47,7 +48,7 @@ func Create(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	memory := db.Memory{ID: memoryID, UserID: userID, Public: *requestBody.Public}
+	memory := database.Memory{ID: memoryID, UserID: userID, Public: *requestBody.Public}
 
 	response, _ := json.Marshal(&memory)
 	record(string(response))
@@ -58,6 +59,7 @@ func Create(w http.ResponseWriter, r *http.Request, _ router.Params) {
 }
 
 func Add(w http.ResponseWriter, r *http.Request, _ router.Params) {
+	db := r.Context().Value(utils.ContextKeyDB).(database.DB)
 	decoder := json.NewDecoder(r.Body)
 	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
 	userID := r.Context().Value(utils.ContextKeyUserID).(string)
@@ -120,6 +122,7 @@ func Add(w http.ResponseWriter, r *http.Request, _ router.Params) {
 }
 
 func Get(w http.ResponseWriter, r *http.Request, _ router.Params) {
+	db := r.Context().Value(utils.ContextKeyDB).(database.DB)
 	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
 	userID, ok := r.Context().Value(utils.ContextKeyUserID).(string)
 	if !ok {
@@ -148,7 +151,8 @@ func Get(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	_ = json.NewEncoder(w).Encode(response)
 }
 
-func Embedder(ctx context.Context, userID string, memoryID []string, task string) ([]db.MatchResult, error) {
+func Embedder(ctx context.Context, userID string, memoryID []string, task string) ([]database.MatchResult, error) {
+	db := ctx.Value(utils.ContextKeyDB).(database.DB)
 	callback := func(model_name string, input_count int) {
 		db.LogRequests(
 			ctx.Value(utils.ContextKeyEventID).(string),
@@ -190,7 +194,7 @@ func Search(w http.ResponseWriter, r *http.Request, p router.Params) {
 		return
 	}
 
-	response := map[string][]db.MatchResult{"results": results}
+	response := map[string][]database.MatchResult{"results": results}
 
 	w.Header().Set("Content-Type", "application/json")
 

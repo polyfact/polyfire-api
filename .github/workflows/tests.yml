@@ -1,0 +1,27 @@
+name: tests
+on:
+  push:
+    branches:
+      - master
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    name: tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
+        with:
+          go-version: '1.20'
+          cache: false
+      - id: 'codegen'
+        name: 'Launching code generation'
+        run: 'make codegen'
+      - name: 'tests'
+        name: 'Launching tests'
+        run: 'make test'

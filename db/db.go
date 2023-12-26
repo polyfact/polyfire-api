@@ -9,16 +9,18 @@ import (
 	"gorm.io/gorm"
 )
 
-var DB gorm.DB
+type DB struct {
+	sql gorm.DB
+}
 
-func InitDB() {
+func InitDB() DB {
 	db, err := gorm.Open(postgres.Open(os.Getenv("POSTGRES_URI")), &gorm.Config{})
 	if err != nil {
 		fmt.Println("POSTGRES_URI: ", os.Getenv("POSTGRES_URI"))
 		panic("POSTGRES_URI: " + os.Getenv("POSTGRES_URI"))
 	}
 
-	DB = *db
+	return DB{sql: *db}
 }
 
 func CreateClient() (*postgrest.Client, error) {

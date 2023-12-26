@@ -47,10 +47,10 @@ type UserInfos struct {
 	ProjectUserID        string      `json:"project_user_id"`
 }
 
-func getUserInfos(userID string) (*UserInfos, error) {
+func (db DB) getUserInfos(userID string) (*UserInfos, error) {
 	var userInfos UserInfos
 
-	err := DB.Raw(`
+	err := db.sql.Raw(`
 		SELECT
 			dev_users.premium as premium,
 			COALESCE((SELECT SUM(credits) FROM get_logs_per_projects(dev_users.id, now()::timestamp, (now() - interval '1' month)::timestamp)), 0) as dev_usage,
@@ -85,8 +85,8 @@ func getUserInfos(userID string) (*UserInfos, error) {
 	return &userInfos, nil
 }
 
-func CheckDBVersionRateLimit(userID string, version int) (*UserInfos, RateLimitStatus, CreditsStatus, error) {
-	userInfos, err := getUserInfos(userID)
+func (db DB) CheckDBVersionRateLimit(userID string, version int) (*UserInfos, RateLimitStatus, CreditsStatus, error) {
+	userInfos, err := db.getUserInfos(userID)
 	if err != nil {
 		return nil, RateLimitStatusNone, CreditsStatusNone, err
 	}
@@ -119,8 +119,8 @@ func CheckDBVersionRateLimit(userID string, version int) (*UserInfos, RateLimitS
 	return userInfos, rateLimitStatus, creditsStatus, nil
 }
 
-func RemoveCreditsFromDev(userID string, credits int) error {
-	return DB.Exec(
+func (db DB) RemoveCreditsFromDev(userID string, credits int) error {
+	return db.sql.Exec(
 		`UPDATE auth_users SET credits = credits - ? WHERE id = (SELECT auth_users.id FROM project_users JOIN projects ON project_users.project_id = projects.id JOIN auth_users ON auth_users.id = projects.auth_id::text WHERE project_users.id = try_cast_uuid(?) LIMIT 1)`,
 		credits,
 		userID,
@@ -133,8 +133,8 @@ type RefreshToken struct {
 	ProjectID            string `json:"project_id"`
 }
 
-func CreateRefreshToken(refreshToken string, refreshTokenSupabase string, projectID string) error {
-	err := DB.Exec(`
+func (db DB) CreateRefreshToken(refreshToken string, refreshTokenSupabase string, projectID string) error {
+	err := db.sql.Exec(`
 		INSERT INTO refresh_tokens (refresh_token, refresh_token_supabase, project_id)
 		VALUES (@refresh_token, @refresh_token_supabase, @project_id)
 	`, sql.Named("refresh_token", refreshToken), sql.Named("refresh_token_supabase", refreshTokenSupabase), sql.Named("project_id", projectID)).Error
@@ -145,10 +145,10 @@ func CreateRefreshToken(refreshToken string, refreshTokenSupabase string, projec
 	return nil
 }
 
-func GetAndDeleteRefreshToken(refreshToken string) (*RefreshToken, error) {
+func (db DB) GetAndDeleteRefreshToken(refreshToken string) (*RefreshToken, error) {
 	var refreshTokenStruct []RefreshToken
 
-	err := DB.Raw(`
+	err := db.sql.Raw(`
 		DELETE FROM refresh_tokens
 		WHERE refresh_token = @refresh_token
 		RETURNING refresh_token, refresh_token_supabase, project_id
@@ -164,10 +164,10 @@ func GetAndDeleteRefreshToken(refreshToken string) (*RefreshToken, error) {
 	return &refreshTokenStruct[0], nil
 }
 
-func GetDevEmail(projectID string) (string, error) {
+func (db DB) GetDevEmail(projectID string) (string, error) {
 	var devEmail []string
 
-	err := DB.Raw(`SELECT get_dev_email_project_id(@project_id)`, sql.Named("project_id", projectID)).Scan(&devEmail).Error
+	err := db.sql.Raw(`SELECT get_dev_email_project_id(@project_id)`, sql.Named("project_id", projectID)).Scan(&devEmail).Error
 	if err != nil {
 		return "", err
 	}
@@ -177,4 +177,42 @@ func GetDevEmail(projectID string) (string, error) {
 	}
 
 	return devEmail[0], nil
+}
+
+func (db DB) GetUserIDFromProjectAuthID(
+	project string,
+	authID string,
+) (*string, error) {
+	var results []ProjectUser
+
+	err := db.sql.Find(&results, "auth_id = ? AND project_id = ?", authID, project).Error
+	if err != nil {
+		return nil, err
+	}
+
+	if len(results) == 0 {
+		return nil, nil
+	}
+
+	return &results[0].ID, nil
+}
+
+func (db DB) CreateProjectUser(
+	authID string,
+	projectID string,
+	monthlyCreditRateLimit *int,
+) (*string, error) {
+	var result *ProjectUser
+
+	fmt.Println("Creating project user", authID, projectID, monthlyCreditRateLimit)
+	err := db.sql.Create(&ProjectUserInsert{
+		AuthID:                 authID,
+		ProjectID:              projectID,
+		MonthlyCreditRateLimit: monthlyCreditRateLimit,
+	}).Scan(&result).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return &result.ID, nil
 }

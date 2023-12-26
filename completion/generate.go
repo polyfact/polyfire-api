@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"log"
 
-	db "github.com/polyfire/api/db"
-	llm "github.com/polyfire/api/llm"
-	options "github.com/polyfire/api/llm/providers/options"
-	utils "github.com/polyfire/api/utils"
+	database "github.com/polyfire/api/db"
+	"github.com/polyfire/api/llm"
+	"github.com/polyfire/api/llm/providers/options"
+	"github.com/polyfire/api/utils"
 )
 
 type GenerateRequestBody struct {
@@ -38,7 +38,8 @@ func getLanguageCompletion(language *string) string {
 }
 
 func GenerationStart(ctx context.Context, userID string, input GenerateRequestBody) (*chan options.Result, error) {
-	resources := []db.MatchResult{}
+	db := ctx.Value(utils.ContextKeyDB).(database.DB)
+	resources := []database.MatchResult{}
 
 	log.Println("Init provider")
 
@@ -121,7 +122,7 @@ func GenerationStart(ctx context.Context, userID string, input GenerateRequestBo
 	var embeddings []float32
 
 	if input.Temperature != nil && *(input.Temperature) == 0.0 && (input.Cache == nil || *(input.Cache)) {
-		result, err = CheckExactCache(prompt, providerName, modelName)
+		result, err = CheckExactCache(ctx, prompt, providerName, modelName)
 	}
 
 	if err != nil {

@@ -52,7 +52,7 @@ func tokenToCredit(providerName string, modelName string, inputTokenCount int, o
 	return 0
 }
 
-func LogRequests(
+func (db DB) LogRequests(
 	eventID string,
 	userID string,
 	providerName string,
@@ -73,9 +73,9 @@ func LogRequests(
 		credits = 0
 	}
 
-	err1 := RemoveCreditsFromDev(userID, credits)
+	err1 := db.RemoveCreditsFromDev(userID, credits)
 
-	err2 := DB.Exec(
+	err2 := db.sql.Exec(
 		"INSERT INTO request_logs (user_id, model_name, kind, input_token_count, output_token_count, credits, event_id) VALUES (?::uuid, ?, ?, ?, ?, ?, try_cast_uuid(?))",
 		userID,
 		modelName,
@@ -93,7 +93,7 @@ func LogRequests(
 	}
 }
 
-func LogRequestsCredits(
+func (db DB) LogRequestsCredits(
 	eventID string,
 	userID string,
 	modelName string,
@@ -102,8 +102,8 @@ func LogRequestsCredits(
 	outputTokenCount int,
 	kind Kind,
 ) {
-	err1 := RemoveCreditsFromDev(userID, credits)
-	err2 := DB.Exec(
+	err1 := db.RemoveCreditsFromDev(userID, credits)
+	err2 := db.sql.Exec(
 		"INSERT INTO request_logs (user_id, model_name, kind, input_token_count, output_token_count, credits, event_id) VALUES (?::uuid, ?, ?, ?, ?, ?, try_cast_uuid(?))",
 		userID,
 		modelName,
@@ -132,7 +132,7 @@ type Event struct {
 	Type         string `json:"type"`
 }
 
-func LogEvents(
+func (db DB) LogEvents(
 	id string,
 	path string,
 	userID string,
@@ -144,7 +144,7 @@ func LogEvents(
 	eventType string,
 	orginDomain string,
 ) {
-	err := DB.Exec(
+	err := db.sql.Exec(
 		`INSERT INTO events (id, path, user_id, project_id, request_body, response_body, error, prompt_id, type, origin_domain)
 		VALUES (
 			@id,

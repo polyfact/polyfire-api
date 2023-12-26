@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 
@@ -20,6 +21,7 @@ import (
 
 type CORSRouter struct {
 	Router *httprouter.Router
+	db     db.DB
 }
 
 func (h CORSRouter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -27,20 +29,29 @@ func (h CORSRouter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Headers", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "*")
 
-	middlewares.AddRecord(r, utils.Unknown)
-	defer middlewares.RecoverFromPanic(w, r)
+	ctx := r.Context()
 
-	h.Router.ServeHTTP(w, r)
+	ctxWithDB := context.WithValue(ctx, utils.ContextKeyDB, h.db)
+
+	rWithDB := r.WithContext(ctxWithDB)
+
+	middlewares.AddRecord(rWithDB, utils.Unknown)
+	defer middlewares.RecoverFromPanic(w, rWithDB)
+
+	h.Router.ServeHTTP(w, rWithDB)
 }
 
-func GlobalMiddleware(router *httprouter.Router) http.Handler {
-	return &CORSRouter{Router: router}
+func GlobalMiddleware(router *httprouter.Router, db db.DB) http.Handler {
+	return &CORSRouter{
+		Router: router,
+		db:     db,
+	}
 }
 
 func main() {
 	log.Print("Starting the server on :8080")
 
-	db.InitDB()
+	DB := db.InitDB()
 
 	router := httprouter.New()
 
@@ -85,5 +96,5 @@ func main() {
 	router.PUT("/kv", middlewares.Record(utils.KVSet, middlewares.Auth(kv.Set)))
 	router.DELETE("/kv", middlewares.Record(utils.KVDelete, middlewares.Auth(kv.Delete)))
 
-	log.Fatal(http.ListenAndServe(":8080", GlobalMiddleware(router)))
+	log.Fatal(http.ListenAndServe(":8080", GlobalMiddleware(router, DB)))
 }

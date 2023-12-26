@@ -91,10 +91,18 @@ deploy: app.yaml codegen
 	gcloud app deploy --quiet --version v1
 
 clean:
-	rm -f $(BUILD_DIRECTORY)/* app.yaml $(CODEGEN_DIRECTORY)/*
+	rm -rf $(BUILD_DIRECTORY) app.yaml $(CODEGEN_DIRECTORY)
 
 fmt:
 	go fmt $$(go list ./...)
+
+test-%:
+	@echo "TEST: $(shell echo $@ | sed s/^test-// | sed 's/--/\//')/"
+	@cd $(shell echo $@ | sed s/^test-// | sed 's/--/\//') && go test && cd ..
+
+TESTS = $(shell find | grep _test.go | xargs dirname | uniq | sed 's/\.\//test-/' | sed 's/\//--/g')
+
+test: codegen ${TESTS}
 
 schema.sql:
 	( pg_dump -Osx ${SUPABASE_PG_URI} && pg_dump -at models ${SUPABASE_PG_URI} ) > schema.sql
@@ -123,4 +131,4 @@ update-openrouter-models: check-env $(CODEGEN_DIRECTORY)/openrouter-models.csv
 
 codegen: $(CODEGEN_DIRECTORY)/openrouter-models.go
 
-.PHONY: clean fmt check-env deploy create-dev-db update-openrouter-models codegen
+.PHONY: clean fmt check-env deploy create-dev-db update-openrouter-models codegen test

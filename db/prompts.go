@@ -53,7 +53,7 @@ type Prompt struct {
 	Slug        string      `json:"slug"`
 }
 
-func GetPromptByIDOrSlug(id string) (*Prompt, error) {
+func (db DB) GetPromptByIDOrSlug(id string) (*Prompt, error) {
 	prompt := &Prompt{}
 
 	matchUUID, _ := regexp.MatchString(UUIDRegexp, id)
@@ -66,9 +66,9 @@ func GetPromptByIDOrSlug(id string) (*Prompt, error) {
 	var err error
 
 	if matchUUID {
-		err = DB.First(prompt, "id = ?", id).Error
+		err = db.sql.First(prompt, "id = ?", id).Error
 	} else {
-		err = DB.First(prompt, "slug = ?", id).Error
+		err = db.sql.First(prompt, "slug = ?", id).Error
 	}
 
 	if err != nil {
@@ -78,7 +78,7 @@ func GetPromptByIDOrSlug(id string) (*Prompt, error) {
 	return prompt, nil
 }
 
-func RetrieveSystemPromptID(systemPromptIDOrSlug *string) (*string, error) {
+func (db DB) RetrieveSystemPromptID(systemPromptIDOrSlug *string) (*string, error) {
 	var prompt Prompt
 
 	if systemPromptIDOrSlug == nil {
@@ -96,8 +96,7 @@ func RetrieveSystemPromptID(systemPromptIDOrSlug *string) (*string, error) {
 		return systemPromptIDOrSlug, nil
 	}
 
-	err := DB.Table("prompts").Select("id").Where("slug = ?", systemPromptIDOrSlug).First(&prompt).Error
-
+	err := db.sql.Table("prompts").Select("id").Where("slug = ?", systemPromptIDOrSlug).First(&prompt).Error
 	if err != nil {
 		return nil, err
 	}

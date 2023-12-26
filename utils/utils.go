@@ -13,6 +13,7 @@ func ContainsString(list []string, item string) bool {
 type ContextKey string
 
 const (
+	ContextKeyDB                    ContextKey = "db"
 	ContextKeyUserID                ContextKey = "userId"
 	ContextKeyRateLimitStatus       ContextKey = "rateLimitStatus"
 	ContextKeyCreditsStatus         ContextKey = "creditsStatus"

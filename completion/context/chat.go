@@ -2,11 +2,13 @@ package context
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"strings"
 	"text/template"
 
-	"github.com/polyfire/api/db"
+	database "github.com/polyfire/api/db"
+	"github.com/polyfire/api/utils"
 )
 
 var chatHistoryTemplate = template.Must(
@@ -23,7 +25,8 @@ type ChatHistoryContext struct {
 
 var chatHistoryTemplateGrowth = InitContextStructureTemplate(*chatHistoryTemplate)
 
-func GetChatHistoryContext(userID string, chatID string) (*ChatHistoryContext, error) {
+func GetChatHistoryContext(ctx context.Context, userID string, chatID string) (*ChatHistoryContext, error) {
+	db := ctx.Value(utils.ContextKeyDB).(database.DB)
 	allHistory, err := db.GetChatMessages(userID, chatID, true, 20, 0)
 	if err != nil {
 		return nil, err

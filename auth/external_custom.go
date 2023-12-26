@@ -1,13 +1,16 @@
 package auth
 
 import (
+	"context"
 	"fmt"
 
 	jwt "github.com/golang-jwt/jwt/v5"
-	db "github.com/polyfire/api/db"
+	database "github.com/polyfire/api/db"
+	"github.com/polyfire/api/utils"
 )
 
-func getUserFromCustomSignature(customToken string, projectID string) (string, string, error) {
+func getUserFromCustomSignature(ctx context.Context, customToken string, projectID string) (string, string, error) {
+	db := ctx.Value(utils.ContextKeyDB).(database.DB)
 	project, err := db.GetProjectByID(projectID)
 	if err != nil {
 		return "", "", err

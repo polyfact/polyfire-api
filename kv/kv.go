@@ -5,11 +5,12 @@ import (
 	"net/http"
 
 	router "github.com/julienschmidt/httprouter"
-	db "github.com/polyfire/api/db"
+	database "github.com/polyfire/api/db"
 	"github.com/polyfire/api/utils"
 )
 
 func Get(w http.ResponseWriter, r *http.Request, _ router.Params) {
+	db := r.Context().Value(utils.ContextKeyDB).(database.DB)
 	userID := r.Context().Value(utils.ContextKeyUserID).(string)
 	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
 
@@ -33,6 +34,7 @@ func Get(w http.ResponseWriter, r *http.Request, _ router.Params) {
 }
 
 func Set(w http.ResponseWriter, r *http.Request, _ router.Params) {
+	db := r.Context().Value(utils.ContextKeyDB).(database.DB)
 	userID := r.Context().Value(utils.ContextKeyUserID).(string)
 	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
 
@@ -59,6 +61,7 @@ func Set(w http.ResponseWriter, r *http.Request, _ router.Params) {
 }
 
 func Delete(w http.ResponseWriter, r *http.Request, _ router.Params) {
+	db := r.Context().Value(utils.ContextKeyDB).(database.DB)
 	userID := r.Context().Value(utils.ContextKeyUserID).(string)
 	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
 
@@ -81,6 +84,7 @@ func Delete(w http.ResponseWriter, r *http.Request, _ router.Params) {
 }
 
 func List(w http.ResponseWriter, r *http.Request, _ router.Params) {
+	db := r.Context().Value(utils.ContextKeyDB).(database.DB)
 	userID := r.Context().Value(utils.ContextKeyUserID).(string)
 	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
 

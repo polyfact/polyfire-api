@@ -7,11 +7,12 @@ import (
 	llmTokens "github.com/polyfire/api/tokens"
 	goOpenai "github.com/sashabaranov/go-openai"
 
-	"github.com/polyfire/api/db"
+	database "github.com/polyfire/api/db"
 	"github.com/polyfire/api/utils"
 )
 
 func Embed(ctx context.Context, content string, c *func(string, int)) ([]float32, error) {
+	db := ctx.Value(utils.ContextKeyDB).(database.DB)
 	alreadyExistingEmbedding, err := db.GetExistingEmbeddingFromContent(content)
 	if err != nil {
 		return nil, err

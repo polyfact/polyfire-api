@@ -27,10 +27,10 @@ func (ChatWithLatestMessage) TableName() string {
 	return "chats"
 }
 
-func GetChatByID(id string) (*Chat, error) {
+func (db DB) GetChatByID(id string) (*Chat, error) {
 	var result *Chat
 
-	err := DB.First(&result, "id = ?", id).Error
+	err := db.sql.First(&result, "id = ?", id).Error
 	if err != nil {
 		return nil, err
 	}
@@ -38,10 +38,10 @@ func GetChatByID(id string) (*Chat, error) {
 	return result, nil
 }
 
-func CreateChat(userID string, systemPrompt *string, SystemPromptID *string, name *string) (*Chat, error) {
+func (db DB) CreateChat(userID string, systemPrompt *string, SystemPromptID *string, name *string) (*Chat, error) {
 	var result *Chat
 
-	err := DB.Raw("INSERT INTO chats (user_id, system_prompt, system_prompt_id, name) VALUES (?::uuid, ?, ?, ?) RETURNING *", userID, systemPrompt, SystemPromptID, name).
+	err := db.sql.Raw("INSERT INTO chats (user_id, system_prompt, system_prompt_id, name) VALUES (?::uuid, ?, ?, ?) RETURNING *", userID, systemPrompt, SystemPromptID, name).
 		Scan(&result).
 		Error
 	if err != nil {
@@ -51,10 +51,10 @@ func CreateChat(userID string, systemPrompt *string, SystemPromptID *string, nam
 	return result, nil
 }
 
-func ListChats(userID string) ([]ChatWithLatestMessage, error) {
+func (db DB) ListChats(userID string) ([]ChatWithLatestMessage, error) {
 	var result []ChatWithLatestMessage
 
-	err := DB.Raw(`
+	err := db.sql.Raw(`
 	SELECT c.*, cm.content AS latest_message_content, cm.created_at AS latest_message_created_at
 	FROM chats c
 	LEFT JOIN LATERAL (
@@ -73,16 +73,18 @@ func ListChats(userID string) ([]ChatWithLatestMessage, error) {
 	return result, nil
 }
 
-func DeleteChat(userID string, id string) error {
-	err := DB.Exec("DELETE FROM chats WHERE id = ? AND user_id = ?", id, userID).Error
+func (db DB) DeleteChat(userID string, id string) error {
+	err := db.sql.Exec("DELETE FROM chats WHERE id = ? AND user_id = ?", id, userID).Error
 
 	return err
 }
 
-func UpdateChat(userID string, id string, name string) (*Chat, error) {
+func (db DB) UpdateChat(userID string, id string, name string) (*Chat, error) {
 	var result *Chat
 
-	err := DB.Raw("UPDATE chats SET name = ? WHERE id = ? AND user_id = ? RETURNING *", name, id, userID).Scan(&result).Error
+	err := db.sql.Raw("UPDATE chats SET name = ? WHERE id = ? AND user_id = ? RETURNING *", name, id, userID).
+		Scan(&result).
+		Error
 	if err != nil {
 		return nil, err
 	}
@@ -102,10 +104,10 @@ func (ChatMessage) TableName() string {
 	return "chat_messages"
 }
 
-func GetChatMessages(userID string, chatID string, orderByDESC bool, limit int, offset int) ([]ChatMessage, error) {
+func (db DB) GetChatMessages(userID string, chatID string, orderByDESC bool, limit int, offset int) ([]ChatMessage, error) {
 	var results []ChatMessage
 
-	query := DB.
+	query := db.sql.
 		Select("chat_messages.*").
 		Joins("JOIN chats ON chats.id = chat_messages.chat_id").
 		Where("chats.id = ? AND chats.user_id = ?", chatID, userID)
@@ -126,8 +128,8 @@ func GetChatMessages(userID string, chatID string, orderByDESC bool, limit int, 
 	return results, nil
 }
 
-func AddChatMessage(chatID string, isUserMessage bool, content string) error {
-	err := DB.Exec(
+func (db DB) AddChatMessage(chatID string, isUserMessage bool, content string) error {
+	err := db.sql.Exec(
 		"INSERT INTO chat_messages (chat_id, is_user_message, content) VALUES (?, ?, ?)",
 		chatID,
 		isUserMessage,

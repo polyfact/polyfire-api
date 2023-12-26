@@ -7,7 +7,7 @@ import (
 	supa "github.com/nedpals/supabase-go"
 )
 
-func GetUserFromSupabaseToken(token string, _ string) (string, string, error) {
+func GetUserFromSupabaseToken(_ context.Context, token string, _ string) (string, string, error) {
 	supabaseURL := os.Getenv("SUPABASE_URL")
 	supabaseKey := os.Getenv("SUPABASE_KEY")
 

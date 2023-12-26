@@ -42,7 +42,7 @@ func (Project) TableName() string {
 	return "projects"
 }
 
-func GetProjectByID(id string) (*Project, error) {
+func (db DB) GetProjectByID(id string) (*Project, error) {
 	project := &Project{}
 
 	matchUUID, _ := regexp.MatchString(UUIDRegexp, id)
@@ -55,9 +55,9 @@ func GetProjectByID(id string) (*Project, error) {
 	var err error
 
 	if matchUUID {
-		err = DB.First(project, "id = ?", id).Error
+		err = db.sql.First(project, "id = ?", id).Error
 	} else {
-		err = DB.First(project, "slug = ?", id).Error
+		err = db.sql.First(project, "slug = ?", id).Error
 	}
 
 	if err != nil {
@@ -67,10 +67,10 @@ func GetProjectByID(id string) (*Project, error) {
 	return project, nil
 }
 
-func GetProjectUserByID(id string) (*ProjectUser, error) {
+func (db DB) GetProjectUserByID(id string) (*ProjectUser, error) {
 	var results []ProjectUser
 
-	DB.Find(&results, "id = ?", id)
+	db.sql.Find(&results, "id = ?", id)
 
 	if len(results) == 0 {
 		return nil, nil
@@ -79,10 +79,10 @@ func GetProjectUserByID(id string) (*ProjectUser, error) {
 	return &results[0], nil
 }
 
-func GetProjectForUserID(userID string) (*string, error) {
+func (db DB) GetProjectForUserID(userID string) (*string, error) {
 	var results []ProjectUser
 
-	DB.Find(&results, "id = ?", userID)
+	db.sql.Find(&results, "id = ?", userID)
 
 	if len(results) == 0 {
 		return nil, nil
@@ -113,10 +113,10 @@ func (Model) TableName() string {
 	return "models"
 }
 
-func GetModelByAliasAndProjectID(alias string, projectID string, modelType string) (*Model, error) {
+func (db DB) GetModelByAliasAndProjectID(alias string, projectID string, modelType string) (*Model, error) {
 	model := Model{}
 
-	err := DB.Raw(
+	err := db.sql.Raw(
 		"SELECT models.* FROM models JOIN model_aliases ON model_aliases.model_id = models.id WHERE model_aliases.alias = ? AND (model_aliases.project_id = ? OR model_aliases.project_id IS NULL) AND models.type = ? LIMIT 1",
 		alias,
 		projectID,

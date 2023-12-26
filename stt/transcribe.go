@@ -18,7 +18,7 @@ import (
 	router "github.com/julienschmidt/httprouter"
 	supa "github.com/nedpals/supabase-go"
 
-	db "github.com/polyfire/api/db"
+	database "github.com/polyfire/api/db"
 	providers "github.com/polyfire/api/stt/providers"
 	"github.com/polyfire/api/utils"
 )
@@ -123,19 +123,20 @@ type Result struct {
 
 func Transcribe(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	ctx := r.Context()
+	db := ctx.Value(utils.ContextKeyDB).(database.DB)
 	userID := ctx.Value(utils.ContextKeyUserID).(string)
 	record := ctx.Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
 
 	rateLimitStatus := ctx.Value(utils.ContextKeyRateLimitStatus)
 
-	if rateLimitStatus == db.RateLimitStatusReached {
+	if rateLimitStatus == database.RateLimitStatusReached {
 		utils.RespondError(w, record, "rate_limit_reached")
 		return
 	}
 
 	creditsStatus := ctx.Value(utils.ContextKeyCreditsStatus)
 
-	if creditsStatus == db.CreditsStatusUsedUp {
+	if creditsStatus == database.CreditsStatusUsedUp {
 		utils.RespondError(w, record, "credits_used_up")
 		return
 	}

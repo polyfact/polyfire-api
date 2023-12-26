@@ -14,7 +14,7 @@ import (
 	"github.com/haguro/elevenlabs-go"
 	router "github.com/julienschmidt/httprouter"
 
-	"github.com/polyfire/api/db"
+	database "github.com/polyfire/api/db"
 	"github.com/polyfire/api/utils"
 )
 
@@ -30,13 +30,13 @@ func TextToSpeech(ctx context.Context, w io.Writer, text string, voiceID string)
 	if !ok {
 		customToken = os.Getenv("ELEVENLABS_API_KEY")
 		rateLimitStatus := ctx.Value(utils.ContextKeyRateLimitStatus)
-		if rateLimitStatus != db.RateLimitStatusOk {
+		if rateLimitStatus != database.RateLimitStatusOk {
 			return ErrRateLimitReached
 		}
 
 		creditsStatus := ctx.Value(utils.ContextKeyCreditsStatus)
 
-		if creditsStatus == db.CreditsStatusUsedUp {
+		if creditsStatus == database.CreditsStatusUsedUp {
 			return ErrCreditsUsedUp
 		}
 
@@ -58,6 +58,7 @@ type RequestBody struct {
 }
 
 func Handler(w http.ResponseWriter, r *http.Request, _ router.Params) {
+	db := r.Context().Value(utils.ContextKeyDB).(database.DB)
 	userID := r.Context().Value(utils.ContextKeyUserID).(string)
 	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
 
