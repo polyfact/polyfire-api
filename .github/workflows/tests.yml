@@ -22,6 +22,6 @@ jobs:
       - id: 'codegen'
         name: 'Launching code generation'
         run: 'make codegen'
-      - name: 'tests'
+      - id: 'tests'
         name: 'Launching tests'
         run: 'make test'
