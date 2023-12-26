@@ -8,7 +8,7 @@ import (
 	"github.com/polyfire/api/utils"
 )
 
-func mockCacheHit(provider string, model string, input string) (*database.CompletionCache, error) {
+func mockCacheHit(_ string, _ string, _ string) (*database.CompletionCache, error) {
 	return &database.CompletionCache{
 		ID:        "00000000-0000-0000-0000-000000000000",
 		Sha256sum: "0123456789abcdef",
@@ -44,7 +44,7 @@ func TestExactCacheHit(t *testing.T) {
 	}
 }
 
-func mockCacheMiss(provider string, model string, input string) (*database.CompletionCache, error) {
+func mockCacheMiss(_ string, _ string, _ string) (*database.CompletionCache, error) {
 	return nil, nil
 }
 

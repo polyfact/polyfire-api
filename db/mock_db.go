@@ -43,144 +43,144 @@ type MockDatabase struct {
 	MockGetModelByAliasAndProjectID     func(alias string, projectID string, modelType string) (*Model, error)
 }
 
-func (mdb MockDatabase) GetModelByAliasAndProjectID(alias string, projectID string, modelType string) (*Model, error) {
+func (mdb MockDatabase) GetModelByAliasAndProjectID(_ string, _ string, _ string) (*Model, error) {
 	panic("Mock GetModelByAliasAndProjectID Unimplemented")
 }
 
-func (mdb MockDatabase) GetProjectForUserID(userID string) (*string, error) {
+func (mdb MockDatabase) GetProjectForUserID(_ string) (*string, error) {
 	panic("Mock GetProjectForUserID Unimplemented")
 }
 
-func (mdb MockDatabase) GetProjectUserByID(id string) (*ProjectUser, error) {
+func (mdb MockDatabase) GetProjectUserByID(_ string) (*ProjectUser, error) {
 	panic("Mock GetProjectUserByID Unimplemented")
 }
 
-func (mdb MockDatabase) GetProjectByID(id string) (*Project, error) {
+func (mdb MockDatabase) GetProjectByID(_ string) (*Project, error) {
 	panic("Mock GetProjectByID Unimplemented")
 }
 
-func (mdb MockDatabase) MatchEmbeddings(memoryIDs []string, userID string, embedding []float32) ([]MatchResult, error) {
+func (mdb MockDatabase) MatchEmbeddings(_ []string, _ string, _ []float32) ([]MatchResult, error) {
 	panic("Mock MatchEmbeddings Unimplemented")
 }
 
-func (mdb MockDatabase) GetMemoryIDs(userID string) ([]MemoryRecord, error) {
+func (mdb MockDatabase) GetMemoryIDs(_ string) ([]MemoryRecord, error) {
 	panic("Mock GetMemoryIDs Unimplemented")
 }
 
-func (mdb MockDatabase) GetExistingEmbeddingFromContent(content string) (*[]float32, error) {
+func (mdb MockDatabase) GetExistingEmbeddingFromContent(_ string) (*[]float32, error) {
 	panic("Mock GetExistingEmbeddingFromContent Unimplemented")
 }
 
-func (mdb MockDatabase) AddMemory(userID string, memoryID string, content string, embedding []float32) error {
+func (mdb MockDatabase) AddMemory(_ string, _ string, _ string, _ []float32) error {
 	panic("Mock AddMemory Unimplemented")
 }
 
-func (mdb MockDatabase) GetMemory(memoryID string) (*Memory, error) {
+func (mdb MockDatabase) GetMemory(_ string) (*Memory, error) {
 	panic("Mock GetMemory Unimplemented")
 }
 
-func (mdb MockDatabase) CreateMemory(memoryID string, userID string, public bool) error {
+func (mdb MockDatabase) CreateMemory(_ string, _ string, _ bool) error {
 	panic("Mock CreateMemory Unimplemented")
 }
 
-func (mdb MockDatabase) AddChatMessage(chatID string, isUserMessage bool, content string) error {
+func (mdb MockDatabase) AddChatMessage(_ string, _ bool, _ string) error {
 	panic("Mock AddChatMessage Unimplemented")
 }
 
 func (mdb MockDatabase) GetChatMessages(
-	userID string,
-	chatID string,
-	orderByDESC bool,
-	limit int,
-	offset int,
+	_ string,
+	_ string,
+	_ bool,
+	_ int,
+	_ int,
 ) ([]ChatMessage, error) {
 	panic("Mock GetChatMessages Unimplemented")
 }
 
-func (mdb MockDatabase) UpdateChat(userID string, id string, name string) (*Chat, error) {
+func (mdb MockDatabase) UpdateChat(_ string, _ string, _ string) (*Chat, error) {
 	panic("Mock UpdateChat Unimplemented")
 }
 
-func (mdb MockDatabase) DeleteChat(userID string, id string) error {
+func (mdb MockDatabase) DeleteChat(_ string, _ string) error {
 	panic("Mock DeleteChat Unimplemented")
 }
 
-func (mdb MockDatabase) ListChats(userID string) ([]ChatWithLatestMessage, error) {
+func (mdb MockDatabase) ListChats(_ string) ([]ChatWithLatestMessage, error) {
 	panic("Mock ListChats Unimplemented")
 }
 
-func (mdb MockDatabase) CreateChat(userID string, systemPrompt *string, SystemPromptID *string, name *string) (*Chat, error) {
+func (mdb MockDatabase) CreateChat(_ string, _ *string, _ *string, _ *string) (*Chat, error) {
 	panic("Mock CreateChat Unimplemented")
 }
 
-func (mdb MockDatabase) GetChatByID(id string) (*Chat, error) {
+func (mdb MockDatabase) GetChatByID(_ string) (*Chat, error) {
 	panic("Mock GetChatByID Unimplemented")
 }
 
-func (mdb MockDatabase) RetrieveSystemPromptID(systemPromptIDOrSlug *string) (*string, error) {
+func (mdb MockDatabase) RetrieveSystemPromptID(_ *string) (*string, error) {
 	panic("Mock RetrieveSystemPromptID Unimplemented")
 }
 
-func (mdb MockDatabase) GetPromptByIDOrSlug(id string) (*Prompt, error) {
+func (mdb MockDatabase) GetPromptByIDOrSlug(_ string) (*Prompt, error) {
 	panic("Mock GetPromptByIDOrSlug Unimplemented")
 }
 
-func (mdb MockDatabase) ListKV(userID string) ([]KVStore, error) {
+func (mdb MockDatabase) ListKV(_ string) ([]KVStore, error) {
 	panic("Mock ListKV Unimplemented")
 }
 
-func (mdb MockDatabase) DeleteKV(userID, key string) error {
+func (mdb MockDatabase) DeleteKV(_ string, _ string) error {
 	panic("Mock DeleteKV Unimplemented")
 }
 
-func (mdb MockDatabase) GetKVMap(userID string, keys []string) (map[string]string, error) {
+func (mdb MockDatabase) GetKVMap(_ string, _ []string) (map[string]string, error) {
 	panic("Mock GetKVMap Unimplemented")
 }
 
-func (mdb MockDatabase) GetKV(userID, key string) (*KVStore, error) {
+func (mdb MockDatabase) GetKV(_ string, _ string) (*KVStore, error) {
 	panic("Mock GetKV Unimplemented")
 }
 
-func (mdb MockDatabase) SetKV(userID, key, value string) error {
+func (mdb MockDatabase) SetKV(_ string, _ string, _ string) error {
 	panic("Mock SetKV Unimplemented")
 }
 
 func (mdb MockDatabase) LogEvents(
-	id string,
-	path string,
-	userID string,
-	projectID string,
-	requestBody string,
-	responseBody string,
-	error bool,
-	promptID string,
-	eventType string,
-	orginDomain string,
+	_ string,
+	_ string,
+	_ string,
+	_ string,
+	_ string,
+	_ string,
+	_ bool,
+	_ string,
+	_ string,
+	_ string,
 ) {
 	panic("Mock LogEvents Unimplemented")
 }
 
 func (mdb MockDatabase) LogRequestsCredits(
-	eventID string,
-	userID string,
-	modelName string,
-	credits int,
-	inputTokenCount int,
-	outputTokenCount int,
-	kind Kind,
+	_ string,
+	_ string,
+	_ string,
+	_ int,
+	_ int,
+	_ int,
+	_ Kind,
 ) {
 	panic("Mock LogRequestsCredits Unimplemented")
 }
 
 func (mdb MockDatabase) LogRequests(
-	eventID string,
-	userID string,
-	providerName string,
-	modelName string,
-	inputTokenCount int,
-	outputTokenCount int,
-	kind Kind,
-	countCredits bool,
+	_ string,
+	_ string,
+	_ string,
+	_ string,
+	_ int,
+	_ int,
+	_ Kind,
+	_ bool,
 ) {
 	panic("Mock LogRequests Unimplemented")
 }
@@ -193,12 +193,12 @@ func (mdb MockDatabase) GetExactCompletionCacheByHash(provider string, model str
 }
 
 func (mdb MockDatabase) AddCompletionCache(
-	input []float32,
-	prompt string,
-	result string,
-	provider string,
-	model string,
-	exact bool,
+	_ []float32,
+	_ string,
+	_ string,
+	_ string,
+	_ string,
+	_ bool,
 ) error {
 	panic("Mock AddCompletionCache Unimplemented")
 }
@@ -210,45 +210,45 @@ func (mdb MockDatabase) GetCompletionCacheByInput(provider string, model string,
 	panic("GetCompletionCacheByInput Mock not found")
 }
 
-func (mdb MockDatabase) GetCompletionCache(id string) (*CompletionCache, error) {
+func (mdb MockDatabase) GetCompletionCache(_ string) (*CompletionCache, error) {
 	panic("Mock GetCompletionCache Unimplemented")
 }
 
-func (mdb MockDatabase) GetTTSVoice(slug string) (TTSVoice, error) {
+func (mdb MockDatabase) GetTTSVoice(_ string) (TTSVoice, error) {
 	panic("Mock GetTTSVoice Unimplemented")
 }
 
-func (mdb MockDatabase) CreateProjectUser(authID string, projectID string, monthlyCreditRateLimit *int) (*string, error) {
+func (mdb MockDatabase) CreateProjectUser(_ string, _ string, _ *int) (*string, error) {
 	panic("Mock CreateProjectUser Unimplemented")
 }
 
-func (mdb MockDatabase) GetUserIDFromProjectAuthID(project string, authID string) (*string, error) {
+func (mdb MockDatabase) GetUserIDFromProjectAuthID(_ string, _ string) (*string, error) {
 	panic("Mock GetUserIDFromProjectAuthID Unimplemented")
 }
 
-func (mdb MockDatabase) GetDevEmail(projectID string) (string, error) {
+func (mdb MockDatabase) GetDevEmail(_ string) (string, error) {
 	panic("Mock GetDevEmail Unimplemented")
 }
 
-func (mdb MockDatabase) GetAndDeleteRefreshToken(refreshToken string) (*RefreshToken, error) {
+func (mdb MockDatabase) GetAndDeleteRefreshToken(_ string) (*RefreshToken, error) {
 	panic("Mock GetAndDeleteRefreshToken Unimplemented")
 }
 
-func (mdb MockDatabase) CreateRefreshToken(refreshToken string, refreshTokenSupabase string, projectID string) error {
+func (mdb MockDatabase) CreateRefreshToken(_ string, _ string, _ string) error {
 	panic("Mock CreateRefreshToken Unimplemented")
 }
 
-func (mdb MockDatabase) RemoveCreditsFromDev(userID string, credits int) error {
+func (mdb MockDatabase) RemoveCreditsFromDev(_ string, _ int) error {
 	panic("Mock RemoveCreditsFromDev Unimplemented")
 }
 
 func (mdb MockDatabase) CheckDBVersionRateLimit(
-	userID string,
-	version int,
+	_ string,
+	_ int,
 ) (*UserInfos, RateLimitStatus, CreditsStatus, error) {
 	panic("Mock CheckDBVersionRateLimit Unimplemented")
 }
 
-func (mdb MockDatabase) getUserInfos(userID string) (*UserInfos, error) {
+func (mdb MockDatabase) getUserInfos(_ string) (*UserInfos, error) {
 	panic("Mock getUserInfos Unimplemented")
 }
