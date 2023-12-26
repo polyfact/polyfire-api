@@ -180,7 +180,8 @@ func (db DB) GetDevEmail(projectID string) (string, error) {
 }
 
 func (db DB) GetUserIDFromProjectAuthID(
-	project string, authID string, email string,
+	project string,
+	authID string,
 ) (*string, error) {
 	var results []ProjectUser
 
@@ -198,7 +199,6 @@ func (db DB) GetUserIDFromProjectAuthID(
 
 func (db DB) CreateProjectUser(
 	authID string,
-	email string,
 	projectID string,
 	monthlyCreditRateLimit *int,
 ) (*string, error) {

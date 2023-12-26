@@ -26,7 +26,7 @@ func ExchangeToken(
 		return "", err
 	}
 
-	userID, err := db.GetUserIDFromProjectAuthID(project.ID, authID, email)
+	userID, err := db.GetUserIDFromProjectAuthID(project.ID, authID)
 	if err != nil {
 		return "", err
 	}
@@ -38,7 +38,6 @@ func ExchangeToken(
 		fmt.Println("Creating user on project", project.ID)
 		userID, err = db.CreateProjectUser(
 			authID,
-			email,
 			project.ID,
 			project.DefaultMonthlyCreditRateLimit,
 		)
