@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -8,73 +9,34 @@ import (
 
 	jwt "github.com/golang-jwt/jwt/v5"
 	router "github.com/julienschmidt/httprouter"
-	db "github.com/polyfire/api/db"
+	database "github.com/polyfire/api/db"
 	posthog "github.com/polyfire/api/posthog"
 	"github.com/polyfire/api/utils"
 )
 
-func GetUserIDFromProjectAuthID(project string, authID string, email string) (*string, error) {
-	var results []db.ProjectUser
-
-	err := db.DB.Find(&results, "auth_id = ? AND project_id = ?", authID, project).Error
-	if err != nil {
-		return nil, err
-	}
-
-	if len(results) == 0 {
-		return nil, nil
-	}
-
-	posthog.IdentifyUser(authID, results[0].ID, email)
-
-	return &results[0].ID, nil
-}
-
-func CreateProjectUser(
-	authID string,
-	email string,
-	projectID string,
-	monthlyCreditRateLimit *int,
-) (*string, error) {
-	var result *db.ProjectUser
-
-	fmt.Println("Creating project user", authID, projectID, monthlyCreditRateLimit)
-	err := db.DB.Create(&db.ProjectUserInsert{
-		AuthID:                 authID,
-		ProjectID:              projectID,
-		MonthlyCreditRateLimit: monthlyCreditRateLimit,
-	}).Scan(&result).Error
-	if err != nil {
-		return nil, err
-	}
-
-	posthog.IdentifyUser(authID, result.ID, email)
-
-	return &result.ID, nil
-}
-
 func ExchangeToken(
+	ctx context.Context,
 	token string,
-	project db.Project,
-	getUserFromToken func(token string, projectID string) (string, string, error),
+	project database.Project,
+	getUserFromToken func(ctx context.Context, token string, projectID string) (string, string, error),
 ) (string, error) {
-	authID, email, err := getUserFromToken(token, project.ID)
+	db := ctx.Value(utils.ContextKeyDB).(database.DB)
+	authID, email, err := getUserFromToken(ctx, token, project.ID)
 	if err != nil {
 		return "", err
 	}
 
-	userID, err := GetUserIDFromProjectAuthID(project.ID, authID, email)
+	userID, err := db.GetUserIDFromProjectAuthID(project.ID, authID, email)
 	if err != nil {
 		return "", err
 	}
 
 	if userID == nil {
-
 		if !project.FreeUserInit {
 			return "", fmt.Errorf("free_user_init_disabled")
 		}
 		fmt.Println("Creating user on project", project.ID)
-		userID, err = CreateProjectUser(
+		userID, err = db.CreateProjectUser(
 			authID,
 			email,
 			project.ID,
@@ -83,7 +45,10 @@ func ExchangeToken(
 		if err != nil {
 			return "", err
 		}
+
 	}
+
+	posthog.IdentifyUser(authID, *userID, email)
 
 	unsignedUserToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"user_id": *userID,
@@ -98,9 +63,10 @@ func ExchangeToken(
 }
 
 func TokenExchangeHandler(
-	getUserFromToken func(token string, projectID string) (string, string, error),
+	getUserFromToken func(ctx context.Context, token string, projectID string) (string, string, error),
 ) func(w http.ResponseWriter, r *http.Request, ps router.Params) {
 	return func(w http.ResponseWriter, r *http.Request, ps router.Params) {
+		db := r.Context().Value(utils.ContextKeyDB).(database.DB)
 		record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
 		projectID := ps.ByName("id")
 		project, err := db.GetProjectByID(projectID)
@@ -122,7 +88,7 @@ func TokenExchangeHandler(
 
 		token := authHeader[1]
 
-		userToken, err := ExchangeToken(token, *project, getUserFromToken)
+		userToken, err := ExchangeToken(r.Context(), token, *project, getUserFromToken)
 		if err != nil {
 			fmt.Println(err)
 			utils.RespondError(w, record, "token_exchange_failed")

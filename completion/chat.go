@@ -1,6 +1,7 @@
 package completion
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -8,12 +9,13 @@ import (
 	"strings"
 
 	router "github.com/julienschmidt/httprouter"
-	"github.com/polyfire/api/db"
+	database "github.com/polyfire/api/db"
 	"github.com/polyfire/api/llm/providers/options"
 	"github.com/polyfire/api/utils"
 )
 
 func CreateChat(w http.ResponseWriter, r *http.Request, _ router.Params) {
+	db := r.Context().Value(utils.ContextKeyDB).(database.DB)
 	userID := r.Context().Value(utils.ContextKeyUserID).(string)
 	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
 
@@ -49,6 +51,7 @@ func CreateChat(w http.ResponseWriter, r *http.Request, _ router.Params) {
 }
 
 func UpdateChat(w http.ResponseWriter, r *http.Request, ps router.Params) {
+	db := r.Context().Value(utils.ContextKeyDB).(database.DB)
 	id := ps.ByName("id")
 	userID := r.Context().Value(utils.ContextKeyUserID).(string)
 	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
@@ -76,6 +79,7 @@ func UpdateChat(w http.ResponseWriter, r *http.Request, ps router.Params) {
 }
 
 func DeleteChat(w http.ResponseWriter, r *http.Request, ps router.Params) {
+	db := r.Context().Value(utils.ContextKeyDB).(database.DB)
 	id := ps.ByName("id")
 	userID := r.Context().Value(utils.ContextKeyUserID).(string)
 	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
@@ -90,6 +94,7 @@ func DeleteChat(w http.ResponseWriter, r *http.Request, ps router.Params) {
 }
 
 func ListChat(w http.ResponseWriter, r *http.Request, _ router.Params) {
+	db := r.Context().Value(utils.ContextKeyDB).(database.DB)
 	userID := r.Context().Value(utils.ContextKeyUserID).(string)
 	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
 
@@ -106,6 +111,7 @@ func ListChat(w http.ResponseWriter, r *http.Request, _ router.Params) {
 }
 
 func GetChatHistory(w http.ResponseWriter, r *http.Request, ps router.Params) {
+	db := r.Context().Value(utils.ContextKeyDB).(database.DB)
 	id := ps.ByName("id")
 	orderByParam := r.URL.Query().Get("orderBy")
 	limitParam := r.URL.Query().Get("limit")
@@ -139,12 +145,14 @@ func GetChatHistory(w http.ResponseWriter, r *http.Request, ps router.Params) {
 }
 
 func AddToChatHistory(
+	ctx context.Context,
 	userID string,
 	task string,
 	chatID string,
 	callback options.ProviderCallback,
 	opts *options.ProviderOptions,
 ) error {
+	db := ctx.Value(utils.ContextKeyDB).(database.DB)
 	log.Println("GetChatByID")
 	chat, err := db.GetChatByID(chatID)
 	if err != nil {

@@ -4,11 +4,12 @@ import (
 	"net/http"
 
 	router "github.com/julienschmidt/httprouter"
-	db "github.com/polyfire/api/db"
+	database "github.com/polyfire/api/db"
 	"github.com/polyfire/api/utils"
 )
 
 func GetAuthID(w http.ResponseWriter, r *http.Request, _ router.Params) {
+	db := r.Context().Value(utils.ContextKeyDB).(database.DB)
 	userID := r.Context().Value(utils.ContextKeyUserID).(string)
 
 	projectUser, _ := db.GetProjectUserByID(userID)

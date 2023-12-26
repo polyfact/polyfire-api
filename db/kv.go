@@ -32,66 +32,66 @@ func createCombinedKey(userID, key string) string {
 	return userID + "|" + key
 }
 
-func RemoveUserIDFromKey(key string, userID string) string {
+func removeUserIDFromKey(key string, userID string) string {
 	return strings.Replace(key, userID+"|", "", 1)
 }
 
-func SetKV(userID, key, value string) error {
+func (db DB) SetKV(userID, key, value string) error {
 	combinedKey := createCombinedKey(userID, key)
 
 	kv := KVStoreInsert{Key: combinedKey, UserID: userID, Value: value}
 
-	return DB.Clauses(clause.OnConflict{
+	return db.sql.Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "key"}},
 		DoUpdates: clause.Assignments(map[string]interface{}{"value": value, "user_id": userID}),
 	}).Create(&kv).Error
 }
 
-func GetKV(userID, key string) (*KVStore, error) {
+func (db DB) GetKV(userID, key string) (*KVStore, error) {
 	var result KVStore
-	err := DB.First(&result, "key = ?", createCombinedKey(userID, key)).Error
+	err := db.sql.First(&result, "key = ?", createCombinedKey(userID, key)).Error
 	if err != nil {
 		return nil, err
 	}
 	return &result, nil
 }
 
-func GetKVMap(userID string, keys []string) (map[string]string, error) {
+func (db DB) GetKVMap(userID string, keys []string) (map[string]string, error) {
 	var results []KVStore
 	combinedKeys := make([]string, len(keys))
 	for i, v := range keys {
 		combinedKeys[i] = createCombinedKey(userID, v)
 	}
-	err := DB.Where("key IN ?", combinedKeys).Find(&results).Error
+	err := db.sql.Where("key IN ?", combinedKeys).Find(&results).Error
 	if err != nil {
 		return nil, err
 	}
 
 	result := make(map[string]string)
 	for _, v := range results {
-		result[RemoveUserIDFromKey(v.Key, userID)] = v.Value
+		result[removeUserIDFromKey(v.Key, userID)] = v.Value
 	}
 
 	return result, nil
 }
 
-func DeleteKV(userID, key string) error {
+func (db DB) DeleteKV(userID, key string) error {
 	combinedKey := createCombinedKey(userID, key)
 
 	kv := KVStore{Key: combinedKey}
 
-	return DB.Where("key = ?", combinedKey).Delete(&kv).Error
+	return db.sql.Where("key = ?", combinedKey).Delete(&kv).Error
 }
 
-func ListKV(userID string) ([]KVStore, error) {
+func (db DB) ListKV(userID string) ([]KVStore, error) {
 	var results []KVStore
-	err := DB.Where("user_id = ?", userID).Find(&results).Error
+	err := db.sql.Where("user_id = ?", userID).Find(&results).Error
 	if err != nil {
 		return nil, err
 	}
 
 	for i := range results {
-		results[i].Key = RemoveUserIDFromKey(results[i].Key, userID)
+		results[i].Key = removeUserIDFromKey(results[i].Key, userID)
 	}
 	return results, nil
 }

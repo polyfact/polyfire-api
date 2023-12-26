@@ -65,6 +65,7 @@ func GetContextString(
 		var systemPrompt completionContext.ContentElement
 		var err error
 		systemPrompt, warnings, err = completionContext.GetSystemPrompt(
+			ctx,
 			userID,
 			input.SystemPromptID,
 			input.SystemPrompt,
@@ -80,13 +81,13 @@ func GetContextString(
 	}
 
 	if input.ChatID != nil && len(*input.ChatID) > 0 {
-		err := AddToChatHistory(userID, input.Task, *input.ChatID, callback, opts)
+		err := AddToChatHistory(ctx, userID, input.Task, *input.ChatID, callback, opts)
 		if err != nil {
 			return "", warnings, err
 		}
 
 		launchContextFillingGoRouting(&wg, &contextElements, func() (completionContext.ContentElement, error) {
-			return completionContext.GetChatHistoryContext(userID, *input.ChatID)
+			return completionContext.GetChatHistoryContext(ctx, userID, *input.ChatID)
 		})
 	}
 

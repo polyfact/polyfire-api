@@ -8,7 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	router "github.com/julienschmidt/httprouter"
-	"github.com/polyfire/api/db"
+	database "github.com/polyfire/api/db"
 	"github.com/polyfire/api/utils"
 )
 
@@ -38,6 +38,7 @@ func storeImageBucket(reader io.Reader, path string) (string, error) {
 }
 
 func ImageGeneration(w http.ResponseWriter, r *http.Request, _ router.Params) {
+	db := r.Context().Value(utils.ContextKeyDB).(database.DB)
 	userID := r.Context().Value(utils.ContextKeyUserID).(string)
 	request, _ := json.Marshal(r.URL.Query())
 	prompt := r.URL.Query().Get("p")
@@ -49,14 +50,14 @@ func ImageGeneration(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	}
 	rateLimitStatus := r.Context().Value(utils.ContextKeyRateLimitStatus)
 
-	if rateLimitStatus == db.RateLimitStatusReached {
+	if rateLimitStatus == database.RateLimitStatusReached {
 		utils.RespondError(w, record, "rate_limit_reached")
 		return
 	}
 
 	creditsStatus := r.Context().Value(utils.ContextKeyCreditsStatus)
 
-	if creditsStatus == db.CreditsStatusUsedUp {
+	if creditsStatus == database.CreditsStatusUsedUp {
 		utils.RespondError(w, record, "credits_used_up")
 		return
 	}

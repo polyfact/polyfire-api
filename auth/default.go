@@ -12,10 +12,11 @@ import (
 	"strings"
 
 	httprouter "github.com/julienschmidt/httprouter"
-	"github.com/polyfire/api/db"
+	database "github.com/polyfire/api/db"
+	"github.com/polyfire/api/utils"
 )
 
-func checkAuthorizedDomains(project *db.Project, redirectURI string) bool {
+func checkAuthorizedDomains(project *database.Project, redirectURI string) bool {
 	if len(project.AuthorizedDomains) == 0 {
 		return true
 	}
@@ -41,6 +42,7 @@ func checkAuthorizedDomains(project *db.Project, redirectURI string) bool {
 }
 
 func RedirectAuth(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	db := r.Context().Value(utils.ContextKeyDB).(database.DB)
 	projectID := ps.ByName("id")
 	provider := r.URL.Query().Get("provider")
 	redirectToFinal := r.URL.Query().Get("redirect_to")
@@ -80,7 +82,7 @@ func RedirectAuth(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 	http.Redirect(w, r, url, http.StatusFound)
 }
 
-func wrapSupabaseRefreshToken(refreshToken string, projectID string) (string, error) {
+func wrapSupabaseRefreshToken(db database.DB, refreshToken string, projectID string) (string, error) {
 	wrappedRefreshToken := make([]byte, 32)
 	_, err := rand.Read(wrappedRefreshToken)
 	if err != nil {
@@ -100,6 +102,7 @@ func wrapSupabaseRefreshToken(refreshToken string, projectID string) (string, er
 }
 
 func CallbackAuth(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	db := r.Context().Value(utils.ContextKeyDB).(database.DB)
 	projectID := ps.ByName("id")
 	redirectTo := r.URL.Query().Get("redirect_to")
 	accessToken := r.URL.Query().Get("access_token")
@@ -142,13 +145,13 @@ func CallbackAuth(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 		return
 	}
 
-	token, err := ExchangeToken(accessToken, *project, GetUserFromSupabaseToken)
+	token, err := ExchangeToken(r.Context(), accessToken, *project, GetUserFromSupabaseToken)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	wrappedRefreshToken, err := wrapSupabaseRefreshToken(refreshToken, project.ID)
+	wrappedRefreshToken, err := wrapSupabaseRefreshToken(db, refreshToken, project.ID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -167,6 +170,7 @@ type RefreshTokenSupabaseResponse struct {
 }
 
 func RefreshToken(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	db := r.Context().Value(utils.ContextKeyDB).(database.DB)
 	projectID := ps.ByName("id")
 
 	var refreshTokenRequest RefreshTokenRequest
@@ -227,13 +231,13 @@ func RefreshToken(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 		return
 	}
 
-	wrappedRefreshToken, err := wrapSupabaseRefreshToken(refreshTokenResponse.RefreshToken, project.ID)
+	wrappedRefreshToken, err := wrapSupabaseRefreshToken(db, refreshTokenResponse.RefreshToken, project.ID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	token, err := ExchangeToken(refreshTokenResponse.AccessToken, *project, GetUserFromSupabaseToken)
+	token, err := ExchangeToken(r.Context(), refreshTokenResponse.AccessToken, *project, GetUserFromSupabaseToken)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

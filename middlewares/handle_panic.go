@@ -12,7 +12,7 @@ import (
 
 	router "github.com/julienschmidt/httprouter"
 
-	db "github.com/polyfire/api/db"
+	database "github.com/polyfire/api/db"
 	posthog "github.com/polyfire/api/posthog"
 	"github.com/polyfire/api/utils"
 )
@@ -43,6 +43,7 @@ func getErrorMessage(rec interface{}) string {
 }
 
 func AddRecord(r *http.Request, eventType utils.EventType) {
+	db := r.Context().Value(utils.ContextKeyDB).(database.DB)
 	eventID := uuid.New().String()
 
 	originHeader := r.Header.Get("Origin")

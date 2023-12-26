@@ -4,9 +4,10 @@ import (
 	"context"
 	"log"
 
-	db "github.com/polyfire/api/db"
-	llm "github.com/polyfire/api/llm"
-	options "github.com/polyfire/api/llm/providers/options"
+	database "github.com/polyfire/api/db"
+	"github.com/polyfire/api/llm"
+	"github.com/polyfire/api/llm/providers/options"
+	"github.com/polyfire/api/utils"
 )
 
 func CheckFuzzyCache(
@@ -15,6 +16,7 @@ func CheckFuzzyCache(
 	providerName string,
 	modelName string,
 ) (chan options.Result, []float32, error) {
+	db := ctx.Value(utils.ContextKeyDB).(database.DB)
 	embeddings, err := llm.Embed(ctx, prompt, nil)
 	if err != nil {
 		return nil, embeddings, err
@@ -40,10 +42,12 @@ func CheckFuzzyCache(
 }
 
 func CheckExactCache(
+	ctx context.Context,
 	prompt string,
 	providerName string,
 	modelName string,
 ) (chan options.Result, error) {
+	db := ctx.Value(utils.ContextKeyDB).(database.DB)
 	cache, err := db.GetExactCompletionCacheByHash(providerName, modelName, prompt)
 	if err != nil {
 		return nil, err

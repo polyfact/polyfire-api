@@ -1,12 +1,14 @@
 package context
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
 
-	"github.com/polyfire/api/db"
+	database "github.com/polyfire/api/db"
 	"github.com/polyfire/api/tokens"
+	"github.com/polyfire/api/utils"
 )
 
 type ParsedSystemPromptElement struct {
@@ -90,7 +92,8 @@ func (sp SystemPrompt) Render(vars map[string]string) string {
 	return result
 }
 
-func GetVars(userID string, varList []string) (map[string]string, []string) {
+func GetVars(ctx context.Context, userID string, varList []string) (map[string]string, []string) {
+	db := ctx.Value(utils.ContextKeyDB).(database.DB)
 	warnings := make([]string, 0)
 	result := make(map[string]string)
 
@@ -128,11 +131,13 @@ type SystemPromptContext struct {
 }
 
 func GetSystemPrompt(
+	ctx context.Context,
 	userID string,
 	systemPromptID *string,
 	systemPrompt *string,
 	chatID *string,
 ) (*SystemPromptContext, []string, error) {
+	db := ctx.Value(utils.ContextKeyDB).(database.DB)
 	result := ""
 
 	if systemPrompt != nil && len(*systemPrompt) > 0 {
@@ -171,7 +176,7 @@ func GetSystemPrompt(
 
 	if len(varList) != 0 {
 		var vars map[string]string
-		vars, warnings = GetVars(userID, varList)
+		vars, warnings = GetVars(ctx, userID, varList)
 		result = systemPromptCtx.Render(vars)
 
 		if len(warnings) == 0 {

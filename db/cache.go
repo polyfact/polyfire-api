@@ -23,9 +23,9 @@ func (CompletionCache) TableName() string {
 	return "completion_cache"
 }
 
-func GetCompletionCache(id string) (*CompletionCache, error) {
+func (db DB) GetCompletionCache(id string) (*CompletionCache, error) {
 	var cache []CompletionCache
-	err := DB.Find(&cache, "id = ?", id).Error
+	err := db.sql.Find(&cache, "id = ?", id).Error
 	if err != nil {
 		return nil, err
 	}
@@ -37,7 +37,7 @@ func GetCompletionCache(id string) (*CompletionCache, error) {
 	return &cache[0], nil
 }
 
-func GetCompletionCacheByInput(provider string, model string, input []float32) (*CompletionCache, error) {
+func (db DB) GetCompletionCacheByInput(provider string, model string, input []float32) (*CompletionCache, error) {
 	embeddingstr := "["
 	for _, v := range input {
 		embeddingstr += strconv.FormatFloat(float64(v), 'f', 6, 64) + ","
@@ -45,7 +45,7 @@ func GetCompletionCacheByInput(provider string, model string, input []float32) (
 	embeddingstr = strings.TrimRight(embeddingstr, ",") + "]"
 
 	var cache []CompletionCache
-	err := DB.Find(
+	err := db.sql.Find(
 		&cache,
 		"exact = false AND provider = ? AND model = ? AND input <-> ? < 0.15 ORDER BY input <-> ? ASC",
 		provider,
@@ -64,7 +64,14 @@ func GetCompletionCacheByInput(provider string, model string, input []float32) (
 	return &cache[0], nil
 }
 
-func AddCompletionCache(input []float32, prompt string, result string, provider string, model string, exact bool) error {
+func (db DB) AddCompletionCache(
+	input []float32,
+	prompt string,
+	result string,
+	provider string,
+	model string,
+	exact bool,
+) error {
 	embeddingstr := ""
 	for _, v := range input {
 		embeddingstr += strconv.FormatFloat(float64(v), 'f', 6, 64) + ","
@@ -74,7 +81,7 @@ func AddCompletionCache(input []float32, prompt string, result string, provider 
 	sha256sum := sha256.Sum256([]byte(prompt))
 	sha256sumHex := hex.EncodeToString(sha256sum[:])
 
-	err := DB.Exec(
+	err := db.sql.Exec(
 		"INSERT INTO completion_cache (result, provider, model, input, exact, sha256sum) VALUES (@result, @provider, @model, CASE WHEN @input = '' THEN NULL ELSE string_to_array(@input, ',')::float[] END, @exact, @sha256sum) ON CONFLICT (sha256sum) DO NOTHING;",
 		sql.Named("result", result),
 		sql.Named("provider", provider),
@@ -87,12 +94,12 @@ func AddCompletionCache(input []float32, prompt string, result string, provider 
 	return err
 }
 
-func GetExactCompletionCacheByHash(provider string, model string, input string) (*CompletionCache, error) {
+func (db DB) GetExactCompletionCacheByHash(provider string, model string, input string) (*CompletionCache, error) {
 	sha256sum := sha256.Sum256([]byte(input))
 	sha256sumHex := hex.EncodeToString(sha256sum[:])
 
 	var cache []CompletionCache
-	err := DB.Find(
+	err := db.sql.Find(
 		&cache,
 		"provider = ? AND model = ? AND sha256sum = ?",
 		provider,

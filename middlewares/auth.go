@@ -9,7 +9,7 @@ import (
 
 	jwt "github.com/golang-jwt/jwt/v5"
 	router "github.com/julienschmidt/httprouter"
-	"github.com/polyfire/api/db"
+	database "github.com/polyfire/api/db"
 	"github.com/polyfire/api/utils"
 )
 
@@ -35,9 +35,9 @@ func parseJWT(token string) (jwt.MapClaims, error) {
 func createUserContext(
 	r *http.Request,
 	userID string,
-	user *db.UserInfos,
-	rateLimitStatus db.RateLimitStatus,
-	creditsStatus db.CreditsStatus,
+	user *database.UserInfos,
+	rateLimitStatus database.RateLimitStatus,
+	creditsStatus database.CreditsStatus,
 ) context.Context {
 	recordEventWithUserID := r.Context().Value(utils.ContextKeyRecordEventWithUserID).(utils.RecordWithUserIDFunc)
 	newCtx := context.WithValue(r.Context(), utils.ContextKeyUserID, userID)
@@ -77,6 +77,7 @@ func authenticateAndHandle(
 	token string,
 	handler func(http.ResponseWriter, *http.Request, router.Params),
 ) {
+	db := r.Context().Value(utils.ContextKeyDB).(database.DB)
 	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
 	if token == "" {
 		utils.RespondError(w, record, "no_token")
@@ -104,12 +105,12 @@ func authenticateAndHandle(
 	log.Println("DB Version / Rate Limit Status In Context")
 	user, rateLimitStatus, creditsStatus, err := db.CheckDBVersionRateLimit(userID, version)
 
-	if err == db.ErrDBVersionMismatch {
+	if err == database.ErrDBVersionMismatch {
 		utils.RespondError(w, record, "invalid_token")
 		return
 	}
 
-	if err == db.ErrDevNotPremium {
+	if err == database.ErrDevNotPremium {
 		utils.RespondError(w, record, "dev_not_premium")
 		return
 	}

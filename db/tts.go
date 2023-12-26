@@ -11,9 +11,9 @@ func (TTSVoice) TableName() string {
 	return "tts_voices"
 }
 
-func GetTTSVoice(slug string) (TTSVoice, error) {
+func (db DB) GetTTSVoice(slug string) (TTSVoice, error) {
 	var voice TTSVoice
-	err := DB.First(&voice, "slug = ?", slug).Error
+	err := db.sql.First(&voice, "slug = ?", slug).Error
 	if err != nil {
 		return voice, err
 	}
