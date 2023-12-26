@@ -77,7 +77,7 @@ func authenticateAndHandle(
 	token string,
 	handler func(http.ResponseWriter, *http.Request, router.Params),
 ) {
-	db := r.Context().Value(utils.ContextKeyDB).(database.DB)
+	db := r.Context().Value(utils.ContextKeyDB).(database.Database)
 	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
 	if token == "" {
 		utils.RespondError(w, record, "no_token")

@@ -20,7 +20,7 @@ func ExchangeToken(
 	project database.Project,
 	getUserFromToken func(ctx context.Context, token string, projectID string) (string, string, error),
 ) (string, error) {
-	db := ctx.Value(utils.ContextKeyDB).(database.DB)
+	db := ctx.Value(utils.ContextKeyDB).(database.Database)
 	authID, email, err := getUserFromToken(ctx, token, project.ID)
 	if err != nil {
 		return "", err
@@ -65,7 +65,7 @@ func TokenExchangeHandler(
 	getUserFromToken func(ctx context.Context, token string, projectID string) (string, string, error),
 ) func(w http.ResponseWriter, r *http.Request, ps router.Params) {
 	return func(w http.ResponseWriter, r *http.Request, ps router.Params) {
-		db := r.Context().Value(utils.ContextKeyDB).(database.DB)
+		db := r.Context().Value(utils.ContextKeyDB).(database.Database)
 		record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
 		projectID := ps.ByName("id")
 		project, err := db.GetProjectByID(projectID)

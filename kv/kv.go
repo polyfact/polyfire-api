@@ -10,7 +10,7 @@ import (
 )
 
 func Get(w http.ResponseWriter, r *http.Request, _ router.Params) {
-	db := r.Context().Value(utils.ContextKeyDB).(database.DB)
+	db := r.Context().Value(utils.ContextKeyDB).(database.Database)
 	userID := r.Context().Value(utils.ContextKeyUserID).(string)
 	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
 
@@ -34,7 +34,7 @@ func Get(w http.ResponseWriter, r *http.Request, _ router.Params) {
 }
 
 func Set(w http.ResponseWriter, r *http.Request, _ router.Params) {
-	db := r.Context().Value(utils.ContextKeyDB).(database.DB)
+	db := r.Context().Value(utils.ContextKeyDB).(database.Database)
 	userID := r.Context().Value(utils.ContextKeyUserID).(string)
 	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
 
@@ -61,7 +61,7 @@ func Set(w http.ResponseWriter, r *http.Request, _ router.Params) {
 }
 
 func Delete(w http.ResponseWriter, r *http.Request, _ router.Params) {
-	db := r.Context().Value(utils.ContextKeyDB).(database.DB)
+	db := r.Context().Value(utils.ContextKeyDB).(database.Database)
 	userID := r.Context().Value(utils.ContextKeyUserID).(string)
 	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
 
@@ -84,7 +84,7 @@ func Delete(w http.ResponseWriter, r *http.Request, _ router.Params) {
 }
 
 func List(w http.ResponseWriter, r *http.Request, _ router.Params) {
-	db := r.Context().Value(utils.ContextKeyDB).(database.DB)
+	db := r.Context().Value(utils.ContextKeyDB).(database.Database)
 	userID := r.Context().Value(utils.ContextKeyUserID).(string)
 	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
 

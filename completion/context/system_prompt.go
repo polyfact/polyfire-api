@@ -93,7 +93,7 @@ func (sp SystemPrompt) Render(vars map[string]string) string {
 }
 
 func GetVars(ctx context.Context, userID string, varList []string) (map[string]string, []string) {
-	db := ctx.Value(utils.ContextKeyDB).(database.DB)
+	db := ctx.Value(utils.ContextKeyDB).(database.Database)
 	warnings := make([]string, 0)
 	result := make(map[string]string)
 
@@ -137,7 +137,7 @@ func GetSystemPrompt(
 	systemPrompt *string,
 	chatID *string,
 ) (*SystemPromptContext, []string, error) {
-	db := ctx.Value(utils.ContextKeyDB).(database.DB)
+	db := ctx.Value(utils.ContextKeyDB).(database.Database)
 	result := ""
 
 	if systemPrompt != nil && len(*systemPrompt) > 0 {

@@ -60,7 +60,7 @@ func getAvailableModels(model string) (string, string) {
 }
 
 func getModelWithAliases(ctx context.Context, modelAlias string, projectID string) (string, string) {
-	db := ctx.Value(utils.ContextKeyDB).(database.DB)
+	db := ctx.Value(utils.ContextKeyDB).(database.Database)
 	provider, model := getAvailableModels(modelAlias)
 
 	if model == "" {

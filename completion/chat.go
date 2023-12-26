@@ -15,7 +15,7 @@ import (
 )
 
 func CreateChat(w http.ResponseWriter, r *http.Request, _ router.Params) {
-	db := r.Context().Value(utils.ContextKeyDB).(database.DB)
+	db := r.Context().Value(utils.ContextKeyDB).(database.Database)
 	userID := r.Context().Value(utils.ContextKeyUserID).(string)
 	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
 
@@ -51,7 +51,7 @@ func CreateChat(w http.ResponseWriter, r *http.Request, _ router.Params) {
 }
 
 func UpdateChat(w http.ResponseWriter, r *http.Request, ps router.Params) {
-	db := r.Context().Value(utils.ContextKeyDB).(database.DB)
+	db := r.Context().Value(utils.ContextKeyDB).(database.Database)
 	id := ps.ByName("id")
 	userID := r.Context().Value(utils.ContextKeyUserID).(string)
 	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
@@ -79,7 +79,7 @@ func UpdateChat(w http.ResponseWriter, r *http.Request, ps router.Params) {
 }
 
 func DeleteChat(w http.ResponseWriter, r *http.Request, ps router.Params) {
-	db := r.Context().Value(utils.ContextKeyDB).(database.DB)
+	db := r.Context().Value(utils.ContextKeyDB).(database.Database)
 	id := ps.ByName("id")
 	userID := r.Context().Value(utils.ContextKeyUserID).(string)
 	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
@@ -94,7 +94,7 @@ func DeleteChat(w http.ResponseWriter, r *http.Request, ps router.Params) {
 }
 
 func ListChat(w http.ResponseWriter, r *http.Request, _ router.Params) {
-	db := r.Context().Value(utils.ContextKeyDB).(database.DB)
+	db := r.Context().Value(utils.ContextKeyDB).(database.Database)
 	userID := r.Context().Value(utils.ContextKeyUserID).(string)
 	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
 
@@ -111,7 +111,7 @@ func ListChat(w http.ResponseWriter, r *http.Request, _ router.Params) {
 }
 
 func GetChatHistory(w http.ResponseWriter, r *http.Request, ps router.Params) {
-	db := r.Context().Value(utils.ContextKeyDB).(database.DB)
+	db := r.Context().Value(utils.ContextKeyDB).(database.Database)
 	id := ps.ByName("id")
 	orderByParam := r.URL.Query().Get("orderBy")
 	limitParam := r.URL.Query().Get("limit")
@@ -152,7 +152,7 @@ func AddToChatHistory(
 	callback options.ProviderCallback,
 	opts *options.ProviderOptions,
 ) error {
-	db := ctx.Value(utils.ContextKeyDB).(database.DB)
+	db := ctx.Value(utils.ContextKeyDB).(database.Database)
 	log.Println("GetChatByID")
 	chat, err := db.GetChatByID(chatID)
 	if err != nil {

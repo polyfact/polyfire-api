@@ -42,7 +42,7 @@ func checkAuthorizedDomains(project *database.Project, redirectURI string) bool 
 }
 
 func RedirectAuth(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	db := r.Context().Value(utils.ContextKeyDB).(database.DB)
+	db := r.Context().Value(utils.ContextKeyDB).(database.Database)
 	projectID := ps.ByName("id")
 	provider := r.URL.Query().Get("provider")
 	redirectToFinal := r.URL.Query().Get("redirect_to")
@@ -82,7 +82,7 @@ func RedirectAuth(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 	http.Redirect(w, r, url, http.StatusFound)
 }
 
-func wrapSupabaseRefreshToken(db database.DB, refreshToken string, projectID string) (string, error) {
+func wrapSupabaseRefreshToken(db database.Database, refreshToken string, projectID string) (string, error) {
 	wrappedRefreshToken := make([]byte, 32)
 	_, err := rand.Read(wrappedRefreshToken)
 	if err != nil {
@@ -102,7 +102,7 @@ func wrapSupabaseRefreshToken(db database.DB, refreshToken string, projectID str
 }
 
 func CallbackAuth(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	db := r.Context().Value(utils.ContextKeyDB).(database.DB)
+	db := r.Context().Value(utils.ContextKeyDB).(database.Database)
 	projectID := ps.ByName("id")
 	redirectTo := r.URL.Query().Get("redirect_to")
 	accessToken := r.URL.Query().Get("access_token")
@@ -170,7 +170,7 @@ type RefreshTokenSupabaseResponse struct {
 }
 
 func RefreshToken(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	db := r.Context().Value(utils.ContextKeyDB).(database.DB)
+	db := r.Context().Value(utils.ContextKeyDB).(database.Database)
 	projectID := ps.ByName("id")
 
 	var refreshTokenRequest RefreshTokenRequest

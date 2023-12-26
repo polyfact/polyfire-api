@@ -38,7 +38,7 @@ func storeImageBucket(reader io.Reader, path string) (string, error) {
 }
 
 func ImageGeneration(w http.ResponseWriter, r *http.Request, _ router.Params) {
-	db := r.Context().Value(utils.ContextKeyDB).(database.DB)
+	db := r.Context().Value(utils.ContextKeyDB).(database.Database)
 	userID := r.Context().Value(utils.ContextKeyUserID).(string)
 	request, _ := json.Marshal(r.URL.Query())
 	prompt := r.URL.Query().Get("p")

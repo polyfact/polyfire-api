@@ -43,7 +43,7 @@ func getErrorMessage(rec interface{}) string {
 }
 
 func AddRecord(r *http.Request, eventType utils.EventType) {
-	db := r.Context().Value(utils.ContextKeyDB).(database.DB)
+	db := r.Context().Value(utils.ContextKeyDB).(database.Database)
 	eventID := uuid.New().String()
 
 	originHeader := r.Header.Get("Origin")

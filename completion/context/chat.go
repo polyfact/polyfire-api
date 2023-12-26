@@ -26,7 +26,7 @@ type ChatHistoryContext struct {
 var chatHistoryTemplateGrowth = InitContextStructureTemplate(*chatHistoryTemplate)
 
 func GetChatHistoryContext(ctx context.Context, userID string, chatID string) (*ChatHistoryContext, error) {
-	db := ctx.Value(utils.ContextKeyDB).(database.DB)
+	db := ctx.Value(utils.ContextKeyDB).(database.Database)
 	allHistory, err := db.GetChatMessages(userID, chatID, true, 20, 0)
 	if err != nil {
 		return nil, err

@@ -18,7 +18,7 @@ import (
 const BatchSize int = 512
 
 func Create(w http.ResponseWriter, r *http.Request, _ router.Params) {
-	db := r.Context().Value(utils.ContextKeyDB).(database.DB)
+	db := r.Context().Value(utils.ContextKeyDB).(database.Database)
 	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
 	userID, ok := r.Context().Value(utils.ContextKeyUserID).(string)
 	if !ok {
@@ -59,7 +59,7 @@ func Create(w http.ResponseWriter, r *http.Request, _ router.Params) {
 }
 
 func Add(w http.ResponseWriter, r *http.Request, _ router.Params) {
-	db := r.Context().Value(utils.ContextKeyDB).(database.DB)
+	db := r.Context().Value(utils.ContextKeyDB).(database.Database)
 	decoder := json.NewDecoder(r.Body)
 	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
 	userID := r.Context().Value(utils.ContextKeyUserID).(string)
@@ -122,7 +122,7 @@ func Add(w http.ResponseWriter, r *http.Request, _ router.Params) {
 }
 
 func Get(w http.ResponseWriter, r *http.Request, _ router.Params) {
-	db := r.Context().Value(utils.ContextKeyDB).(database.DB)
+	db := r.Context().Value(utils.ContextKeyDB).(database.Database)
 	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
 	userID, ok := r.Context().Value(utils.ContextKeyUserID).(string)
 	if !ok {
@@ -152,7 +152,7 @@ func Get(w http.ResponseWriter, r *http.Request, _ router.Params) {
 }
 
 func Embedder(ctx context.Context, userID string, memoryID []string, task string) ([]database.MatchResult, error) {
-	db := ctx.Value(utils.ContextKeyDB).(database.DB)
+	db := ctx.Value(utils.ContextKeyDB).(database.Database)
 	callback := func(model_name string, input_count int) {
 		db.LogRequests(
 			ctx.Value(utils.ContextKeyEventID).(string),

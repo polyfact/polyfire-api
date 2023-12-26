@@ -123,7 +123,7 @@ type Result struct {
 
 func Transcribe(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	ctx := r.Context()
-	db := ctx.Value(utils.ContextKeyDB).(database.DB)
+	db := ctx.Value(utils.ContextKeyDB).(database.Database)
 	userID := ctx.Value(utils.ContextKeyUserID).(string)
 	record := ctx.Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
 

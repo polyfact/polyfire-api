@@ -58,7 +58,7 @@ type RequestBody struct {
 }
 
 func Handler(w http.ResponseWriter, r *http.Request, _ router.Params) {
-	db := r.Context().Value(utils.ContextKeyDB).(database.DB)
+	db := r.Context().Value(utils.ContextKeyDB).(database.Database)
 	userID := r.Context().Value(utils.ContextKeyUserID).(string)
 	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
 

@@ -12,7 +12,7 @@ import (
 )
 
 func Embed(ctx context.Context, content string, c *func(string, int)) ([]float32, error) {
-	db := ctx.Value(utils.ContextKeyDB).(database.DB)
+	db := ctx.Value(utils.ContextKeyDB).(database.Database)
 	alreadyExistingEmbedding, err := db.GetExistingEmbeddingFromContent(content)
 	if err != nil {
 		return nil, err

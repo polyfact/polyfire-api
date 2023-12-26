@@ -38,7 +38,7 @@ func getLanguageCompletion(language *string) string {
 }
 
 func GenerationStart(ctx context.Context, userID string, input GenerateRequestBody) (*chan options.Result, error) {
-	db := ctx.Value(utils.ContextKeyDB).(database.DB)
+	db := ctx.Value(utils.ContextKeyDB).(database.Database)
 	resources := []database.MatchResult{}
 
 	log.Println("Init provider")
