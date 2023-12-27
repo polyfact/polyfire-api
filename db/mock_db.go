@@ -67,7 +67,10 @@ func (mdb MockDatabase) GetMemoryIDs(_ string) ([]MemoryRecord, error) {
 	panic("Mock GetMemoryIDs Unimplemented")
 }
 
-func (mdb MockDatabase) GetExistingEmbeddingFromContent(_ string) (*[]float32, error) {
+func (mdb MockDatabase) GetExistingEmbeddingFromContent(content string) (*[]float32, error) {
+	if mdb.MockGetExistingEmbeddingFromContent != nil {
+		return mdb.MockGetExistingEmbeddingFromContent(content)
+	}
 	panic("Mock GetExistingEmbeddingFromContent Unimplemented")
 }
 
@@ -158,7 +161,29 @@ func (mdb MockDatabase) LogRequestsCredits(_ string, _ string, _ string, _ int, 
 	panic("Mock LogRequestsCredits Unimplemented")
 }
 
-func (mdb MockDatabase) LogRequests(_ string, _ string, _ string, _ string, _ int, _ int, _ Kind, _ bool) {
+func (mdb MockDatabase) LogRequests(
+	eventID string,
+	userID string,
+	providerName string,
+	modelName string,
+	inputTokenCount int,
+	outputTokenCount int,
+	kind Kind,
+	countCredits bool,
+) {
+	if mdb.MockLogRequests != nil {
+		mdb.MockLogRequests(
+			eventID,
+			userID,
+			providerName,
+			modelName,
+			inputTokenCount,
+			outputTokenCount,
+			kind,
+			countCredits,
+		)
+		return
+	}
 	panic("Mock LogRequests Unimplemented")
 }
 

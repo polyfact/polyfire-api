@@ -98,7 +98,7 @@ fmt:
 
 test-%:
 	@echo "TEST: $(shell echo $@ | sed s/^test-// | sed 's/--/\//')/"
-	@cd $(shell echo $@ | sed s/^test-// | sed 's/--/\//') && go test && cd ..
+	@cd $(shell echo $@ | sed s/^test-// | sed 's/--/\//') && go test -v && cd ..
 
 TESTS = $(shell find | grep _test.go | xargs dirname | uniq | sed 's/\.\//test-/' | sed 's/\//--/g')
 

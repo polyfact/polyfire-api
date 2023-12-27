@@ -22,13 +22,6 @@ type OpenAIStreamProvider struct {
 	Provider      string
 }
 
-type openAIContext string
-
-const (
-	ContextKeyHttpClient openAIContext = "httpclient"
-	ContextKeyBaseURL    openAIContext = "baseurl"
-)
-
 func NewOpenAIStreamProvider(ctx context.Context, model string) OpenAIStreamProvider {
 	var config goOpenai.ClientConfig
 	var isCustomToken bool
@@ -47,11 +40,11 @@ func NewOpenAIStreamProvider(ctx context.Context, model string) OpenAIStreamProv
 		isCustomToken = false
 	}
 
-	if client, ok := ctx.Value(ContextKeyHttpClient).(*http.Client); ok {
+	if client, ok := ctx.Value(utils.ContextKeyHTTPClient).(*http.Client); ok {
 		config.HTTPClient = client
 	}
 
-	if base, ok := ctx.Value(ContextKeyBaseURL).(string); ok {
+	if base, ok := ctx.Value(utils.ContextKeyOpenAIBaseURL).(string); ok {
 		config.BaseURL = base
 	}
 

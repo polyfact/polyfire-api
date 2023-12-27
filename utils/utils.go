@@ -29,6 +29,8 @@ const (
 	ContextKeyOriginDomain          ContextKey = "originDomain"
 	ContextKeyProjectUserUsage      ContextKey = "projectUserUsage"
 	ContextKeyProjectUserRateLimit  ContextKey = "projectUserRateLimit"
+	ContextKeyHTTPClient            ContextKey = "httpClient"
+	ContextKeyOpenAIBaseURL         ContextKey = "openAIBaseURL"
 )
 
 type EventType string
