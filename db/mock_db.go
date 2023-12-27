@@ -217,7 +217,10 @@ func (mdb MockDatabase) CreateProjectUser(_ string, _ string, _ *int) (*string, 
 	panic("Mock CreateProjectUser Unimplemented")
 }
 
-func (mdb MockDatabase) GetUserIDFromProjectAuthID(_ string, _ string) (*string, error) {
+func (mdb MockDatabase) GetUserIDFromProjectAuthID(project string, authID string) (*string, error) {
+	if mdb.MockGetUserIDFromProjectAuthID != nil {
+		return mdb.MockGetUserIDFromProjectAuthID(project, authID)
+	}
 	panic("Mock GetUserIDFromProjectAuthID Unimplemented")
 }
 
