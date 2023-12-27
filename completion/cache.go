@@ -2,7 +2,6 @@ package completion
 
 import (
 	"context"
-	"log"
 
 	database "github.com/polyfire/api/db"
 	"github.com/polyfire/api/llm"
@@ -28,8 +27,6 @@ func CheckFuzzyCache(
 	}
 
 	if cache != nil {
-		log.Println("Fuzzy Cache hit")
-
 		result := make(chan options.Result)
 		go func() {
 			defer close(result)
@@ -54,8 +51,6 @@ func CheckExactCache(
 	}
 
 	if cache != nil {
-		log.Println("Cache hit")
-
 		result := make(chan options.Result)
 		go func() {
 			defer close(result)

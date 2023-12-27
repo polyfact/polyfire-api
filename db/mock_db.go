@@ -87,13 +87,7 @@ func (mdb MockDatabase) AddChatMessage(_ string, _ bool, _ string) error {
 	panic("Mock AddChatMessage Unimplemented")
 }
 
-func (mdb MockDatabase) GetChatMessages(
-	_ string,
-	_ string,
-	_ bool,
-	_ int,
-	_ int,
-) ([]ChatMessage, error) {
+func (mdb MockDatabase) GetChatMessages(_ string, _ string, _ bool, _ int, _ int) ([]ChatMessage, error) {
 	panic("Mock GetChatMessages Unimplemented")
 }
 
@@ -160,28 +154,11 @@ func (mdb MockDatabase) LogEvents(
 	panic("Mock LogEvents Unimplemented")
 }
 
-func (mdb MockDatabase) LogRequestsCredits(
-	_ string,
-	_ string,
-	_ string,
-	_ int,
-	_ int,
-	_ int,
-	_ Kind,
-) {
+func (mdb MockDatabase) LogRequestsCredits(_ string, _ string, _ string, _ int, _ int, _ int, _ Kind) {
 	panic("Mock LogRequestsCredits Unimplemented")
 }
 
-func (mdb MockDatabase) LogRequests(
-	_ string,
-	_ string,
-	_ string,
-	_ string,
-	_ int,
-	_ int,
-	_ Kind,
-	_ bool,
-) {
+func (mdb MockDatabase) LogRequests(_ string, _ string, _ string, _ string, _ int, _ int, _ Kind, _ bool) {
 	panic("Mock LogRequests Unimplemented")
 }
 
@@ -192,14 +169,7 @@ func (mdb MockDatabase) GetExactCompletionCacheByHash(provider string, model str
 	panic("GetExactCompletionCacheByHash Mock not found")
 }
 
-func (mdb MockDatabase) AddCompletionCache(
-	_ []float32,
-	_ string,
-	_ string,
-	_ string,
-	_ string,
-	_ bool,
-) error {
+func (mdb MockDatabase) AddCompletionCache(_ []float32, _ string, _ string, _ string, _ string, _ bool) error {
 	panic("Mock AddCompletionCache Unimplemented")
 }
 
@@ -242,10 +212,7 @@ func (mdb MockDatabase) RemoveCreditsFromDev(_ string, _ int) error {
 	panic("Mock RemoveCreditsFromDev Unimplemented")
 }
 
-func (mdb MockDatabase) CheckDBVersionRateLimit(
-	_ string,
-	_ int,
-) (*UserInfos, RateLimitStatus, CreditsStatus, error) {
+func (mdb MockDatabase) CheckDBVersionRateLimit(_ string, _ int) (*UserInfos, RateLimitStatus, CreditsStatus, error) {
 	panic("Mock CheckDBVersionRateLimit Unimplemented")
 }
 
