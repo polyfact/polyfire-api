@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -35,7 +36,7 @@ func ExchangeToken(
 		if !project.FreeUserInit {
 			return "", fmt.Errorf("free_user_init_disabled")
 		}
-		fmt.Println("Creating user on project", project.ID)
+		log.Println("[INFO] Creating user on project", project.ID)
 		userID, err = db.CreateProjectUser(
 			authID,
 			project.ID,
@@ -89,7 +90,7 @@ func TokenExchangeHandler(
 
 		userToken, err := ExchangeToken(r.Context(), token, *project, getUserFromToken)
 		if err != nil {
-			fmt.Println(err)
+			log.Println("[ERROR]", err)
 			utils.RespondError(w, record, "token_exchange_failed")
 			return
 		}

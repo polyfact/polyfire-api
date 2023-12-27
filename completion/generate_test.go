@@ -21,7 +21,10 @@ func MockLogRequests(
 }
 
 func TestSimpleFullGeneration(t *testing.T) {
-	ctx := utils.MockOpenAIServer(context.Background())
+	utils.SetLogLevel("WARN")
+	ctx := context.Background()
+
+	ctx = utils.MockOpenAIServer(ctx)
 
 	ctx = context.WithValue(
 		ctx,
@@ -41,17 +44,8 @@ func TestSimpleFullGeneration(t *testing.T) {
 	 * This is normally set by the db/users.go request. Here we're only testing GenerationStart
 	 * so we need to define it manually
 	 */
-	ctx = context.WithValue(
-		ctx,
-		utils.ContextKeyRateLimitStatus,
-		database.RateLimitStatusOk,
-	)
-
-	ctx = context.WithValue(
-		ctx,
-		utils.ContextKeyEventID,
-		"00000000-0000-0000-0000-000000000000",
-	)
+	ctx = context.WithValue(ctx, utils.ContextKeyRateLimitStatus, database.RateLimitStatusOk)
+	ctx = context.WithValue(ctx, utils.ContextKeyEventID, "00000000-0000-0000-0000-000000000000")
 
 	reqBody := GenerateRequestBody{
 		Task: "Test",

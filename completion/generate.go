@@ -3,7 +3,6 @@ package completion
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log"
 
 	database "github.com/polyfire/api/db"
@@ -41,7 +40,7 @@ func GenerationStart(ctx context.Context, userID string, input GenerateRequestBo
 	db := ctx.Value(utils.ContextKeyDB).(database.Database)
 	resources := []database.MatchResult{}
 
-	log.Println("Init provider")
+	log.Println("[DEBUG] Init provider")
 
 	// Get provider
 	provider, err := llm.NewProvider(ctx, input.Model)
@@ -54,11 +53,10 @@ func GenerationStart(ctx context.Context, userID string, input GenerateRequestBo
 	}
 
 	providerName, modelName := provider.ProviderModel()
-	fmt.Println("Provider: " + providerName)
 
 	// Check Rate Limit
 	if provider.DoesFollowRateLimit() {
-		log.Println("Check Rate Limit")
+		log.Println("[DEBUG] Check Rate Limit")
 		err = CheckRateLimit(ctx)
 		if err != nil {
 			return nil, err
@@ -115,7 +113,7 @@ func GenerationStart(ctx context.Context, userID string, input GenerateRequestBo
 		prompt = getLanguageCompletion(input.Language) + contextString + "\nUser:\n" + input.Task + "\nYou:\n"
 	}
 
-	fmt.Println("Prompt: " + prompt)
+	log.Println("[INFO] Prompt: " + prompt)
 
 	var result chan options.Result
 
@@ -148,7 +146,7 @@ func GenerationStart(ctx context.Context, userID string, input GenerateRequestBo
 		return &result, nil
 	}
 
-	log.Println("Generate")
+	log.Println("[DEBUG] Generate")
 	resChan := provider.Generate(prompt, &callback, &opts)
 
 	if input.AutoComplete {

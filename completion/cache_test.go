@@ -20,6 +20,7 @@ func mockCacheHit(_ string, _ string, _ string) (*database.CompletionCache, erro
 }
 
 func TestExactCacheHit(t *testing.T) {
+	utils.SetLogLevel("WARN")
 	prompt := "My name is"
 
 	ctx := context.WithValue(
@@ -49,6 +50,7 @@ func mockCacheMiss(_ string, _ string, _ string) (*database.CompletionCache, err
 }
 
 func TestExactCacheMiss(t *testing.T) {
+	utils.SetLogLevel("WARN")
 	prompt := "My name is"
 
 	ctx := context.WithValue(
