@@ -9,11 +9,11 @@ import (
 	"github.com/polyfire/api/utils"
 )
 
-func mockGetExistingEmbeddingFromContent(content string) (*[]float32, error) {
+func mockGetExistingEmbeddingFromContent(_ string) (*[]float32, error) {
 	return nil, nil
 }
 
-func mockMatchEmbeddings(memoryIDs []string, userID string, embedding []float32) ([]database.MatchResult, error) {
+func mockMatchEmbeddings(_ []string, _ string, _ []float32) ([]database.MatchResult, error) {
 	result := database.MatchResult{
 		ID:         "00000000-0000-0000-0000-000000000000",
 		Content:    "banana42",

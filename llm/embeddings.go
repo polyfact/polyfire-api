@@ -2,6 +2,7 @@ package llm
 
 import (
 	"context"
+	"fmt"
 
 	providers "github.com/polyfire/api/llm/providers"
 	llmTokens "github.com/polyfire/api/tokens"
@@ -24,7 +25,7 @@ func Embed(ctx context.Context, content string, c *func(string, int)) ([]float32
 
 	userID := ctx.Value(utils.ContextKeyUserID).(string)
 
-	client := providers.NewOpenAIStreamProvider(ctx, string(goOpenai.AdaEmbeddingV2)).Client
+	client := providers.NewOpenAIStreamProvider(ctx, fmt.Sprint(goOpenai.AdaEmbeddingV2)).Client
 
 	embeddingCtx := context.Background()
 	res, err := client.CreateEmbeddings(embeddingCtx, goOpenai.EmbeddingRequestStrings{
