@@ -28,8 +28,7 @@ func CheckFuzzyCache(
 	}
 
 	if cache != nil {
-		log.Println("Fuzzy Cache hit")
-
+		log.Println("[INFO] Fuzzy cache hit")
 		result := make(chan options.Result)
 		go func() {
 			defer close(result)
@@ -54,8 +53,7 @@ func CheckExactCache(
 	}
 
 	if cache != nil {
-		log.Println("Cache hit")
-
+		log.Println("[INFO] Exact cache hit")
 		result := make(chan options.Result)
 		go func() {
 			defer close(result)

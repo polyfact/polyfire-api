@@ -22,7 +22,7 @@ endif
 
 all: $(CODEGEN_DIRECTORY)/openrouter-models.go fmt $(BUILD_DIRECTORY)/$(BIN_NAME)
 
-$(BUILD_DIRECTORY)/$(BIN_NAME): api.go ./**/*.go
+$(BUILD_DIRECTORY)/$(BIN_NAME): codegen api.go ./**/*.go
 	mkdir -p $(BUILD_DIRECTORY)
 	GOOS=$(OS) GOARCH="$(GOARCH)" go build -o $(BUILD_DIRECTORY)/$(BIN_NAME) api.go
 
@@ -96,13 +96,13 @@ clean:
 fmt:
 	go fmt $$(go list ./...)
 
-test-%:
+test-%: codegen
 	@echo "TEST: $(shell echo $@ | sed s/^test-// | sed 's/--/\//')/"
-	@cd $(shell echo $@ | sed s/^test-// | sed 's/--/\//') && go test && cd ..
+	@cd $(shell echo $@ | sed s/^test-// | sed 's/--/\//') && go test -v && cd ..
 
 TESTS = $(shell find | grep _test.go | xargs dirname | uniq | sed 's/\.\//test-/' | sed 's/\//--/g')
 
-test: codegen ${TESTS}
+test: ${TESTS}
 
 schema.sql:
 	( pg_dump -Osx ${SUPABASE_PG_URI} && pg_dump -at models ${SUPABASE_PG_URI} ) > schema.sql

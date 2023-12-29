@@ -3,7 +3,7 @@ package llm
 import (
 	"context"
 	"errors"
-	"fmt"
+	"log"
 
 	"github.com/polyfire/api/codegen"
 	database "github.com/polyfire/api/db"
@@ -78,20 +78,20 @@ func getModelWithAliases(ctx context.Context, modelAlias string, projectID strin
 
 func NewProvider(ctx context.Context, modelInput string) (Provider, error) {
 	projectID, _ := ctx.Value(utils.ContextKeyProjectID).(string)
-	fmt.Println("Project ID: ", projectID)
+	log.Println("[INFO] Project ID: ", projectID)
 
 	provider, model := getModelWithAliases(ctx, modelInput, projectID)
 
-	fmt.Println("Provider: ", provider)
+	log.Println("[INFO] Provider: ", provider)
 
 	switch provider {
 	case "openai":
-		fmt.Println("Using OpenAI")
+		log.Println("[INFO] Using OpenAI")
 		llm := providers.NewOpenAIStreamProvider(ctx, model)
 
 		return llm, nil
 	case "cohere":
-		fmt.Println("Using Cohere")
+		log.Println("[INFO] Using Cohere")
 		llm, err := cohere.New()
 		if err != nil {
 			return nil, err
@@ -102,11 +102,11 @@ func NewProvider(ctx context.Context, modelInput string) (Provider, error) {
 			Model: model,
 		}, nil
 	case "replicate":
-		fmt.Println("Using Replicate")
+		log.Println("[INFO] Using Replicate")
 		llm := providers.NewReplicateProvider(ctx, model)
 		return llm, nil
 	case "openrouter":
-		fmt.Println("Using OpenRouter")
+		log.Println("[INFO] Using OpenRouter")
 		llm := providers.NewOpenRouterProvider(ctx, model)
 
 		return llm, nil

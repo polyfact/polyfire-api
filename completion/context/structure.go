@@ -112,10 +112,10 @@ func GetContext(content []ContentElement, tokenLimit int) (string, error) {
 		}
 	}
 
-	// We try to increase the size of the important and helpful elements (in the order of importance we added them in)
+	// We try to increase the size of the important and helpful elements (in the order of importance we added them in) to the recommended size
 	for i, item := range importantAndHelpfulContent {
 		importantAndHelpfulContent[i].Recommended = item.ContentElement.GetContentFittingIn(
-			tokenLimit - (tokenCount - item.MinimumSize),
+			item.RecommendedSize,
 		)
 		importantAndHelpfulContent[i].RecommendedSize = tokens.CountTokens(importantAndHelpfulContent[i].Recommended)
 
@@ -125,6 +125,26 @@ func GetContext(content []ContentElement, tokenLimit int) (string, error) {
 
 		importantAndHelpfulContent[i].UseRecommended = true
 		tokenCount = tokenCount - importantAndHelpfulContent[i].MinimumSize + importantAndHelpfulContent[i].RecommendedSize
+	}
+
+	// We try to increase the size of the important and helpful elements (in the order of importance we added them in) as much as possible
+	for i, item := range importantAndHelpfulContent {
+		size := item.MinimumSize
+		if item.UseRecommended {
+			size = item.RecommendedSize
+		}
+		recommended := item.ContentElement.GetContentFittingIn(
+			tokenLimit - (tokenCount - size),
+		)
+		recommendedSize := tokens.CountTokens(recommended)
+
+		if (tokenCount + recommendedSize - size) > tokenLimit {
+			continue
+		}
+		importantAndHelpfulContent[i].Recommended = recommended
+		importantAndHelpfulContent[i].RecommendedSize = recommendedSize
+		importantAndHelpfulContent[i].UseRecommended = true
+		tokenCount = tokenCount - size + importantAndHelpfulContent[i].RecommendedSize
 	}
 
 	// We merge all the context and sort them by the order we want to get them in the context prompt

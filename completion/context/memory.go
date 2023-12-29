@@ -4,6 +4,7 @@ import (
 	"context"
 	"text/template"
 
+	database "github.com/polyfire/api/db"
 	"github.com/polyfire/api/memory"
 )
 
@@ -14,9 +15,14 @@ var memoryTemplate = template.Must(template.New("memory_context").Parse(`Here ar
 type MemoryContext = TemplateContext
 
 func GetMemory(ctx context.Context, userID string, memoryIds []string, task string) (*MemoryContext, error) {
-	results, err := memory.Embedder(ctx, userID, memoryIds, task)
-	if err != nil {
-		return nil, err
+	results := []database.MatchResult{}
+	var err error
+
+	if len(memoryIds) > 0 {
+		results, err = memory.Embedder(ctx, userID, memoryIds, task)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	resultStrings := make([]string, len(results))

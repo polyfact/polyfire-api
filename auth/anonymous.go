@@ -38,9 +38,7 @@ func getUserFromAnonymousToken(ctx context.Context, token string, projectID stri
 		email = strings.TrimSpace(string(emailBytes))
 	}
 
-	reEncoded := base64.URLEncoding.EncodeToString(
-		[]byte(email),
-	) // This needs to be re-encoded since it has been trimmed by the previous line
+	reEncoded := base64.URLEncoding.EncodeToString([]byte(email))
 
 	_, err = mail.ParseAddress(email)
 	if err != nil {

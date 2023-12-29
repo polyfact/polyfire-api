@@ -1,5 +1,12 @@
 package utils
 
+import (
+	"log"
+	"os"
+
+	"github.com/hashicorp/logutils"
+)
+
 func ContainsString(list []string, item string) bool {
 	for _, i := range list {
 		if i == item {
@@ -29,6 +36,8 @@ const (
 	ContextKeyOriginDomain          ContextKey = "originDomain"
 	ContextKeyProjectUserUsage      ContextKey = "projectUserUsage"
 	ContextKeyProjectUserRateLimit  ContextKey = "projectUserRateLimit"
+	ContextKeyHTTPClient            ContextKey = "httpClient"
+	ContextKeyOpenAIBaseURL         ContextKey = "openAIBaseURL"
 )
 
 type EventType string
@@ -76,3 +85,12 @@ const (
 	PromptUpdate EventType = "data.prompt.update"
 	PromptDelete EventType = "data.prompt.delete"
 )
+
+func SetLogLevel(lvl string) {
+	filter := &logutils.LevelFilter{
+		Levels:   []logutils.LogLevel{"DEBUG", "INFO", "WARN", "ERROR"},
+		MinLevel: logutils.LogLevel(lvl),
+		Writer:   os.Stderr,
+	}
+	log.SetOutput(filter)
+}

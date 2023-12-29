@@ -13,7 +13,7 @@ import (
 	"github.com/polyfire/api/utils"
 )
 
-func parseJWT(token string) (jwt.MapClaims, error) {
+func ParseJWT(token string) (jwt.MapClaims, error) {
 	parsedToken, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
@@ -84,7 +84,7 @@ func authenticateAndHandle(
 		return
 	}
 
-	claims, err := parseJWT(token)
+	claims, err := ParseJWT(token)
 	if err != nil {
 		utils.RespondError(w, record, "invalid_token")
 		return

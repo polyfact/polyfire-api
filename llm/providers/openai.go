@@ -3,9 +3,9 @@ package providers
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"math"
+	"net/http"
 	"os"
 	"strings"
 
@@ -16,7 +16,7 @@ import (
 )
 
 type OpenAIStreamProvider struct {
-	client        goOpenai.Client
+	Client        goOpenai.Client
 	Model         string
 	IsCustomToken bool
 	Provider      string
@@ -40,8 +40,16 @@ func NewOpenAIStreamProvider(ctx context.Context, model string) OpenAIStreamProv
 		isCustomToken = false
 	}
 
+	if client, ok := ctx.Value(utils.ContextKeyHTTPClient).(*http.Client); ok {
+		config.HTTPClient = client
+	}
+
+	if base, ok := ctx.Value(utils.ContextKeyOpenAIBaseURL).(string); ok {
+		config.BaseURL = base
+	}
+
 	return OpenAIStreamProvider{
-		client:        *goOpenai.NewClientWithConfig(config),
+		Client:        *goOpenai.NewClientWithConfig(config),
 		Model:         model,
 		IsCustomToken: isCustomToken,
 		Provider:      "openai",
@@ -87,9 +95,7 @@ func (m OpenAIStreamProvider) Generate(
 			}
 		}
 
-		fmt.Printf("%v\n", req.Temperature)
-
-		stream, err := m.client.CreateChatCompletionStream(ctx, req)
+		stream, err := m.Client.CreateChatCompletionStream(ctx, req)
 		if err != nil {
 			if strings.Contains(err.Error(), "Incorrect API key provided") && m.IsCustomToken {
 				chanRes <- options.Result{Err: "openai_invalid_api_key"}
@@ -112,8 +118,6 @@ func (m OpenAIStreamProvider) Generate(
 			}
 
 			tokenUsage.Output = tokens.CountTokens(completion.Choices[0].Delta.Content)
-
-			fmt.Printf("%v %v\n", completion.Choices[0].Delta.Content, tokenUsage.Output)
 
 			totalOutput += tokenUsage.Output
 
