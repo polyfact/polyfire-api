@@ -59,7 +59,10 @@ func (mdb MockDatabase) GetProjectByID(_ string) (*Project, error) {
 	panic("Mock GetProjectByID Unimplemented")
 }
 
-func (mdb MockDatabase) MatchEmbeddings(_ []string, _ string, _ []float32) ([]MatchResult, error) {
+func (mdb MockDatabase) MatchEmbeddings(memoryIDs []string, userID string, embedding []float32) ([]MatchResult, error) {
+	if mdb.MockMatchEmbeddings != nil {
+		return mdb.MockMatchEmbeddings(memoryIDs, userID, embedding)
+	}
 	panic("Mock MatchEmbeddings Unimplemented")
 }
 

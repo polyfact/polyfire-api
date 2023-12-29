@@ -16,7 +16,7 @@ import (
 )
 
 type OpenAIStreamProvider struct {
-	client        goOpenai.Client
+	Client        goOpenai.Client
 	Model         string
 	IsCustomToken bool
 	Provider      string
@@ -49,7 +49,7 @@ func NewOpenAIStreamProvider(ctx context.Context, model string) OpenAIStreamProv
 	}
 
 	return OpenAIStreamProvider{
-		client:        *goOpenai.NewClientWithConfig(config),
+		Client:        *goOpenai.NewClientWithConfig(config),
 		Model:         model,
 		IsCustomToken: isCustomToken,
 		Provider:      "openai",
@@ -95,7 +95,7 @@ func (m OpenAIStreamProvider) Generate(
 			}
 		}
 
-		stream, err := m.client.CreateChatCompletionStream(ctx, req)
+		stream, err := m.Client.CreateChatCompletionStream(ctx, req)
 		if err != nil {
 			if strings.Contains(err.Error(), "Incorrect API key provided") && m.IsCustomToken {
 				chanRes <- options.Result{Err: "openai_invalid_api_key"}

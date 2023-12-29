@@ -21,7 +21,7 @@ func NewOpenRouterProvider(_ context.Context, model string) OpenAIStreamProvider
 	config.BaseURL = "https://openrouter.ai/api/v1"
 
 	return OpenAIStreamProvider{
-		client:        *goOpenai.NewClientWithConfig(config),
+		Client:        *goOpenai.NewClientWithConfig(config),
 		Model:         model,
 		IsCustomToken: isCustomToken,
 		Provider:      "openrouter",

@@ -2,8 +2,8 @@ package llm
 
 import (
 	"context"
-	"os"
 
+	providers "github.com/polyfire/api/llm/providers"
 	llmTokens "github.com/polyfire/api/tokens"
 	goOpenai "github.com/sashabaranov/go-openai"
 
@@ -22,23 +22,9 @@ func Embed(ctx context.Context, content string, c *func(string, int)) ([]float32
 		return *alreadyExistingEmbedding, nil
 	}
 
-	var config goOpenai.ClientConfig
-
 	userID := ctx.Value(utils.ContextKeyUserID).(string)
 
-	customToken, ok := ctx.Value(utils.ContextKeyOpenAIToken).(string)
-	if ok {
-		config = goOpenai.DefaultConfig(customToken)
-		customOrg, ok := ctx.Value(utils.ContextKeyOpenAIOrg).(string)
-		if ok {
-			config.OrgID = customOrg
-		}
-	} else {
-		config = goOpenai.DefaultConfig(os.Getenv("OPENAI_API_KEY"))
-		config.OrgID = os.Getenv("OPENAI_ORGANIZATION")
-	}
-
-	client := goOpenai.NewClientWithConfig(config)
+	client := providers.NewOpenAIStreamProvider(ctx, string(goOpenai.AdaEmbeddingV2)).Client
 
 	embeddingCtx := context.Background()
 	res, err := client.CreateEmbeddings(embeddingCtx, goOpenai.EmbeddingRequestStrings{

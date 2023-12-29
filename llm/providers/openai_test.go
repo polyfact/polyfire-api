@@ -8,6 +8,7 @@ import (
 )
 
 func TestOpenAIProvider(t *testing.T) {
+	utils.SetLogLevel("WARN")
 	ctx := utils.MockOpenAIServer(context.Background())
 	result := NewOpenAIStreamProvider(ctx, "test-model").Generate("Test", nil, nil)
 

@@ -8,7 +8,7 @@ import (
 	"github.com/polyfire/api/utils"
 )
 
-func MockLogRequests(
+func mockLogRequests(
 	_ string,
 	_ string,
 	_ string,
@@ -36,7 +36,7 @@ func TestSimpleFullGeneration(t *testing.T) {
 			 * it's really useful, cannot be bypassed or merged with an already occuring request.
 			 * Any database request will slow down requests for the users.
 			 */
-			MockLogRequests: MockLogRequests,
+			MockLogRequests: mockLogRequests,
 		},
 	)
 
