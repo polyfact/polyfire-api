@@ -6,26 +6,13 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
-	"os"
 
-	"github.com/polyfire/api/utils"
+	providers "github.com/polyfire/api/llm/providers"
 	openai "github.com/sashabaranov/go-openai"
 )
 
 func DALLEGenerate(ctx context.Context, prompt string, model string) (io.Reader, error) {
-	var config openai.ClientConfig
-	customToken, ok := ctx.Value(utils.ContextKeyOpenAIToken).(string)
-	if ok {
-		config = openai.DefaultConfig(customToken)
-		customOrg, ok := ctx.Value(utils.ContextKeyOpenAIOrg).(string)
-		if ok {
-			config.OrgID = customOrg
-		}
-	} else {
-		config = openai.DefaultConfig(os.Getenv("OPENAI_API_KEY"))
-		config.OrgID = os.Getenv("OPENAI_ORGANIZATION")
-	}
-	client := openai.NewClientWithConfig(config)
+	client := providers.NewOpenAIStreamProvider(ctx, model).Client
 
 	req := openai.ImageRequest{
 		Prompt:         prompt,
