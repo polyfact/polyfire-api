@@ -54,17 +54,12 @@ func SplitFile(file io.Reader) ([]io.Reader, int, func(), error) {
 
 	durationFfprobe := strings.Split(strings.Trim(string(ffprobeResult), " \t\n"), ".")
 
-	durationMinutes, err := strconv.Atoi(durationFfprobe[0])
+	durationSeconds, err := strconv.Atoi(durationFfprobe[0])
 	if err != nil {
 		return nil, 0, nil, err
 	}
 
-	durationSeconds, err := strconv.Atoi(durationFfprobe[1][0:2])
-	if err != nil {
-		return nil, 0, nil, err
-	}
-
-	durationSeconds = durationMinutes*60 + durationSeconds + 1
+	durationSeconds = durationSeconds + 1
 	os.Remove("/tmp/" + id + "/audio-file")
 
 	splitCmd := exec.Command("split", "-b", "20971400", "/tmp/"+id+"/audio-file.ts")
