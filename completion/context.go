@@ -5,26 +5,9 @@ import (
 	"sync"
 
 	completionContext "github.com/polyfire/api/completion/context"
-	options "github.com/polyfire/api/llm/providers/options"
+	"github.com/polyfire/api/llm/providers/options"
+	"github.com/polyfire/api/utils"
 )
-
-func parseMemoryIDArray(memoryID interface{}) []string {
-	var memoryIDArray []string
-
-	var str string
-	var ok bool
-	var array []interface{}
-	if str, ok = memoryID.(string); ok {
-		memoryIDArray = append(memoryIDArray, str)
-	} else if array, ok = memoryID.([]interface{}); ok {
-		for _, item := range array {
-			if str, ok = item.(string); ok {
-				memoryIDArray = append(memoryIDArray, str)
-			}
-		}
-	}
-	return memoryIDArray
-}
 
 func launchContextFillingGoRouting(
 	wg *sync.WaitGroup,
@@ -57,7 +40,7 @@ func GetContextString(
 	contextElements := make([]completionContext.ContentElement, 0)
 
 	launchContextFillingGoRouting(&wg, &contextElements, func() (completionContext.ContentElement, error) {
-		return completionContext.GetMemory(ctx, userID, parseMemoryIDArray(input.MemoryID), input.Task)
+		return completionContext.GetMemory(ctx, userID, utils.StringOptionalArray(input.MemoryID), input.Task)
 	})
 
 	var warnings []string

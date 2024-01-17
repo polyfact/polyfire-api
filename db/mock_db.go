@@ -34,6 +34,7 @@ type MockDatabase struct {
 	MockCreateMemory                    func(memoryID string, userID string, public bool) error
 	MockGetMemory                       func(memoryID string) (*Memory, error)
 	MockAddMemory                       func(userID string, memoryID string, content string, embedding []float32) error
+	MockAddMemories                     func(memoryID string, embeddings []Embedding) error
 	MockGetExistingEmbeddingFromContent func(content string) (*[]float32, error)
 	MockGetMemoryIDs                    func(userID string) ([]MemoryRecord, error)
 	MockMatchEmbeddings                 func(memoryIDs []string, userID string, embedding []float32) ([]MatchResult, error)
@@ -79,6 +80,10 @@ func (mdb MockDatabase) GetExistingEmbeddingFromContent(content string) (*[]floa
 
 func (mdb MockDatabase) AddMemory(_ string, _ string, _ string, _ []float32) error {
 	panic("Mock AddMemory Unimplemented")
+}
+
+func (mdb MockDatabase) AddMemories(_ string, _ []Embedding) error {
+	panic("Mock AddMemories Unimplemented")
 }
 
 func (mdb MockDatabase) GetMemory(_ string) (*Memory, error) {

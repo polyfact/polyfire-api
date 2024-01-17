@@ -8,10 +8,10 @@ import (
 	"github.com/google/uuid"
 
 	router "github.com/julienschmidt/httprouter"
-	textsplitter "github.com/tmc/langchaingo/textsplitter"
 
 	database "github.com/polyfire/api/db"
 	"github.com/polyfire/api/llm"
+	"github.com/polyfire/api/tokens"
 	"github.com/polyfire/api/utils"
 )
 
@@ -65,9 +65,9 @@ func Add(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	userID := r.Context().Value(utils.ContextKeyUserID).(string)
 
 	var requestBody struct {
-		ID       string `json:"id"`
-		Input    string `json:"input"`
-		MaxToken int    `json:"max_token"`
+		ID       string      `json:"id"`
+		Input    interface{} `json:"input"`
+		MaxToken int         `json:"max_token"`
 	}
 
 	err := decoder.Decode(&requestBody)
@@ -76,18 +76,20 @@ func Add(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		return
 	}
 
-	splitter := textsplitter.NewTokenSplitter()
+	var chunkSize int
 
-	if requestBody.MaxToken != 0 {
-		splitter.ChunkSize = requestBody.MaxToken
+	if requestBody.MaxToken > 0 {
+		chunkSize = requestBody.MaxToken
 	} else {
-		splitter.ChunkSize = BatchSize
+		chunkSize = BatchSize
 	}
 
-	chunks, err := splitter.SplitText(requestBody.Input)
-	if err != nil {
-		utils.RespondError(w, record, "splitting_error")
-		return
+	chunks := make([]string, 0)
+
+	for _, input := range utils.StringOptionalArray(requestBody.Input) {
+		chunk := tokens.SplitText(input, chunkSize)
+
+		chunks = append(chunks, chunk[:]...)
 	}
 
 	callback := func(model_name string, input_count int) {
@@ -96,19 +98,40 @@ func Add(w http.ResponseWriter, r *http.Request, _ router.Params) {
 			userID, "openai", model_name, input_count, 0, "embedding", true)
 	}
 
-	for _, chunk := range chunks {
-		embeddings, err := llm.Embed(r.Context(), chunk, &callback)
+	var embeddings [][]float32
+
+	batches, err := tokens.BatchText(chunks, 2000)
+	if err != nil {
+		utils.RespondError(w, record, "embedding_error")
+		return
+	}
+
+	for _, batch := range batches {
+		embeddingsBatch, err := llm.Embed(r.Context(), batch, &callback)
 		if err != nil {
 			utils.RespondError(w, record, "embedding_error")
 			return
 		}
 
-		err = db.AddMemory(userID, requestBody.ID, chunk, embeddings)
+		embeddings = append(embeddings, embeddingsBatch[:]...)
+	}
 
-		if err != nil {
-			utils.RespondError(w, record, "db_insert_error")
-			return
-		}
+	results := make([]database.Embedding, 0)
+
+	for i, chunk := range chunks {
+		results = append(results, database.Embedding{
+			UserID:    userID,
+			MemoryID:  requestBody.ID,
+			Content:   chunk,
+			Embedding: embeddings[i],
+		})
+	}
+
+	err = db.AddMemories(requestBody.ID, results)
+
+	if err != nil {
+		utils.RespondError(w, record, "db_insert_error")
+		return
 	}
 
 	response := map[string]bool{"success": true}
@@ -159,12 +182,12 @@ func Embedder(ctx context.Context, userID string, memoryID []string, task string
 			userID, "openai", model_name, input_count, 0, "embedding", true)
 	}
 
-	embeddings, err := llm.Embed(ctx, task, &callback)
+	embeddings, err := llm.Embed(ctx, []string{task}, &callback)
 	if err != nil {
 		return nil, err
 	}
 
-	results, err := db.MatchEmbeddings(memoryID, userID, embeddings)
+	results, err := db.MatchEmbeddings(memoryID, userID, embeddings[0])
 	if err != nil {
 		return nil, err
 	}
