@@ -94,3 +94,24 @@ func SetLogLevel(lvl string) {
 	}
 	log.SetOutput(filter)
 }
+
+func StringOptionalArray(elem interface{}) []string {
+	var elemArray []string
+
+	var str string
+	var ok bool
+	var array []interface{}
+	if str, ok = elem.(string); ok {
+		elemArray = append(elemArray, str)
+	} else if array, ok = elem.([]interface{}); ok {
+		for _, item := range array {
+			if str, ok = item.(string); ok {
+				if len(str) == 0 {
+					continue
+				}
+				elemArray = append(elemArray, str)
+			}
+		}
+	}
+	return elemArray
+}

@@ -110,6 +110,47 @@ func (db DB) AddMemory(userID string, memoryID string, content string, embedding
 	return err
 }
 
+func (db DB) AddMemories(memoryID string, embeddings []Embedding) error {
+	memory, err := db.GetMemory(memoryID)
+	if err != nil {
+		return err
+	}
+
+	query := "INSERT INTO embeddings (memory_id, user_id, content, embedding) VALUES"
+	params := make([]interface{}, 0)
+
+	for i, embedding := range embeddings {
+
+		if memory == nil || memory.UserID != embedding.UserID {
+			return errors.New("memory not found")
+		}
+
+		embeddingstr := ""
+		for _, v := range embedding.Embedding {
+			embeddingstr += strconv.FormatFloat(float64(v), 'f', 6, 64) + ","
+		}
+		embeddingstr = strings.TrimRight(embeddingstr, ",")
+
+		if i != 0 {
+			query += ","
+		}
+
+		query += " (?, ?::uuid, ?, string_to_array(?, ',')::float[])"
+
+		params = append(params, embedding.MemoryID, embedding.UserID, embedding.Content, embeddingstr)
+	}
+
+	err = db.sql.Exec(
+		query,
+		params[:]...,
+	).Error
+	if err != nil {
+		return err
+	}
+
+	return err
+}
+
 func (db DB) GetExistingEmbeddingFromContent(content string) (*[]float32, error) {
 	var embeddings []Embedding
 	err := db.sql.Find(&embeddings, "content = ?", content).Error

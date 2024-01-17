@@ -17,14 +17,14 @@ func CheckFuzzyCache(
 	modelName string,
 ) (chan options.Result, []float32, error) {
 	db := ctx.Value(utils.ContextKeyDB).(database.Database)
-	embeddings, err := llm.Embed(ctx, prompt, nil)
+	embeddings, err := llm.Embed(ctx, []string{prompt}, nil)
 	if err != nil {
-		return nil, embeddings, err
+		return nil, embeddings[0], err
 	}
 
-	cache, err := db.GetCompletionCacheByInput(providerName, modelName, embeddings)
+	cache, err := db.GetCompletionCacheByInput(providerName, modelName, embeddings[0])
 	if err != nil {
-		return nil, embeddings, err
+		return nil, embeddings[0], err
 	}
 
 	if cache != nil {
@@ -34,10 +34,10 @@ func CheckFuzzyCache(
 			defer close(result)
 			result <- options.Result{Result: cache.Result}
 		}()
-		return result, embeddings, nil
+		return result, embeddings[0], nil
 	}
 
-	return nil, embeddings, nil
+	return nil, embeddings[0], nil
 }
 
 func CheckExactCache(

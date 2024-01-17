@@ -71,6 +71,7 @@ type Database interface {
 	CreateMemory(memoryID string, userID string, public bool) error
 	GetMemory(memoryID string) (*Memory, error)
 	AddMemory(userID string, memoryID string, content string, embedding []float32) error
+	AddMemories(memoryID string, embeddings []Embedding) error
 	GetExistingEmbeddingFromContent(content string) (*[]float32, error)
 	GetMemoryIDs(userID string) ([]MemoryRecord, error)
 	MatchEmbeddings(memoryIDs []string, userID string, embedding []float32) ([]MatchResult, error)
