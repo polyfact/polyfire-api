@@ -46,7 +46,7 @@ func SplitFile(file io.Reader) ([]io.Reader, int, func(), error) {
 		return nil, 0, nil, err
 	}
 
-	ffprobeResult, err := exec.Command("ffprobe", "-i", "/tmp/"+id+"/audio-file", "-show_entries", "format=duration", "-v", "quiet", "-of", "csv=p=0").
+	ffprobeResult, err := exec.Command("ffprobe", "-i", "/tmp/"+id+"/audio-file.ts", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", "-v", "quiet", "-of", "csv=p=0").
 		Output()
 	if err != nil {
 		return nil, 0, nil, err
