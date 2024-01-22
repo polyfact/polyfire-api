@@ -3,6 +3,7 @@ package providers
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"math"
 	"net/http"
@@ -100,6 +101,7 @@ func (m OpenAIStreamProvider) Generate(
 			if strings.Contains(err.Error(), "Incorrect API key provided") && m.IsCustomToken {
 				chanRes <- options.Result{Err: "openai_invalid_api_key"}
 			} else {
+				fmt.Println(err)
 				chanRes <- options.Result{Err: "generation_error"}
 			}
 			return
@@ -116,7 +118,6 @@ func (m OpenAIStreamProvider) Generate(
 			if errors.Is(err, io.EOF) || err != nil {
 				break
 			}
-
 			tokenUsage.Output = tokens.CountTokens(completion.Choices[0].Delta.Content)
 
 			totalOutput += tokenUsage.Output
