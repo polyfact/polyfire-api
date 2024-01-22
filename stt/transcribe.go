@@ -13,6 +13,7 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/google/uuid"
 	router "github.com/julienschmidt/httprouter"
@@ -174,7 +175,6 @@ func Transcribe(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		fileBufReader = bufio.NewReader(part)
 	}
 
-	totalStr := ""
 	// The format doesn't seem to really matter
 	files, duration, closeFunc, err := SplitFile(fileBufReader)
 	if err != nil {
@@ -191,21 +191,36 @@ func Transcribe(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	}
 
 	var res providers.TranscriptionResult
-	res.Words = make([]providers.Word, 0)
+
+	texts := make([]string, len(files))
+	wordLists := make([][]providers.Word, len(files))
+
+	var wg sync.WaitGroup
 	for i, r := range files {
-		resTmp, err := provider.Transcribe(ctx, r, "mpeg")
-		if err != nil {
-			fmt.Printf("%v\n", err)
-			utils.RespondError(w, record, "transcription_error")
-			return
-		}
-		totalStr += " " + resTmp.Text
-		res.Text += " " + resTmp.Text
-		res.Words = append(res.Words, resTmp.Words...)
-		fmt.Printf("Transcription %v/%v\n", i+1, len(files))
+		file_reader := r
+		chunk_nb := i
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			resTmp, err := provider.Transcribe(ctx, file_reader, "mpeg")
+			if err != nil {
+				fmt.Printf("%v\n", err)
+				utils.RespondError(w, record, "transcription_error")
+				return
+			}
+			texts[chunk_nb] = resTmp.Text
+			wordLists[chunk_nb] = resTmp.Words
+			fmt.Printf("Transcription %v/%v\n", chunk_nb+1, len(files))
+		}()
 	}
 
-	res.Text = strings.Trim(totalStr, " \t\n")
+	wg.Wait()
+
+	res.Words = make([]providers.Word, 0)
+	for _, l := range wordLists {
+		res.Words = append(res.Words, l...)
+	}
+	res.Text = strings.Trim(strings.Join(texts, " "), " \t\n")
 	db.LogRequestsCredits(
 		r.Context().Value(utils.ContextKeyEventID).(string),
 		userID, "whisper", duration*1000, 0, 0, "transcription")
