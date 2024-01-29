@@ -13,7 +13,11 @@ import (
 
 type WhisperProvider struct{}
 
-func (WhisperProvider) Transcribe(ctx context.Context, reader io.Reader, format string) (*TranscriptionResult, error) {
+func (WhisperProvider) Transcribe(
+	ctx context.Context,
+	reader io.Reader,
+	opts TranscriptionInputOptions,
+) (*TranscriptionResult, error) {
 	var session *openai.Session
 	customToken, ok := ctx.Value(utils.ContextKeyOpenAIToken).(string)
 	if ok {
@@ -33,7 +37,7 @@ func (WhisperProvider) Transcribe(ctx context.Context, reader io.Reader, format 
 
 	params := audio.CreateTranscriptionParams{
 		Audio:       reader,
-		AudioFormat: format,
+		AudioFormat: opts.Format,
 	}
 
 	transcriptionCtx := context.Background()

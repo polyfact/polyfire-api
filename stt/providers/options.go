@@ -16,13 +16,25 @@ type Word struct {
 	SpeakerConfidence float64 `json:"speaker_confidence"`
 }
 
+type TranscriptionInputOptions struct {
+	Format       string
+	Language     *string
+	OutputFormat *string
+}
+
+type DialogueElement struct {
+	Speaker int    `json:"speaker"`
+	Text    string `json:"text"`
+}
+
 type TranscriptionResult struct {
-	Text  string `json:"text"`
-	Words []Word `json:"words,omitempty"`
+	Text     string            `json:"text"`
+	Words    []Word            `json:"words,omitempty"`
+	Dialogue []DialogueElement `json:"dialogue,omitempty"`
 }
 
 type Provider interface {
-	Transcribe(context.Context, io.Reader, string) (*TranscriptionResult, error)
+	Transcribe(context.Context, io.Reader, TranscriptionInputOptions) (*TranscriptionResult, error)
 }
 
 func NewProvider(provider string) (Provider, error) {
