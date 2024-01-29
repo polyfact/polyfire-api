@@ -54,7 +54,17 @@ func (DeepgramProvider) Transcribe(
 	if len(res.Results.Channels) > 0 {
 		if len(res.Results.Channels[0].Alternatives) > 0 {
 			text = res.Results.Channels[0].Alternatives[0].Transcript
+			lastSpeaker := 0
+			lastPunctatedWord := " "
 			for _, word := range res.Results.Channels[0].Alternatives[0].Words {
+				if (word.Speaker != nil || *(word.Speaker) != lastSpeaker) &&
+					(word.SpeakerConfidence < 0.7) && rune(lastPunctatedWord[len(lastPunctatedWord)-1]) != '.' {
+					speaker := lastSpeaker
+					word.Speaker = &speaker
+				}
+				lastSpeaker = *word.Speaker
+				lastPunctatedWord = word.Punctuated_Word
+
 				if word.Speaker != nil && dialogueElem.Speaker != *(word.Speaker) {
 					dialogue = append(dialogue, dialogueElem)
 					dialogueElem = DialogueElement{
