@@ -178,7 +178,7 @@ func Transcribe(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	}
 
 	var files []io.Reader
-	var duration int = 0
+	duration := 0
 	if providerName == "openai" || providerName == "" {
 		var closeFunc func()
 		var err error
@@ -208,12 +208,12 @@ func Transcribe(w http.ResponseWriter, r *http.Request, _ router.Params) {
 
 	var wg sync.WaitGroup
 	for i, r := range files {
-		file_reader := r
-		chunk_nb := i
+		fileReader := r
+		chunkNb := i
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			resTmp, err := provider.Transcribe(ctx, file_reader, providers.TranscriptionInputOptions{
+			resTmp, err := provider.Transcribe(ctx, fileReader, providers.TranscriptionInputOptions{
 				Format:   "mpeg",
 				Language: input.Language,
 			})
@@ -222,10 +222,10 @@ func Transcribe(w http.ResponseWriter, r *http.Request, _ router.Params) {
 				utils.RespondError(w, record, "transcription_error")
 				return
 			}
-			texts[chunk_nb] = resTmp.Text
-			wordLists[chunk_nb] = resTmp.Words
-			dialogues[chunk_nb] = resTmp.Dialogue
-			fmt.Printf("Transcription %v/%v\n", chunk_nb+1, len(files))
+			texts[chunkNb] = resTmp.Text
+			wordLists[chunkNb] = resTmp.Words
+			dialogues[chunkNb] = resTmp.Dialogue
+			fmt.Printf("Transcription %v/%v\n", chunkNb+1, len(files))
 		}()
 	}
 
