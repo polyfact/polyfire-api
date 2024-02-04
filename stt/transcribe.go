@@ -109,8 +109,10 @@ func DownloadFromBucket(bucket string, path string) ([]byte, error) {
 }
 
 type TranscribeRequestBody struct {
-	FilePath string `json:"file_path"`
-	Provider string `json:"provider"`
+	FilePath     string  `json:"file_path"`
+	Provider     string  `json:"provider"`
+	Language     *string `json:"language,omitempty"`
+	OutputFormat *string `json:"output_format,omitempty"`
 }
 
 type Result struct {
@@ -140,9 +142,9 @@ func Transcribe(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	contentType := r.Header.Get("Content-Type")
 	var fileBufReader io.Reader
 
+	var input TranscribeRequestBody
 	providerName := ""
 	if contentType == "application/json" {
-		var input TranscribeRequestBody
 
 		err := json.NewDecoder(r.Body).Decode(&input)
 		if err != nil {
@@ -175,14 +177,22 @@ func Transcribe(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		fileBufReader = bufio.NewReader(part)
 	}
 
-	// The format doesn't seem to really matter
-	files, duration, closeFunc, err := SplitFile(fileBufReader)
-	if err != nil {
-		fmt.Println(err)
-		utils.RespondError(w, record, "splitting_error")
-		return
+	var files []io.Reader
+	duration := 0
+	if providerName == "openai" || providerName == "" {
+		var closeFunc func()
+		var err error
+		// The format doesn't seem to really matter
+		files, duration, closeFunc, err = SplitFile(fileBufReader)
+		if err != nil {
+			fmt.Println(err)
+			utils.RespondError(w, record, "splitting_error")
+			return
+		}
+		defer closeFunc()
+	} else {
+		files = []io.Reader{fileBufReader}
 	}
-	defer closeFunc()
 
 	provider, err := providers.NewProvider(providerName)
 	if err != nil {
@@ -194,31 +204,41 @@ func Transcribe(w http.ResponseWriter, r *http.Request, _ router.Params) {
 
 	texts := make([]string, len(files))
 	wordLists := make([][]providers.Word, len(files))
+	dialogues := make([][]providers.DialogueElement, len(files))
 
 	var wg sync.WaitGroup
 	for i, r := range files {
-		file_reader := r
-		chunk_nb := i
+		fileReader := r
+		chunkNb := i
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			resTmp, err := provider.Transcribe(ctx, file_reader, "mpeg")
+			resTmp, err := provider.Transcribe(ctx, fileReader, providers.TranscriptionInputOptions{
+				Format:   "mpeg",
+				Language: input.Language,
+			})
 			if err != nil {
 				fmt.Printf("%v\n", err)
 				utils.RespondError(w, record, "transcription_error")
 				return
 			}
-			texts[chunk_nb] = resTmp.Text
-			wordLists[chunk_nb] = resTmp.Words
-			fmt.Printf("Transcription %v/%v\n", chunk_nb+1, len(files))
+			texts[chunkNb] = resTmp.Text
+			wordLists[chunkNb] = resTmp.Words
+			dialogues[chunkNb] = resTmp.Dialogue
+			fmt.Printf("Transcription %v/%v\n", chunkNb+1, len(files))
 		}()
 	}
 
 	wg.Wait()
 
 	res.Words = make([]providers.Word, 0)
-	for _, l := range wordLists {
+	res.Dialogue = make([]providers.DialogueElement, 0)
+	for i, l := range wordLists {
 		res.Words = append(res.Words, l...)
+		for _, k := range dialogues[i] {
+			k.Speaker = i*100 + k.Speaker
+			res.Dialogue = append(res.Dialogue, k)
+		}
 	}
 	res.Text = strings.Trim(strings.Join(texts, " "), " \t\n")
 	db.LogRequestsCredits(
