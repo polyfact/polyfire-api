@@ -23,8 +23,10 @@ type TranscriptionInputOptions struct {
 }
 
 type DialogueElement struct {
-	Speaker int    `json:"speaker"`
-	Text    string `json:"text"`
+	Speaker int     `json:"speaker"`
+	Text    string  `json:"text"`
+	Start   float64 `json:"start"`
+	End     float64 `json:"end"`
 }
 
 type TranscriptionResult struct {
