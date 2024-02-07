@@ -131,7 +131,7 @@ func RemoveSilence(file io.Reader) ([]Silence, io.Reader, func(), error) {
 		afOpts = append(afOpts, fmt.Sprintf("aselect='not(between(t\\,%f\\,%f))'", start, end))
 	}
 
-	b, err = exec.Command("bash", "-c", "ffmpeg -i \"/tmp/"+id+"/audio-file\" -vf "+strings.Join(vfOpts, ",")+" -af "+strings.Join(afOpts, ",")+" /tmp/"+id+"/audio-file-no-silence.mp3").
+	_, err = exec.Command("bash", "-c", "ffmpeg -i \"/tmp/"+id+"/audio-file\" -vf "+strings.Join(vfOpts, ",")+" -af "+strings.Join(afOpts, ",")+" /tmp/"+id+"/audio-file-no-silence.mp3").
 		CombinedOutput()
 	if err != nil {
 		return nil, nil, closeFunc, err

@@ -137,6 +137,11 @@ func Transcribe(w http.ResponseWriter, r *http.Request, _ router.Params) {
 			defer wg.Done()
 			silences, noSilenceFileReader, closeFunc, err := RemoveSilence(fileReader)
 			defer closeFunc()
+			if err != nil {
+				fmt.Printf("%v\n", err)
+				utils.RespondError(w, record, "transcription_error")
+				return
+			}
 			resTmp, err := provider.Transcribe(ctx, noSilenceFileReader, providers.TranscriptionInputOptions{
 				Format:   "mpeg",
 				Language: input.Language,
