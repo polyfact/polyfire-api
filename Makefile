@@ -88,7 +88,7 @@ ifndef DEEPGRAM_API_KEY
 endif
 
 deploy: app.yaml codegen
-	gcloud app deploy --quiet --version v1.1
+	gcloud app deploy --quiet --version v1-1
 
 clean:
 	rm -rf $(BUILD_DIRECTORY) app.yaml $(CODEGEN_DIRECTORY)
