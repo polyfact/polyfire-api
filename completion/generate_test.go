@@ -45,6 +45,7 @@ func TestSimpleFullGeneration(t *testing.T) {
 	 * so we need to define it manually
 	 */
 	ctx = context.WithValue(ctx, utils.ContextKeyRateLimitStatus, database.RateLimitStatusOk)
+	ctx = context.WithValue(ctx, utils.ContextKeyCreditsStatus, database.CreditsStatusOk)
 	ctx = context.WithValue(ctx, utils.ContextKeyEventID, "00000000-0000-0000-0000-000000000000")
 
 	reqBody := GenerateRequestBody{
