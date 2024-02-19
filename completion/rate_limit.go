@@ -10,15 +10,15 @@ import (
 func CheckRateLimit(ctx context.Context) error {
 	rateLimitStatus := ctx.Value(utils.ContextKeyRateLimitStatus)
 
-	if rateLimitStatus == db.RateLimitStatusOk {
+	creditsStatus := ctx.Value(utils.ContextKeyCreditsStatus)
+
+	if rateLimitStatus == db.RateLimitStatusOk && creditsStatus == db.CreditsStatusOk {
 		return nil
 	}
 
 	if rateLimitStatus == db.RateLimitStatusReached {
 		return ErrRateLimitReached
 	}
-
-	creditsStatus := ctx.Value(utils.ContextKeyCreditsStatus)
 
 	if creditsStatus == db.CreditsStatusUsedUp {
 		return ErrCreditsUsedUp
