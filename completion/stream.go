@@ -179,7 +179,6 @@ func Stream(w http.ResponseWriter, r *http.Request, _ router.Params) {
 
 	err = conn.WriteMessage(websocket.TextMessage, []byte(""))
 	if err != nil {
-		utils.RespondErrorStream(conn, record, "write_end_message_error")
 		return
 	}
 }

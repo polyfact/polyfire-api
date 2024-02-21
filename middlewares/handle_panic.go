@@ -3,6 +3,7 @@ package middlewares
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -20,10 +21,17 @@ import (
 var isDevelopment = os.Getenv("APP_MODE") == "development"
 
 func RecoverFromPanic(w http.ResponseWriter, r *http.Request) {
-	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
 	if rec := recover(); rec != nil {
 		errorMessage := getErrorMessage(rec)
 
+		fmt.Println(errorMessage)
+
+		// Ideally we would take the record function from the context but we cannot
+		// trust that the event hasn't already be recorded, which if it was the case
+		// would cause another panic when trying to insert it.
+		record := func(_ string, _ ...utils.KeyValue) {
+			// But adding some form of logs here would still be useful maybe ?
+		}
 		utils.RespondError(w, record, "unknown_error", errorMessage)
 	}
 }
