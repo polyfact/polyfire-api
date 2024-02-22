@@ -20,7 +20,7 @@ import (
 
 var isDevelopment = os.Getenv("APP_MODE") == "development"
 
-func RecoverFromPanic(w http.ResponseWriter, r *http.Request) {
+func RecoverFromPanic(w http.ResponseWriter, _ *http.Request) {
 	if rec := recover(); rec != nil {
 		errorMessage := getErrorMessage(rec)
 
