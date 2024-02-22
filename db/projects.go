@@ -36,6 +36,7 @@ type Project struct {
 	CustomAuthPublicKey           string      `json:"custom_auth_public_key"`
 	AllowAnonymousAuth            bool        `json:"allow_anonymous_auth"`
 	AuthorizedDomains             StringArray `json:"authorized_domains"`
+	AuthorizedAuthEmailDomain     StringArray `json:"authorized_auth_email_domains"`
 }
 
 func (Project) TableName() string {

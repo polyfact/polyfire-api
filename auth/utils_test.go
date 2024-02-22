@@ -62,3 +62,47 @@ func TestExchangeToken(t *testing.T) {
 		t.Fatalf(`Unexpected userID "%s"`, userID)
 	}
 }
+
+func TestExchangeTokenWithAuthorizedDomainSuccess(t *testing.T) {
+	utils.SetLogLevel("WARN")
+
+	MockGetUserFromToken := func(_ context.Context, token string, projectID string) (string, string, error) {
+		if token != "test-token-user-1" && token != "test-token-user-2" {
+			t.Fatalf(`ExchangeToken expected to pass token "this-is-a-test-token" but got "%s"`, token)
+		}
+
+		if projectID != "this-is-a-test-project-id" {
+			t.Fatalf(`ExchangeToken expected to pass project-id "this-is-a-test-project-id" but got "%s"`, projectID)
+		}
+
+		if token == "test-token-user-2" {
+			return "test-user-id", "email@disalloweddomain.com", nil
+		}
+		return "test-user-id", "email@allowedomain.com", nil
+	}
+
+	ctx := context.WithValue(
+		context.Background(),
+		utils.ContextKeyDB,
+		database.MockDatabase{
+			MockGetUserIDFromProjectAuthID: MockGetUserIDFromProjectAuthID,
+		},
+	)
+
+	project := database.Project{
+		ID:                        "this-is-a-test-project-id",
+		Name:                      "this-is-a-test-project-name",
+		AuthID:                    "this-is-a-test-auth-id",
+		AuthorizedAuthEmailDomain: []string{"allowedomain.com"},
+	}
+
+	_, err := ExchangeToken(ctx, "test-token-user-1", project, MockGetUserFromToken)
+	if err != nil {
+		t.Fatalf(`ExchangeToken returned an error %v`, err)
+	}
+
+	_, err = ExchangeToken(ctx, "test-token-user-2", project, MockGetUserFromToken)
+	if err == nil {
+		t.Fatalf("ExchangeToken did not return an error on test-token-user-2 !!")
+	}
+}

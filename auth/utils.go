@@ -2,7 +2,7 @@ package auth
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"log"
 	"net/http"
 	"os"
@@ -14,6 +14,31 @@ import (
 	posthog "github.com/polyfire/api/posthog"
 	"github.com/polyfire/api/utils"
 )
+
+var (
+	ErrEmailDomainUnauthorized = errors.New("403 Forbidden. This email domain is not authorized")
+	ErrFreeUserInitDisabled    = errors.New("403 Forbidden. This project has forbidden new users from being created")
+)
+
+func checkEmailDomains(project database.Project, email string) bool {
+	if len(project.AuthorizedAuthEmailDomain) == 0 {
+		return true
+	}
+
+	emailSplit := strings.Split(email, "@")
+
+	if len(emailSplit) != 2 {
+		return false
+	}
+
+	for _, domain := range project.AuthorizedAuthEmailDomain {
+		if domain == emailSplit[1] {
+			return true
+		}
+	}
+
+	return false
+}
 
 func ExchangeToken(
 	ctx context.Context,
@@ -27,6 +52,10 @@ func ExchangeToken(
 		return "", err
 	}
 
+	if !checkEmailDomains(project, email) {
+		return "", ErrEmailDomainUnauthorized
+	}
+
 	userID, err := db.GetUserIDFromProjectAuthID(project.ID, authID)
 	if err != nil {
 		return "", err
@@ -34,7 +63,7 @@ func ExchangeToken(
 
 	if userID == nil {
 		if !project.FreeUserInit {
-			return "", fmt.Errorf("free_user_init_disabled")
+			return "", ErrFreeUserInitDisabled
 		}
 		log.Println("[INFO] Creating user on project", project.ID)
 		userID, err = db.CreateProjectUser(
