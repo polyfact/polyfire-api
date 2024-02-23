@@ -77,7 +77,7 @@ func RedirectAuth(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 		"SUPABASE_URL",
 	) + "/auth/v1/authorize?provider=" + provider + "&redirect_to=" + url.QueryEscape(
 		redirectToAPI,
-	)
+	) + "&scopes=email"
 
 	http.Redirect(w, r, url, http.StatusFound)
 }
