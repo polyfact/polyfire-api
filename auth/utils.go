@@ -21,7 +21,7 @@ var (
 )
 
 func checkEmailDomains(project database.Project, email string) bool {
-	if len(project.AuthorizedAuthEmailDomain) == 0 {
+	if len(project.AuthorizedAuthEmailDomains) == 0 {
 		return true
 	}
 
@@ -31,7 +31,7 @@ func checkEmailDomains(project database.Project, email string) bool {
 		return false
 	}
 
-	for _, domain := range project.AuthorizedAuthEmailDomain {
+	for _, domain := range project.AuthorizedAuthEmailDomains {
 		if domain == emailSplit[1] {
 			return true
 		}

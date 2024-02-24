@@ -90,10 +90,10 @@ func TestExchangeTokenWithAuthorizedDomainSuccess(t *testing.T) {
 	)
 
 	project := database.Project{
-		ID:                        "this-is-a-test-project-id",
-		Name:                      "this-is-a-test-project-name",
-		AuthID:                    "this-is-a-test-auth-id",
-		AuthorizedAuthEmailDomain: []string{"allowedomain.com"},
+		ID:                         "this-is-a-test-project-id",
+		Name:                       "this-is-a-test-project-name",
+		AuthID:                     "this-is-a-test-auth-id",
+		AuthorizedAuthEmailDomains: []string{"allowedomain.com"},
 	}
 
 	_, err := ExchangeToken(ctx, "test-token-user-1", project, MockGetUserFromToken)
