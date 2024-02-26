@@ -41,6 +41,8 @@ app.yaml: app.dev.yaml check-env
 	| sed "s#{{API_URL}}#${API_URL}#" \
 	| sed 's/{{ELEVENLABS_API_KEY}}/${ELEVENLABS_API_KEY}/' \
 	| sed 's/{{DEEPGRAM_API_KEY}}/${DEEPGRAM_API_KEY}/' \
+	| sed 's/{{GCS_PROJECT_ID}}/${GCS_PROJECT_ID}/' \
+	| sed 's/{{GCS_BUCKET_NAME}}/${GCS_BUCKET_NAME}/' \
 	| sed "s/{{JWT_SECRET}}/${JWT_SECRET}/" > app.yaml
 
 check-env:
@@ -86,8 +88,20 @@ endif
 ifndef DEEPGRAM_API_KEY
 	$(error DEEPGRAM_API_KEY is undefined)
 endif
+ifndef GCS_BUCKET_NAME
+	$(error GCS_BUCKET_NAME is undefined)
+endif
+ifndef GCS_PROJECT_ID
+	$(error GCS_PROJECT_ID is undefined)
+endif
 
-deploy: app.yaml codegen
+gcs-service-account.json:
+ifndef GCS_SERVICE_ACCOUNT
+	$(error GCS_SERVICE_ACCOUNT is undefined)
+endif
+	@echo ${GCS_SERVICE_ACCOUNT} | base64 -d > gcs-service-account.json
+
+deploy: app.yaml codegen gcs-service-account.json
 	gcloud app deploy --quiet --version v1-1
 
 clean:

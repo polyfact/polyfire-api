@@ -5,3 +5,4 @@ app.yaml
 vectorizer.json
 tmp/
 schema.sql
+gcs-service-account.json

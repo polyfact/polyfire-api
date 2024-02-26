@@ -40,11 +40,14 @@ type Provider interface {
 }
 
 func NewProvider(provider string) (Provider, error) {
-	if provider == "whisper" || provider == "openai" || provider == "" {
+	switch provider {
+	case "whisper", "openai", "":
 		return WhisperProvider{}, nil
-	} else if provider == "deepgram" {
+	case "deepgram":
 		return DeepgramProvider{}, nil
+	case "google":
+		return GoogleProvider{}, nil
+	default:
+		return nil, errors.New("invalid_provider")
 	}
-
-	return nil, errors.New("invalid_provider")
 }
