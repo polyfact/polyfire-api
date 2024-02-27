@@ -41,5 +41,5 @@ func (c GCSUploader) UploadFile(file io.Reader, path string) (string, error) {
 		return "", err
 	}
 
-	return "gcs://" + c.bucketName + "/" + path, nil
+	return "gs://" + c.bucketName + "/" + path, nil
 }
