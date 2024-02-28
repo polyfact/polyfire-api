@@ -72,56 +72,54 @@ func (DeepgramProvider) Transcribe(
 		End:     0,
 	}
 
-	if len(res.Results.Channels) > 0 {
-		if len(res.Results.Channels[0].Alternatives) > 0 {
-			text = res.Results.Channels[0].Alternatives[0].Transcript
-			for _, word := range res.Results.Channels[0].Alternatives[0].Words {
-				if lastSentence.Start == 0 {
-					lastSentence.Start = word.Start
-				}
-
-				if word.Speaker != nil {
-					sentenceSpeakersConfidence[*word.Speaker] += word.SpeakerConfidence
-				}
-
-				lastSentence.Text += " " + word.Punctuated_Word
-				lastSentence.End = word.End
-
-				if rune(word.Punctuated_Word[len(word.Punctuated_Word)-1]) == '.' {
-					if dialogueElem.Start == 0 {
-						dialogueElem = lastSentence
-					} else {
-						speaker := getHighestConfidenceSpeaker(sentenceSpeakersConfidence)
-						lastSentence.Speaker = speaker
-						if dialogueElem.Speaker == lastSentence.Speaker {
-							dialogueElem.Text = dialogueElem.Text + " " + lastSentence.Text
-							dialogueElem.End = lastSentence.End
-						} else {
-							dialogue = append(dialogue, dialogueElem)
-							dialogueElem = lastSentence
-						}
-					}
-					sentenceSpeakersConfidence = make(map[int]float64, 0)
-					lastSentence = DialogueElement{
-						Speaker: 0,
-						Text:    "",
-						Start:   0,
-						End:     0,
-					}
-				}
-
-				words = append(words, Word{
-					Word:              word.Word,
-					PunctuatedWord:    word.Punctuated_Word,
-					Start:             word.Start,
-					End:               word.End,
-					Confidence:        word.Confidence,
-					Speaker:           word.Speaker,
-					SpeakerConfidence: word.SpeakerConfidence,
-				})
+	if len(res.Results.Channels) > 0 && len(res.Results.Channels[0].Alternatives) > 0 {
+		text = res.Results.Channels[0].Alternatives[0].Transcript
+		for _, word := range res.Results.Channels[0].Alternatives[0].Words {
+			if lastSentence.Start == 0 {
+				lastSentence.Start = word.Start
 			}
-			dialogue = append(dialogue, dialogueElem)
+
+			if word.Speaker != nil {
+				sentenceSpeakersConfidence[*word.Speaker] += word.SpeakerConfidence
+			}
+
+			lastSentence.Text += " " + word.Punctuated_Word
+			lastSentence.End = word.End
+
+			if rune(word.Punctuated_Word[len(word.Punctuated_Word)-1]) == '.' {
+				if dialogueElem.Start == 0 {
+					dialogueElem = lastSentence
+				} else {
+					speaker := getHighestConfidenceSpeaker(sentenceSpeakersConfidence)
+					lastSentence.Speaker = speaker
+					if dialogueElem.Speaker == lastSentence.Speaker {
+						dialogueElem.Text = dialogueElem.Text + " " + lastSentence.Text
+						dialogueElem.End = lastSentence.End
+					} else {
+						dialogue = append(dialogue, dialogueElem)
+						dialogueElem = lastSentence
+					}
+				}
+				sentenceSpeakersConfidence = make(map[int]float64, 0)
+				lastSentence = DialogueElement{
+					Speaker: 0,
+					Text:    "",
+					Start:   0,
+					End:     0,
+				}
+			}
+
+			words = append(words, Word{
+				Word:              word.Word,
+				PunctuatedWord:    word.Punctuated_Word,
+				Start:             word.Start,
+				End:               word.End,
+				Confidence:        word.Confidence,
+				Speaker:           word.Speaker,
+				SpeakerConfidence: word.SpeakerConfidence,
+			})
 		}
+		dialogue = append(dialogue, dialogueElem)
 	}
 
 	response := TranscriptionResult{
