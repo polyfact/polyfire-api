@@ -11,6 +11,18 @@ import (
 
 type DeepgramProvider struct{}
 
+func getHighestConfidenceSpeaker(speakersConfidence map[int]float64) int {
+	maxKey := -1
+	maxValue := -1.0
+	for k, v := range speakersConfidence {
+		if v > maxValue {
+			maxKey = k
+			maxValue = v
+		}
+	}
+	return maxKey
+}
+
 func (DeepgramProvider) Transcribe(
 	_ context.Context,
 	reader io.Reader,
@@ -46,7 +58,14 @@ func (DeepgramProvider) Transcribe(
 	words := make([]Word, 0)
 
 	dialogue := make([]DialogueElement, 0)
+	sentenceSpeakersConfidence := make(map[int]float64, 0)
 	dialogueElem := DialogueElement{
+		Speaker: 0,
+		Text:    "",
+		Start:   0,
+		End:     0,
+	}
+	lastSentence := DialogueElement{
 		Speaker: 0,
 		Text:    "",
 		Start:   0,
@@ -56,31 +75,40 @@ func (DeepgramProvider) Transcribe(
 	if len(res.Results.Channels) > 0 {
 		if len(res.Results.Channels[0].Alternatives) > 0 {
 			text = res.Results.Channels[0].Alternatives[0].Transcript
-			lastSpeaker := 0
-			lastPunctatedWord := " "
 			for _, word := range res.Results.Channels[0].Alternatives[0].Words {
-				if dialogueElem.Start == 0 {
-					dialogueElem.Start = word.Start
+				if lastSentence.Start == 0 {
+					lastSentence.Start = word.Start
 				}
-				if (word.Speaker != nil || *(word.Speaker) != lastSpeaker) &&
-					(word.SpeakerConfidence < 0.7) && rune(lastPunctatedWord[len(lastPunctatedWord)-1]) != '.' {
-					speaker := lastSpeaker
-					word.Speaker = &speaker
-				}
-				lastSpeaker = *word.Speaker
-				lastPunctatedWord = word.Punctuated_Word
 
-				if word.Speaker != nil && dialogueElem.Speaker != *(word.Speaker) {
-					dialogue = append(dialogue, dialogueElem)
-					dialogueElem = DialogueElement{
-						Speaker: *(word.Speaker),
+				if word.Speaker != nil {
+					sentenceSpeakersConfidence[*word.Speaker] += word.SpeakerConfidence
+				}
+
+				lastSentence.Text += " " + word.Punctuated_Word
+				lastSentence.End = word.End
+
+				if rune(word.Punctuated_Word[len(word.Punctuated_Word)-1]) == '.' {
+					if dialogueElem.Start == 0 {
+						dialogueElem = lastSentence
+					} else {
+						speaker := getHighestConfidenceSpeaker(sentenceSpeakersConfidence)
+						lastSentence.Speaker = speaker
+						if dialogueElem.Speaker == lastSentence.Speaker {
+							dialogueElem.Text = dialogueElem.Text + " " + lastSentence.Text
+							dialogueElem.End = lastSentence.End
+						} else {
+							dialogue = append(dialogue, dialogueElem)
+							dialogueElem = lastSentence
+						}
+					}
+					sentenceSpeakersConfidence = make(map[int]float64, 0)
+					lastSentence = DialogueElement{
+						Speaker: 0,
 						Text:    "",
-						Start:   word.Start,
+						Start:   0,
+						End:     0,
 					}
 				}
-
-				dialogueElem.Text += " " + word.Punctuated_Word
-				dialogueElem.End = word.End
 
 				words = append(words, Word{
 					Word:              word.Word,
