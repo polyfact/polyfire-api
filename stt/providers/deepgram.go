@@ -47,6 +47,7 @@ func (DeepgramProvider) Transcribe(
 			Language:   language,
 			Utterances: true,
 			Model:      "nova-2",
+			Keywords:   opts.Keywords,
 		},
 	)
 	if err != nil {
