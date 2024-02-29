@@ -20,6 +20,7 @@ type TranscriptionInputOptions struct {
 	Format       string
 	Language     *string
 	OutputFormat *string
+	Keywords     []string
 }
 
 type DialogueElement struct {
