@@ -41,6 +41,7 @@ func (AssemblyAIProvider) Transcribe(
 		LanguageCode:  aai.TranscriptLanguageCode(language),
 		SpeakerLabels: &speakerLabel,
 		WordBoost:     opts.Keywords,
+
 	}
 
 	transcript, err := client.Transcripts.TranscribeFromReader(context.Background(), reader, &params)
