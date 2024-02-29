@@ -36,6 +36,7 @@ func (AssemblyAIProvider) Transcribe(
 	}
 
 	speakerLabel := true
+	fmt.Println("KEYWORDS:", opts.Keywords)
 	params := aai.TranscriptOptionalParams{
 		LanguageCode:  aai.TranscriptLanguageCode(language),
 		SpeakerLabels: &speakerLabel,
