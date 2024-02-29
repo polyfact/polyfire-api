@@ -128,7 +128,5 @@ func (DeepgramProvider) Transcribe(
 		Dialogue: dialogue,
 	}
 
-	fmt.Println(dialogue)
-
 	return &response, nil
 }

@@ -44,6 +44,8 @@ func NewProvider(provider string) (Provider, error) {
 		return WhisperProvider{}, nil
 	} else if provider == "deepgram" {
 		return DeepgramProvider{}, nil
+	} else if provider == "assemblyai" {
+		return AssemblyAIProvider{}, nil
 	}
 
 	return nil, errors.New("invalid_provider")

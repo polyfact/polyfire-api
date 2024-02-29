@@ -25,11 +25,13 @@ require (
 )
 
 require (
+	github.com/AssemblyAI/assemblyai-go-sdk v1.2.0 // indirect
 	github.com/PuerkitoBio/goquery v1.8.1 // indirect
 	github.com/andybalholm/cascadia v1.3.2 // indirect
 	github.com/antchfx/htmlquery v1.3.0 // indirect
 	github.com/antchfx/xmlquery v1.3.17 // indirect
 	github.com/antchfx/xpath v1.2.4 // indirect
+	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
 	github.com/cohere-ai/tokenizer v1.1.2 // indirect
 	github.com/dlclark/regexp2 v1.10.0 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
@@ -44,6 +46,7 @@ require (
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/kennygrant/sanitize v1.2.4 // indirect
+	github.com/klauspost/compress v1.10.3 // indirect
 	github.com/nedpals/postgrest-go v0.1.3 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d // indirect
@@ -54,4 +57,5 @@ require (
 	golang.org/x/text v0.14.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
+	nhooyr.io/websocket v1.8.7 // indirect
 )
