@@ -40,3 +40,4 @@ jobs:
         API_URL: '${{vars.API_URL}}'
         ELEVENLABS_API_KEY: '${{ secrets.ELEVENLABS_API_KEY }}'
         DEEPGRAM_API_KEY: '${{ secrets.DEEPGRAM_API_KEY }}'
+        ASSEMBLYAI_API_KEY: '${{ secrets.ASSEMBLYAI_API_KEY }}'
