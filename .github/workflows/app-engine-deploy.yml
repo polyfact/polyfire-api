@@ -40,3 +40,6 @@ jobs:
         API_URL: '${{vars.API_URL}}'
         ELEVENLABS_API_KEY: '${{ secrets.ELEVENLABS_API_KEY }}'
         DEEPGRAM_API_KEY: '${{ secrets.DEEPGRAM_API_KEY }}'
+        GCS_PROJECT_ID: '${{ secrets.GCS_PROJECT_ID }}'
+        GCS_BUCKET_NAME: '${{ secrets.GCS_BUCKET_NAME }}'
+        GCS_SERVICE_ACCOUNT: '${{ secrets.GCS_SERVICE_ACCOUNT }}'
