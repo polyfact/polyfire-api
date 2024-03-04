@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/deepgram-devs/deepgram-go-sdk/deepgram"
 )
@@ -21,6 +22,38 @@ func getHighestConfidenceSpeaker(speakersConfidence map[int]float64) int {
 		}
 	}
 	return maxKey
+}
+
+func canSpeakerChangeDeepgram(words []deepgram.WordBase, index int) bool {
+	currentWord := words[index].Punctuated_Word
+	nextWord := ""
+
+	if index < len(words)-1 {
+		nextWord = words[index+1].Punctuated_Word
+	}
+
+	return canSpeakerChange(currentWord, nextWord)
+}
+
+func canSpeakerChange(currentWord string, nextWord string) bool {
+	if len(currentWord) > 0 && (rune(currentWord[len(currentWord)-1]) == '.' ||
+		rune(currentWord[len(currentWord)-1]) == '?' ||
+		rune(currentWord[len(currentWord)-1]) == '!') {
+		return true
+	}
+
+	if strings.ToLower(currentWord) == "monsieur" || strings.ToLower(currentWord) == "madame" ||
+		strings.ToLower(currentWord) == "m." ||
+		strings.ToLower(currentWord) == "mr." ||
+		strings.ToLower(currentWord) == "mme." {
+		return false
+	}
+
+	if len(nextWord) > 0 && rune(nextWord[0]) >= 'A' && rune(nextWord[0]) <= 'Z' {
+		return true
+	}
+
+	return false
 }
 
 func (DeepgramProvider) Transcribe(
@@ -75,7 +108,8 @@ func (DeepgramProvider) Transcribe(
 
 	if len(res.Results.Channels) > 0 && len(res.Results.Channels[0].Alternatives) > 0 {
 		text = res.Results.Channels[0].Alternatives[0].Transcript
-		for _, word := range res.Results.Channels[0].Alternatives[0].Words {
+		deepgramWords := res.Results.Channels[0].Alternatives[0].Words
+		for i, word := range deepgramWords {
 			if lastSentence.Start == 0 {
 				lastSentence.Start = word.Start
 			}
@@ -87,7 +121,7 @@ func (DeepgramProvider) Transcribe(
 			lastSentence.Text += " " + word.Punctuated_Word
 			lastSentence.End = word.End
 
-			if rune(word.Punctuated_Word[len(word.Punctuated_Word)-1]) == '.' {
+			if canSpeakerChangeDeepgram(deepgramWords, i) {
 				if dialogueElem.Start == 0 {
 					dialogueElem = lastSentence
 				} else {

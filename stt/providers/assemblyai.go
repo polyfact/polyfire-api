@@ -23,6 +23,21 @@ func fixLanguageCodeFormat(code string) string {
 	return strings.Replace(strings.ToLower(code), "-", "_", -1)
 }
 
+func canSpeakerChangeAssemblyAI(words []aai.TranscriptWord, index int) bool {
+	currentWord := ""
+	nextWord := ""
+
+	if words[index].Text != nil {
+		currentWord = *words[index].Text
+	}
+
+	if index < len(words)-1 && words[index+1].Text != nil {
+		nextWord = *words[index+1].Text
+	}
+
+	return canSpeakerChange(currentWord, nextWord)
+}
+
 func (AssemblyAIProvider) Transcribe(
 	_ context.Context,
 	reader io.Reader,
@@ -41,7 +56,6 @@ func (AssemblyAIProvider) Transcribe(
 		LanguageCode:  aai.TranscriptLanguageCode(language),
 		SpeakerLabels: &speakerLabel,
 		WordBoost:     opts.Keywords,
-
 	}
 
 	transcript, err := client.Transcripts.TranscribeFromReader(context.Background(), reader, &params)
@@ -69,7 +83,7 @@ func (AssemblyAIProvider) Transcribe(
 	}
 
 	text = *transcript.Text
-	for _, word := range transcript.Words {
+	for i, word := range transcript.Words {
 		speaker := assemblyAISpeakerToInt(word.Speaker)
 		start := float64(*word.Start) / 1000.0
 		end := float64(*word.End) / 1000.0
@@ -82,7 +96,7 @@ func (AssemblyAIProvider) Transcribe(
 		lastSentence.Text += " " + *word.Text
 		lastSentence.End = end
 
-		if rune((*word.Text)[len(*word.Text)-1]) == '.' {
+		if canSpeakerChangeAssemblyAI(transcript.Words, i) {
 			if dialogueElem.Start == 0 {
 				dialogueElem = lastSentence
 			} else {
