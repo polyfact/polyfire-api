@@ -21,6 +21,7 @@ type ContextKey string
 
 const (
 	ContextKeyDB                    ContextKey = "db"
+	ContextKeyGCS                   ContextKey = "gcs"
 	ContextKeyUserID                ContextKey = "userId"
 	ContextKeyRateLimitStatus       ContextKey = "rateLimitStatus"
 	ContextKeyCreditsStatus         ContextKey = "creditsStatus"

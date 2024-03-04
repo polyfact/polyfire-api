@@ -22,6 +22,7 @@ import (
 type CORSRouter struct {
 	Router *httprouter.Router
 	db     db.DB
+	gcs    utils.GCSUploader
 }
 
 func (h CORSRouter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -32,6 +33,7 @@ func (h CORSRouter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	ctxWithDB := context.WithValue(ctx, utils.ContextKeyDB, h.db)
+	ctxWithDB = context.WithValue(ctxWithDB, utils.ContextKeyGCS, h.gcs)
 
 	rWithDB := r.WithContext(ctxWithDB)
 
@@ -41,16 +43,18 @@ func (h CORSRouter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.Router.ServeHTTP(w, rWithDB)
 }
 
-func GlobalMiddleware(router *httprouter.Router, db db.DB) http.Handler {
+func GlobalMiddleware(router *httprouter.Router, db db.DB, gcs utils.GCSUploader) http.Handler {
 	return &CORSRouter{
 		Router: router,
 		db:     db,
+		gcs:    gcs,
 	}
 }
 
 func main() {
 	log.Print("Starting the server on :8080")
 
+	GCS := utils.InitGCS()
 	DB := db.InitDB()
 
 	router := httprouter.New()
@@ -96,5 +100,5 @@ func main() {
 	router.PUT("/kv", middlewares.Record(utils.KVSet, middlewares.Auth(kv.Set)))
 	router.DELETE("/kv", middlewares.Record(utils.KVDelete, middlewares.Auth(kv.Delete)))
 
-	log.Fatal(http.ListenAndServe(":8080", GlobalMiddleware(router, DB)))
+	log.Fatal(http.ListenAndServe(":8080", GlobalMiddleware(router, DB, GCS)))
 }
