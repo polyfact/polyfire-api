@@ -20,6 +20,7 @@ type TranscriptionInputOptions struct {
 	Format       string
 	Language     *string
 	OutputFormat *string
+	Keywords     []string
 }
 
 type DialogueElement struct {
@@ -47,6 +48,8 @@ func NewProvider(provider string) (Provider, error) {
 		return DeepgramProvider{}, nil
 	case "google":
 		return GoogleProvider{}, nil
+	case "assemblyai":
+		return AssemblyAIProvider{}, nil
 	default:
 		return nil, errors.New("invalid_provider")
 	}

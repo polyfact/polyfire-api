@@ -43,6 +43,7 @@ app.yaml: app.dev.yaml check-env
 	| sed 's/{{DEEPGRAM_API_KEY}}/${DEEPGRAM_API_KEY}/' \
 	| sed 's/{{GCS_PROJECT_ID}}/${GCS_PROJECT_ID}/' \
 	| sed 's/{{GCS_BUCKET_NAME}}/${GCS_BUCKET_NAME}/' \
+	| sed 's/{{ASSEMBLYAI_API_KEY}}/${ASSEMBLYAI_API_KEY}/' \
 	| sed "s/{{JWT_SECRET}}/${JWT_SECRET}/" > app.yaml
 
 check-env:
@@ -93,6 +94,9 @@ ifndef GCS_BUCKET_NAME
 endif
 ifndef GCS_PROJECT_ID
 	$(error GCS_PROJECT_ID is undefined)
+endif
+ifndef ASSEMBLYAI_API_KEY
+	$(error ASSEMBLYAI_API_KEY is undefined)
 endif
 
 gcs-service-account.json:
