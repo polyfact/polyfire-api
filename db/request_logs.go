@@ -157,7 +157,7 @@ func (db DB) LogEvents(
 			(SELECT id FROM prompts WHERE id = try_cast_uuid(@prompt_id) OR slug = @prompt_id LIMIT 1)::uuid,
 			@type,
 			@origin_domain
-		)`,
+		) ON CONFLICT DO NOTHING`,
 		sql.Named("id", id),
 		sql.Named("path", path),
 		sql.Named("user_id", userID),
