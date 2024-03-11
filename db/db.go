@@ -92,6 +92,13 @@ func InitDB() DB {
 		panic("POSTGRES_URI: " + os.Getenv("POSTGRES_URI"))
 	}
 
+	sqlDB, err := db.DB()
+	if err != nil {
+		panic("Failed to get SQL connection")
+	}
+
+	sqlDB.SetMaxOpenConns(100)
+
 	return DB{sql: *db}
 }
 
