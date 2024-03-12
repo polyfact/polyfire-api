@@ -32,10 +32,10 @@ var (
 
 type UserInfos struct {
 	Premium              bool        `json:"premium"`
-	Credits              int64         `json:"credits"`
+	Credits              int64       `json:"credits"`
 	DevUsage             int         `json:"dev_usage"`
-	ProjectUserRateLimit *int64        `json:"project_user_rate_limit"`
-	ProjectUserUsage     int64         `json:"project_user_usage"`
+	ProjectUserRateLimit *int64      `json:"project_user_rate_limit"`
+	ProjectUserUsage     int64       `json:"project_user_usage"`
 	Version              int         `json:"version"`
 	DevAuthID            string      `json:"dev_auth_id"`
 	OpenaiToken          string      `json:"openai_token"` // Somehow this is case sensitive, don't change to OpenAI

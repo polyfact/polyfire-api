@@ -20,18 +20,13 @@ import (
 
 var isDevelopment = os.Getenv("APP_MODE") == "development"
 
-func RecoverFromPanic(w http.ResponseWriter, _ *http.Request) {
+func RecoverFromPanic(w http.ResponseWriter, r *http.Request) {
 	if rec := recover(); rec != nil {
 		errorMessage := getErrorMessage(rec)
 
 		fmt.Println(errorMessage)
 
-		// Ideally we would take the record function from the context but we cannot
-		// trust that the event hasn't already be recorded, which if it was the case
-		// would cause another panic when trying to insert it.
-		record := func(_ string, _ ...utils.KeyValue) {
-			// But adding some form of logs here would still be useful maybe ?
-		}
+		record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
 		utils.RespondError(w, record, "unknown_error", errorMessage)
 	}
 }
@@ -91,7 +86,11 @@ func AddRecord(r *http.Request, eventType utils.EventType) {
 				}
 				properties[element.Key] = element.Value
 			}
-			posthog.Event("API Request", userID, properties)
+			distinctID := userID
+			if distinctID == "" {
+				distinctID = "00000000-0000-0000-0000-000000000000"
+			}
+			posthog.Event("API Request", distinctID, properties)
 			db.LogEvents(
 				eventID,
 				string(r.URL.Path),

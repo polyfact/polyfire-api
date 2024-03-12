@@ -9,14 +9,14 @@ import (
 )
 
 type UserRateLimitResponse struct {
-	Usage     int  `json:"usage"`
-	RateLimit *int `json:"rate_limit"`
+	Usage     int64  `json:"usage"`
+	RateLimit *int64 `json:"rate_limit"`
 }
 
 func UserRateLimit(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
-	usage := r.Context().Value(utils.ContextKeyProjectUserUsage).(int)
-	rateLimit := r.Context().Value(utils.ContextKeyProjectUserRateLimit).(*int)
+	usage := r.Context().Value(utils.ContextKeyProjectUserUsage).(int64)
+	rateLimit := r.Context().Value(utils.ContextKeyProjectUserRateLimit).(*int64)
 
 	result := UserRateLimitResponse{
 		Usage:     usage,
