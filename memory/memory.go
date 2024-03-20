@@ -86,7 +86,14 @@ func Add(w http.ResponseWriter, r *http.Request, _ router.Params) {
 
 	chunks := make([]string, 0)
 
-	for _, input := range utils.StringOptionalArray(requestBody.Input) {
+	inputs := utils.StringOptionalArray(requestBody.Input)
+
+	if len(inputs) == 0 || (len(inputs) == 1 && len(inputs[0]) == 0) {
+		utils.RespondError(w, record, "empty_input")
+		return
+	}
+
+	for _, input := range inputs {
 		chunk := tokens.SplitText(input, chunkSize)
 
 		chunks = append(chunks, chunk[:]...)

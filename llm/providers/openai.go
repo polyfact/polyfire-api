@@ -118,6 +118,11 @@ func (m OpenAIStreamProvider) Generate(
 			if errors.Is(err, io.EOF) || err != nil {
 				break
 			}
+
+			if len(completion.Choices) == 0 {
+				continue
+			}
+
 			tokenUsage.Output = tokens.CountTokens(completion.Choices[0].Delta.Content)
 
 			totalOutput += tokenUsage.Output
