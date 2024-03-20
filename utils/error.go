@@ -126,6 +126,11 @@ var ErrorMessages = map[string]APIError{
 		Message:    "Failed to decode the incoming request. Please verify the request format.",
 		StatusCode: http.StatusBadRequest,
 	},
+	"empty_input": {
+		Code:       "empty_input",
+		Message:    "The embedding input is empty, please provide at least one string to embed.",
+		StatusCode: http.StatusBadRequest,
+	},
 	"generation_error": {
 		Code:       "generation_error",
 		Message:    "An error occurred while starting the generation. Please try again.",
