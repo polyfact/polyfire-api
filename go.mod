@@ -23,7 +23,7 @@ require (
 	github.com/sashabaranov/go-openai v1.17.9
 	github.com/supabase/postgrest-go v0.0.7
 	github.com/tmc/langchaingo v0.0.0-20230802030916-271e9bd7e7c5
-	google.golang.org/protobuf v1.32.0
+	google.golang.org/protobuf v1.33.0
 	gorm.io/driver/postgres v1.5.2
 	gorm.io/gorm v1.25.4
 )
@@ -54,7 +54,8 @@ require (
 	github.com/googleapis/gax-go/v2 v2.12.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
-	github.com/jackc/pgx/v5 v5.4.3 // indirect
+	github.com/jackc/pgx/v5 v5.5.4 // indirect
+	github.com/jackc/puddle/v2 v2.2.1 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/kennygrant/sanitize v1.2.4 // indirect
