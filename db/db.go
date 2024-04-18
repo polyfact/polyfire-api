@@ -97,7 +97,7 @@ func InitDB() DB {
 		panic("Failed to get SQL connection")
 	}
 
-	sqlDB.SetMaxOpenConns(90)
+	sqlDB.SetMaxOpenConns(50)
 
 	return DB{sql: *db}
 }
