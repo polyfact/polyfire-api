@@ -58,7 +58,11 @@ func (AssemblyAIProvider) Transcribe(
 		WordBoost:     opts.Keywords,
 	}
 
-	transcript, err := client.Transcripts.TranscribeFromReader(context.Background(), reader, &params)
+	transcript, err := client.Transcripts.TranscribeFromReader(
+		context.Background(),
+		reader,
+		&params,
+	)
 	if err != nil {
 		fmt.Println("ERROR", err)
 		return nil, err
@@ -66,6 +70,7 @@ func (AssemblyAIProvider) Transcribe(
 
 	var text string
 	words := make([]Word, 0)
+	dialogueWords := make([]Word, 0)
 
 	dialogue := make([]DialogueElement, 0)
 	sentenceSpeakersConfidence := make(map[int]float64, 0)
@@ -106,7 +111,12 @@ func (AssemblyAIProvider) Transcribe(
 					dialogueElem.Text = dialogueElem.Text + " " + lastSentence.Text
 					dialogueElem.End = lastSentence.End
 				} else {
+					for i := range dialogueWords {
+						words[i].Speaker = &dialogueElem.Speaker
+					}
 					dialogue = append(dialogue, dialogueElem)
+					words = append(words, dialogueWords...)
+					dialogueWords = make([]Word, 0)
 					dialogueElem = lastSentence
 				}
 			}
@@ -118,7 +128,7 @@ func (AssemblyAIProvider) Transcribe(
 				End:     0,
 			}
 		}
-		words = append(words, Word{
+		dialogueWords = append(dialogueWords, Word{
 			Word:              *word.Text,
 			PunctuatedWord:    *word.Text,
 			Start:             start,
@@ -128,7 +138,11 @@ func (AssemblyAIProvider) Transcribe(
 			SpeakerConfidence: 0.8,
 		})
 	}
+	for i := range dialogueWords {
+		words[i].Speaker = &dialogueElem.Speaker
+	}
 	dialogue = append(dialogue, dialogueElem)
+	words = append(words, dialogueWords...)
 
 	response := TranscriptionResult{
 		Text:     text,

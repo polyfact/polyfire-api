@@ -90,6 +90,7 @@ func (DeepgramProvider) Transcribe(
 
 	var text string
 	words := make([]Word, 0)
+	dialogueWords := make([]Word, 0)
 
 	dialogue := make([]DialogueElement, 0)
 	sentenceSpeakersConfidence := make(map[int]float64, 0)
@@ -131,7 +132,12 @@ func (DeepgramProvider) Transcribe(
 						dialogueElem.Text = dialogueElem.Text + " " + lastSentence.Text
 						dialogueElem.End = lastSentence.End
 					} else {
+						for i := range dialogueWords {
+							words[i].Speaker = &dialogueElem.Speaker
+						}
 						dialogue = append(dialogue, dialogueElem)
+						words = append(words, dialogueWords...)
+						dialogueWords = make([]Word, 0)
 						dialogueElem = lastSentence
 					}
 				}
@@ -144,7 +150,7 @@ func (DeepgramProvider) Transcribe(
 				}
 			}
 
-			words = append(words, Word{
+			dialogueWords = append(dialogueWords, Word{
 				Word:              word.Word,
 				PunctuatedWord:    word.Punctuated_Word,
 				Start:             word.Start,
@@ -154,8 +160,13 @@ func (DeepgramProvider) Transcribe(
 				SpeakerConfidence: word.SpeakerConfidence,
 			})
 		}
-		dialogue = append(dialogue, dialogueElem)
 	}
+
+	for i := range dialogueWords {
+		words[i].Speaker = &dialogueElem.Speaker
+	}
+	dialogue = append(dialogue, dialogueElem)
+	words = append(words, dialogueWords...)
 
 	response := TranscriptionResult{
 		Text:     text,
