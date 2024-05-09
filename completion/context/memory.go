@@ -14,12 +14,12 @@ var memoryTemplate = template.Must(template.New("memory_context").Parse(`Here ar
 
 type MemoryContext = TemplateContext
 
-func GetMemory(ctx context.Context, userID string, memoryIds []string, task string) (*MemoryContext, error) {
+func GetMemory(ctx context.Context, userID string, memoryIDs []string, task string) (*MemoryContext, error) {
 	results := []database.MatchResult{}
 	var err error
 
-	if len(memoryIds) > 0 {
-		results, err = memory.Embedder(ctx, userID, memoryIds, task)
+	if len(memoryIDs) > 0 {
+		results, err = memory.Embedder(ctx, userID, memoryIDs, task)
 		if err != nil {
 			return nil, err
 		}

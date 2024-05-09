@@ -28,20 +28,20 @@ func CountTokens(text string) int {
 
 func SplitText(text string, chunkSize int) []string {
 	splits := make([]string, 0)
-	inputIds := tke.Encode(text, nil, nil)
+	inputIDs := tke.Encode(text, nil, nil)
 
 	startIdx := 0
-	curIdx := len(inputIds)
+	curIdx := len(inputIDs)
 	if startIdx+chunkSize < curIdx {
 		curIdx = startIdx + chunkSize
 	}
-	for startIdx < len(inputIds) {
-		chunkIds := inputIds[startIdx:curIdx]
-		splits = append(splits, tke.Decode(chunkIds))
+	for startIdx < len(inputIDs) {
+		chunkIDs := inputIDs[startIdx:curIdx]
+		splits = append(splits, tke.Decode(chunkIDs))
 		startIdx += chunkSize
 		curIdx = startIdx + chunkSize
-		if curIdx > len(inputIds) {
-			curIdx = len(inputIds)
+		if curIdx > len(inputIDs) {
+			curIdx = len(inputIDs)
 		}
 	}
 	return splits

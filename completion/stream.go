@@ -16,7 +16,7 @@ import (
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
-	CheckOrigin:     func(r *http.Request) bool { return true }, // For now, allow all origins
+	CheckOrigin:     func(_ *http.Request) bool { return true }, // For now, allow all origins
 }
 
 func ReturnErrorsStream(conn *websocket.Conn, record utils.RecordFunc, err error) {
