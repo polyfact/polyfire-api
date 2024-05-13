@@ -70,65 +70,18 @@ func (AssemblyAIProvider) Transcribe(
 
 	var text string
 	words := make([]Word, 0)
-	dialogueWords := make([]Word, 0)
-
-	dialogue := make([]DialogueElement, 0)
+	lastSentence := make([]Word, 0)
 	sentenceSpeakersConfidence := make(map[int]float64, 0)
-	dialogueElem := DialogueElement{
-		Speaker: 0,
-		Text:    "",
-		Start:   0,
-		End:     0,
-	}
-	lastSentence := DialogueElement{
-		Speaker: 0,
-		Text:    "",
-		Start:   0,
-		End:     0,
-	}
 
 	text = *transcript.Text
 	for i, word := range transcript.Words {
 		speaker := assemblyAISpeakerToInt(word.Speaker)
 		start := float64(*word.Start) / 1000.0
 		end := float64(*word.End) / 1000.0
-		if lastSentence.Start == 0 {
-			lastSentence.Start = start
-		}
 
 		sentenceSpeakersConfidence[speaker] += 0.8
 
-		lastSentence.Text += " " + *word.Text
-		lastSentence.End = end
-
-		if canSpeakerChangeAssemblyAI(transcript.Words, i) {
-			if dialogueElem.Start == 0 {
-				dialogueElem = lastSentence
-			} else {
-				speaker := getHighestConfidenceSpeaker(sentenceSpeakersConfidence)
-				lastSentence.Speaker = speaker
-				if dialogueElem.Speaker == lastSentence.Speaker {
-					dialogueElem.Text = dialogueElem.Text + " " + lastSentence.Text
-					dialogueElem.End = lastSentence.End
-				} else {
-					for i := range dialogueWords {
-						words[i].Speaker = &dialogueElem.Speaker
-					}
-					dialogue = append(dialogue, dialogueElem)
-					words = append(words, dialogueWords...)
-					dialogueWords = make([]Word, 0)
-					dialogueElem = lastSentence
-				}
-			}
-			sentenceSpeakersConfidence = make(map[int]float64, 0)
-			lastSentence = DialogueElement{
-				Speaker: 0,
-				Text:    "",
-				Start:   0,
-				End:     0,
-			}
-		}
-		dialogueWords = append(dialogueWords, Word{
+		lastSentence = append(lastSentence, Word{
 			Word:              *word.Text,
 			PunctuatedWord:    *word.Text,
 			Start:             start,
@@ -137,17 +90,22 @@ func (AssemblyAIProvider) Transcribe(
 			Speaker:           &speaker,
 			SpeakerConfidence: 0.8,
 		})
+
+		if len(lastSentence) != 0 &&
+			(canSpeakerChangeAssemblyAI(transcript.Words, i) || i == len(transcript.Words)-1) {
+			speaker := getHighestConfidenceSpeaker(sentenceSpeakersConfidence)
+			for j := range lastSentence {
+				lastSentence[j].Speaker = &speaker
+			}
+			words = append(words, lastSentence...)
+			sentenceSpeakersConfidence = make(map[int]float64, 0)
+		}
 	}
-	for i := range dialogueWords {
-		words[i].Speaker = &dialogueElem.Speaker
-	}
-	dialogue = append(dialogue, dialogueElem)
-	words = append(words, dialogueWords...)
 
 	response := TranscriptionResult{
 		Text:     text,
 		Words:    words,
-		Dialogue: dialogue,
+		Dialogue: wordsToDialogue(words),
 	}
 
 	return &response, nil

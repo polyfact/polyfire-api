@@ -56,6 +56,38 @@ func canSpeakerChange(currentWord string, nextWord string) bool {
 	return false
 }
 
+func wordsToDialogue(words []Word) []DialogueElement {
+	dialogue := make([]DialogueElement, 0)
+	var dialogueElement DialogueElement
+	text := ""
+	for _, wordRaw := range words {
+		speakerID := *wordRaw.Speaker
+
+		if dialogueElement.Text == "" || dialogueElement.Speaker != speakerID {
+			if text != "" {
+				dialogueElement.Text = text
+				dialogue = append(dialogue, dialogueElement)
+				text = ""
+			}
+
+			start := wordRaw.Start
+			dialogueElement = DialogueElement{
+				Start:   start,
+				Speaker: speakerID,
+			}
+		}
+		end := wordRaw.End
+		text += " " + wordRaw.PunctuatedWord
+		dialogueElement.End = end
+	}
+
+	textToInsert := text
+	dialogueElement.Text = textToInsert
+	dialogue = append(dialogue, dialogueElement)
+
+	return dialogue
+}
+
 func (DeepgramProvider) Transcribe(
 	_ context.Context,
 	reader io.Reader,
@@ -90,67 +122,19 @@ func (DeepgramProvider) Transcribe(
 
 	var text string
 	words := make([]Word, 0)
-	dialogueWords := make([]Word, 0)
+	lastSentence := make([]Word, 0)
 
-	dialogue := make([]DialogueElement, 0)
 	sentenceSpeakersConfidence := make(map[int]float64, 0)
-	dialogueElem := DialogueElement{
-		Speaker: 0,
-		Text:    "",
-		Start:   0,
-		End:     0,
-	}
-	lastSentence := DialogueElement{
-		Speaker: 0,
-		Text:    "",
-		Start:   0,
-		End:     0,
-	}
 
 	if len(res.Results.Channels) > 0 && len(res.Results.Channels[0].Alternatives) > 0 {
 		text = res.Results.Channels[0].Alternatives[0].Transcript
 		deepgramWords := res.Results.Channels[0].Alternatives[0].Words
 		for i, word := range deepgramWords {
-			if lastSentence.Start == 0 {
-				lastSentence.Start = word.Start
-			}
-
 			if word.Speaker != nil {
 				sentenceSpeakersConfidence[*word.Speaker] += word.SpeakerConfidence
 			}
 
-			lastSentence.Text += " " + word.Punctuated_Word
-			lastSentence.End = word.End
-
-			if canSpeakerChangeDeepgram(deepgramWords, i) {
-				if dialogueElem.Start == 0 {
-					dialogueElem = lastSentence
-				} else {
-					speaker := getHighestConfidenceSpeaker(sentenceSpeakersConfidence)
-					lastSentence.Speaker = speaker
-					if dialogueElem.Speaker == lastSentence.Speaker {
-						dialogueElem.Text = dialogueElem.Text + " " + lastSentence.Text
-						dialogueElem.End = lastSentence.End
-					} else {
-						for i := range dialogueWords {
-							words[i].Speaker = &dialogueElem.Speaker
-						}
-						dialogue = append(dialogue, dialogueElem)
-						words = append(words, dialogueWords...)
-						dialogueWords = make([]Word, 0)
-						dialogueElem = lastSentence
-					}
-				}
-				sentenceSpeakersConfidence = make(map[int]float64, 0)
-				lastSentence = DialogueElement{
-					Speaker: 0,
-					Text:    "",
-					Start:   0,
-					End:     0,
-				}
-			}
-
-			dialogueWords = append(dialogueWords, Word{
+			lastSentence = append(lastSentence, Word{
 				Word:              word.Word,
 				PunctuatedWord:    word.Punctuated_Word,
 				Start:             word.Start,
@@ -159,19 +143,23 @@ func (DeepgramProvider) Transcribe(
 				Speaker:           word.Speaker,
 				SpeakerConfidence: word.SpeakerConfidence,
 			})
+
+			if len(lastSentence) != 0 &&
+				(canSpeakerChangeDeepgram(deepgramWords, i) || i == len(deepgramWords)-1) {
+				speaker := getHighestConfidenceSpeaker(sentenceSpeakersConfidence)
+				for j := range lastSentence {
+					lastSentence[j].Speaker = &speaker
+				}
+				words = append(words, lastSentence...)
+				sentenceSpeakersConfidence = make(map[int]float64, 0)
+			}
 		}
 	}
-
-	for i := range dialogueWords {
-		words[i].Speaker = &dialogueElem.Speaker
-	}
-	dialogue = append(dialogue, dialogueElem)
-	words = append(words, dialogueWords...)
 
 	response := TranscriptionResult{
 		Text:     text,
 		Words:    words,
-		Dialogue: dialogue,
+		Dialogue: wordsToDialogue(words),
 	}
 
 	return &response, nil
