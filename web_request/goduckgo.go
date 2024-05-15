@@ -125,13 +125,18 @@ func WebRequest(query string) ([]string, error) {
 			content = content[:1000] + "..."
 		}
 
-		formattedContent := fmt.Sprintf("Site %d (%s): %s\n==========\n", sitesVisited+1, link, content)
+		formattedContent := fmt.Sprintf(
+			"Site %d (%s): %s\n==========\n",
+			sitesVisited+1,
+			link,
+			content,
+		)
 
 		res = append(res, formattedContent)
 		sitesVisited++
 	})
 
-	c.OnScraped(func(r *colly.Response) {
+	c.OnScraped(func(_ *colly.Response) {
 		close(allDone)
 	})
 
