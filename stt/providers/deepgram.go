@@ -64,7 +64,7 @@ func wordsToDialogue(words []Word) []DialogueElement {
 		speakerID := *wordRaw.Speaker
 
 		if dialogueElement.Text == "" || dialogueElement.Speaker != speakerID {
-			if text != "" {
+			if dialogueElement.Text != "" {
 				dialogueElement.Text = text
 				dialogue = append(dialogue, dialogueElement)
 				text = ""
