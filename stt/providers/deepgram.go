@@ -151,6 +151,7 @@ func (DeepgramProvider) Transcribe(
 					lastSentence[j].Speaker = &speaker
 				}
 				words = append(words, lastSentence...)
+				lastSentence = make([]Word, 0)
 				sentenceSpeakersConfidence = make(map[int]float64, 0)
 			}
 		}
