@@ -77,6 +77,7 @@ func (DeepgramProvider) Transcribe(
 		deepgram.PreRecordedTranscriptionOptions{
 			Punctuate:  true,
 			Diarize:    true,
+			Numerals:   true,
 			Language:   language,
 			Utterances: true,
 			Model:      "nova-2",
