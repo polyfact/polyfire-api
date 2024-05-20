@@ -28,6 +28,7 @@ $(BUILD_DIRECTORY)/$(BIN_NAME): codegen api.go ./**/*.go
 
 app.yaml: app.dev.yaml check-env
 	@cat app.dev.yaml \
+	| sed "s/{{APP_SERVICE_NAME}}/${APP_SERVICE_NAME}/" \
 	| sed "s#{{SUPABASE_URL}}#${SUPABASE_URL}#" \
 	| sed "s/{{SUPABASE_KEY}}/${SUPABASE_KEY}/" \
 	| sed "s/{{OPENAI_API_KEY}}/${OPENAI_API_KEY}/" \
@@ -47,6 +48,9 @@ app.yaml: app.dev.yaml check-env
 	| sed "s/{{JWT_SECRET}}/${JWT_SECRET}/" > app.yaml
 
 check-env:
+ifndef APP_SERVICE_NAME
+	$(error APP_SERVICE_NAME is undefined)
+endif
 ifndef SUPABASE_URL
 	$(error SUPABASE_URL is undefined)
 endif

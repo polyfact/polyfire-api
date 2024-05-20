@@ -1,0 +1,47 @@
+name: Deploy Staging
+
+on:
+  push:
+    branches: [ "staging" ]
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: 'actions/checkout@v3'
+    - id: 'auth'
+      name: 'Authenticate to Google Cloud'
+      uses: 'google-github-actions/auth@v1'
+      with:
+        credentials_json: '${{ secrets.GOOGLE_CREDENTIALS }}'
+    - id: 'setup-gcloud'
+      name: 'Set up Cloud SDK'
+      uses: 'google-github-actions/setup-gcloud@v1'
+      with:
+        version: '>= 363.0.0'
+    - id: 'deploy'
+      name: 'Deploying to Google Cloud App Engine'
+      run: 'make deploy'
+      env:
+        APP_SERVICE_NAME: 'polyfire-staging'
+        SUPABASE_URL: '${{ secrets.STAGING_SUPABASE_URL }}'
+        SUPABASE_KEY: '${{ secrets.STAGING_SUPABASE_KEY }}'
+        OPENAI_API_KEY: '${{ secrets.OPENAI_API_KEY }}'
+        OPENROUTER_API_KEY: '${{ secrets.OPENROUTER_API_KEY }}'
+        COHERE_API_KEY: '${{ secrets.COHERE_API_KEY }}'
+        OPENAI_ORGANIZATION: '${{ secrets.OPENAI_ORGANIZATION }}'
+        POSTHOG_API_KEY: '${{ vars.POSTHOG_API_KEY }}'
+        REPLICATE_API_KEY: '${{ secrets.REPLICATE_API_KEY }}'
+        POSTGRES_URI: '${{ secrets.STAGING_POSTGRES_URI }}'
+        JWT_SECRET: '${{ secrets.STAGING_JWT_SECRET }}'
+        LLAMA_URL: '${{ secrets.LLAMA_URL }}'
+        API_URL: '${{vars.STAGING_API_URL}}'
+        ELEVENLABS_API_KEY: '${{ secrets.ELEVENLABS_API_KEY }}'
+        DEEPGRAM_API_KEY: '${{ secrets.DEEPGRAM_API_KEY }}'
+        GCS_PROJECT_ID: '${{ secrets.GCS_PROJECT_ID }}'
+        GCS_BUCKET_NAME: '${{ secrets.GCS_BUCKET_NAME }}'
+        GCS_SERVICE_ACCOUNT: '${{ secrets.GCS_SERVICE_ACCOUNT }}'
+        ASSEMBLYAI_API_KEY: '${{ secrets.ASSEMBLYAI_API_KEY }}'

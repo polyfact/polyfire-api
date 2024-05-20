@@ -1,0 +1,1080 @@
+def migrate(cur, rls=False):
+    if rls == False:
+        cur.execute("""
+            CREATE SCHEMA IF NOT EXISTS auth;
+
+            CREATE TABLE If NOT EXISTS auth.users (
+                id uuid DEFAULT gen_random_uuid() NOT NULL,
+                email text NOT NULL
+            );
+        """)
+
+
+    cur.execute("""
+        CREATE TYPE public.usage_rate_limit AS (
+        	usage integer,
+        	rate_limit integer,
+        	premium boolean,
+        	openai_token text,
+        	openai_org text
+        );
+        CREATE TABLE public.auth_users (
+            rate_limit bigint,
+            created_at timestamp with time zone DEFAULT now() NOT NULL,
+            id text NOT NULL,
+            stripe_customer_id text,
+            premium boolean DEFAULT true NOT NULL,
+            version bigint,
+            openai_token text,
+            openai_org text,
+            replicate_token text,
+            elevenlabs_token text,
+            credits bigint DEFAULT '50000000'::bigint NOT NULL,
+            authorized_user boolean DEFAULT true NOT NULL,
+            stripe_subscription_id text,
+            updated_at timestamp with time zone DEFAULT now() NOT NULL
+        );
+        CREATE TABLE public.chat_messages (
+            id uuid DEFAULT gen_random_uuid() NOT NULL,
+            chat_id uuid NOT NULL,
+            is_user_message boolean NOT NULL,
+            content text NOT NULL,
+            created_at timestamp with time zone DEFAULT now() NOT NULL
+        );
+        CREATE TABLE public.chats (
+            id uuid DEFAULT gen_random_uuid() NOT NULL,
+            user_id uuid NOT NULL,
+            created_at timestamp with time zone DEFAULT now() NOT NULL,
+            system_prompt text,
+            system_prompt_id uuid,
+            openai_thread_id text,
+            name text
+        );
+        CREATE TABLE public.completion_cache (
+            id uuid DEFAULT gen_random_uuid() NOT NULL,
+            input vector,
+            result text NOT NULL,
+            created_at timestamp with time zone DEFAULT now() NOT NULL,
+            provider text NOT NULL,
+            model text NOT NULL,
+            exact boolean DEFAULT true NOT NULL,
+            sha256sum text DEFAULT ''::text NOT NULL
+        );
+        CREATE TABLE public.embeddings (
+            memory_id uuid NOT NULL,
+            content text NOT NULL,
+            embedding vector(1536),
+            user_id uuid,
+            id uuid DEFAULT gen_random_uuid() NOT NULL,
+            created_at timestamp with time zone DEFAULT now()
+        );
+        CREATE TABLE public.events (
+            id uuid DEFAULT gen_random_uuid() NOT NULL,
+            path text NOT NULL,
+            user_id uuid,
+            project_id uuid NOT NULL,
+            request_body text,
+            response_body text,
+            error boolean DEFAULT false NOT NULL,
+            created_at timestamp with time zone DEFAULT (now() AT TIME ZONE 'utc'::text),
+            prompt_id uuid,
+            type text DEFAULT 'unknown'::text NOT NULL,
+            origin_domain text
+        );
+        CREATE TABLE public.kvs (
+            id uuid DEFAULT gen_random_uuid() NOT NULL,
+            user_id text NOT NULL,
+            key text NOT NULL,
+            value text NOT NULL,
+            created_at timestamp with time zone DEFAULT now(),
+            project_slug text,
+            project_id uuid
+        );
+        CREATE TABLE public.memories (
+            id uuid DEFAULT gen_random_uuid() NOT NULL,
+            created_at timestamp with time zone DEFAULT now(),
+            updated_at timestamp with time zone,
+            user_id uuid,
+            embedding_ids uuid[],
+            description text,
+            read_at timestamp with time zone,
+            public boolean
+        );
+        CREATE TABLE public.model_aliases (
+            id uuid DEFAULT gen_random_uuid() NOT NULL,
+            project_id uuid,
+            alias text NOT NULL,
+            model_id bigint NOT NULL,
+            created_at timestamp with time zone DEFAULT (now() AT TIME ZONE 'utc'::text) NOT NULL
+        );
+        CREATE TABLE public.models (
+            id bigint NOT NULL,
+            model text NOT NULL,
+            provider text NOT NULL,
+            credit_input bigint,
+            credit_type text NOT NULL,
+            type text NOT NULL,
+            created_at timestamp with time zone DEFAULT now() NOT NULL,
+            credit_output bigint,
+            credit bigint,
+            image_url text,
+            official_name text DEFAULT 'OpenAI'::text NOT NULL,
+            hidden boolean DEFAULT false NOT NULL,
+            option_stream boolean DEFAULT false NOT NULL,
+            option_temperature boolean DEFAULT false NOT NULL,
+            option_stop boolean DEFAULT false NOT NULL,
+            tags text[] NOT NULL
+        );
+        ALTER TABLE public.models ALTER COLUMN id ADD GENERATED BY DEFAULT AS IDENTITY (
+            SEQUENCE NAME public.models_id_seq
+            START WITH 1
+            INCREMENT BY 1
+            NO MINVALUE
+            NO MAXVALUE
+            CACHE 1
+        );
+        CREATE TABLE public.project_users (
+            id uuid DEFAULT gen_random_uuid() NOT NULL,
+            auth_id text NOT NULL,
+            project_id uuid NOT NULL,
+            created_at timestamp with time zone DEFAULT now() NOT NULL,
+            monthly_token_rate_limit bigint,
+            stripe_customer_id text,
+            monthly_credit_rate_limit bigint,
+            version bigint,
+            premium boolean DEFAULT false NOT NULL
+        );
+        CREATE TABLE public.projects (
+            id uuid DEFAULT gen_random_uuid() NOT NULL,
+            name text NOT NULL,
+            auth_id uuid NOT NULL,
+            created_at timestamp with time zone DEFAULT now() NOT NULL,
+            free_user_init boolean DEFAULT true NOT NULL,
+            default_monthly_token_rate_limit bigint,
+            firebase_project_id text,
+            default_monthly_credit_rate_limit bigint,
+            slug text NOT NULL,
+            custom_auth_public_key text,
+            allow_anonymous_auth boolean DEFAULT false NOT NULL,
+            authorized_domains text[],
+            premium_monthly_credit_rate_limit bigint,
+            dev_rate_limit boolean DEFAULT false NOT NULL,
+            stripe_connect_account text,
+            stripe_connect_active boolean DEFAULT false NOT NULL,
+            stripe_payment_link text,
+            authorized_auth_email_domains text[]
+        );
+        CREATE TABLE public.prompts (
+            id uuid DEFAULT gen_random_uuid() NOT NULL,
+            name text,
+            description text,
+            prompt text,
+            created_at timestamp with time zone DEFAULT now(),
+            updated_at timestamp with time zone,
+            use bigint DEFAULT '0'::bigint,
+            tags text[],
+            user_id uuid,
+            public boolean DEFAULT false NOT NULL,
+            "like" uuid,
+            slug text,
+            project_slug text,
+            project_id uuid
+        );
+        CREATE TABLE public.prompts_likes (
+            created_at timestamp with time zone DEFAULT now() NOT NULL,
+            prompt_id uuid NOT NULL,
+            user_id uuid,
+            id uuid DEFAULT gen_random_uuid() NOT NULL
+        );
+        CREATE TABLE public.prompts_uses (
+            id uuid DEFAULT gen_random_uuid() NOT NULL,
+            created_at timestamp with time zone DEFAULT now() NOT NULL,
+            user_id uuid NOT NULL,
+            prompt_id uuid NOT NULL
+        );
+        CREATE TABLE public.refresh_tokens (
+            refresh_token text NOT NULL,
+            refresh_token_supabase text NOT NULL,
+            project_id uuid NOT NULL,
+            created_at timestamp with time zone DEFAULT now() NOT NULL
+        );
+        CREATE TABLE public.request_logs (
+            id uuid DEFAULT uuid_generate_v4() NOT NULL,
+            created_at timestamp with time zone DEFAULT now() NOT NULL,
+            user_id uuid NOT NULL,
+            model_name text NOT NULL,
+            input_token_count bigint,
+            output_token_count bigint,
+            kind text,
+            credits bigint DEFAULT '0'::bigint NOT NULL,
+            event_id uuid
+        );
+        CREATE TABLE public.tts_voices (
+            id uuid DEFAULT gen_random_uuid() NOT NULL,
+            slug text NOT NULL,
+            provider text NOT NULL,
+            provider_voice_id text NOT NULL,
+            created_at timestamp with time zone DEFAULT now() NOT NULL
+        );
+        CREATE FUNCTION public.add_credits_to_user(user_id text, credits_to_add bigint) RETURNS void
+            LANGUAGE sql
+            AS $$
+          UPDATE auth_users SET credits = credits + credits_to_add WHERE id = user_id
+        $$;
+        CREATE FUNCTION public.events_with_emails() RETURNS TABLE(id uuid, path text, user_id text, project_id uuid, request_body text, response_body text, error boolean, email text)
+            LANGUAGE sql
+            AS $$
+          SELECT events.id, events.path, events.user_id::text, events.project_id, events.request_body, events.response_body, events.error, email FROM events JOIN project_users ON project_users.id::text = events.user_id::text JOIN auth.users ON auth.users.id::text = project_users.auth_id
+        $$;
+        CREATE FUNCTION public.events_with_emails_light() RETURNS TABLE(id uuid, path text, created_at timestamp with time zone, error boolean, email character varying, project_id uuid)
+            LANGUAGE plpgsql
+            AS $$BEGIN
+          RETURN QUERY
+          SELECT 
+            events.id, 
+            events.path, 
+            events.created_at, 
+            events.error, 
+            auth.users.email,
+            events.project_id
+          FROM 
+            events 
+          JOIN project_users ON project_users.id::text = events.user_id::text 
+          JOIN auth.users ON auth.users.id::text = project_users.auth_id
+          ORDER BY events.created_at DESC
+          LIMIT 100;
+        END;
+        $$;
+        CREATE FUNCTION public.fetch_project_users_info(p_project_id uuid) RETURNS TABLE(user_id uuid, app_metadata jsonb, last_sign_in_at timestamp with time zone, email character varying, project_user_created_at timestamp with time zone, paying_user boolean, stripe_customer_id text)
+            LANGUAGE plpgsql
+            AS $$
+        BEGIN
+            RETURN QUERY 
+            SELECT 
+                u.id as user_id,
+                u.raw_app_meta_data as app_metadata,
+                u.last_sign_in_at,
+                u.email,
+                pu.created_at as project_user_created_at,
+                pu.premium as paying_user,
+                pu.stripe_customer_id
+            FROM 
+                public.project_users pu
+            INNER JOIN 
+                auth.users u ON u.id::text = pu.auth_id
+            WHERE 
+                pu.project_id = p_project_id;
+        END;
+        $$;
+        CREATE FUNCTION public.get_credits_per_projects(param_auth_id text, param_before timestamp without time zone, param_after timestamp without time zone) RETURNS TABLE(id uuid, credits integer)
+            LANGUAGE sql
+            AS $$
+          SELECT
+            projects.id,
+            SUM(request_logs.credits) as credits
+          FROM projects
+          JOIN project_users ON projects.id = project_users.project_id
+          JOIN request_logs ON request_logs.user_id::text = project_users.id::text
+          WHERE projects.auth_id::text = param_auth_id AND request_logs.created_at < param_before AND request_logs.created_at > param_after
+          GROUP BY projects.id
+          UNION
+          SELECT
+            '00000000-0000-0000-0000-000000000000'::uuid as id,
+            SUM(request_logs.credits) as credits
+          FROM
+            request_logs
+          WHERE request_logs.user_id::text = param_auth_id AND request_logs.created_at < param_before AND request_logs.created_at > param_after
+        $$;
+        CREATE FUNCTION public.get_dev_email_project_id(project_id uuid) RETURNS text
+            LANGUAGE sql
+            AS $$
+          SELECT
+            auth.users.email
+          FROM projects
+          JOIN auth.users ON projects.auth_id = auth.users.id
+          WHERE projects.id = project_id
+          LIMIT 1
+        $$;
+        CREATE FUNCTION public.get_logs_per_projects(param_auth_id text, param_before timestamp without time zone, param_after timestamp without time zone) RETURNS TABLE(id uuid, credits bigint)
+            LANGUAGE sql
+            AS $$
+          SELECT
+            projects.id,
+            SUM(request_logs.credits) as credits
+          FROM projects
+          JOIN project_users ON projects.id = project_users.project_id
+          JOIN request_logs ON request_logs.user_id::text = project_users.id::text
+          WHERE projects.auth_id::text = param_auth_id AND request_logs.created_at < param_before AND request_logs.created_at > param_after
+          GROUP BY projects.id
+          UNION
+          SELECT
+            '00000000-0000-0000-0000-000000000000'::uuid as id,
+            SUM(request_logs.credits) as credits
+          FROM
+            request_logs
+          WHERE request_logs.user_id::text = param_auth_id AND request_logs.created_at < param_before AND request_logs.created_at > param_after
+        $$;
+        CREATE FUNCTION public.get_model_info_by_project_id(param_project_id uuid) RETURNS TABLE(model_name text, provider text, credit_input bigint, credit_type text, type text, credit_output bigint, credit bigint, image_url text, total_credits bigint)
+            LANGUAGE plpgsql
+            AS $$
+        BEGIN
+            RETURN QUERY
+            SELECT  
+                request_logs.model_name,
+                models.provider,
+                models.credit_input,
+                models.credit_type,
+                models.type,
+                models.credit_output,
+                models.credit,
+                models.image_url,
+                CAST(SUM(request_logs.credits) AS BIGINT) AS total_credits
+            FROM 
+                request_logs
+            JOIN 
+                project_users ON project_users.id::text = request_logs.user_id::text
+            JOIN
+                models ON request_logs.model_name = models.model
+            WHERE 
+                project_users.project_id = param_project_id
+            GROUP BY 
+                request_logs.model_name, models.provider, models.credit_input, models.credit_type, models.type, models.credit_output, models.credit, models.image_url;
+        END;
+        $$;
+        CREATE FUNCTION public.get_monthly_credit_usage(userid text) RETURNS bigint
+            LANGUAGE sql
+            AS $$
+          select
+            sum(credits) as output
+          from
+            request_logs
+          where
+            created_at > now() - interval '1' month
+            AND user_id::text = userid
+          group by
+            user_id
+        $$;
+        CREATE FUNCTION public.get_monthly_token_usage(userid text) RETURNS integer
+            LANGUAGE sql
+            AS $$
+          select
+            sum(input_token_count) +
+            2 * sum(output_token_count) as output
+          from
+            request_logs
+          where
+            created_at > now() - interval '1' month
+            AND user_id::text = userid
+          group by
+            user_id
+        $$;
+        CREATE FUNCTION public.get_monthly_token_usage_user_id_projects(param_user_id text) RETURNS public.usage_rate_limit
+            LANGUAGE plpgsql
+            AS $$
+        DECLARE
+            dev_id text;
+            result usage_rate_limit;
+        BEGIN
+            dev_id := (
+              SELECT projects.auth_id as output
+              FROM project_users 
+              JOIN projects ON projects.id = project_users.project_id
+              WHERE project_users.id::text = param_user_id
+              GROUP BY projects.auth_id
+              LIMIT 1
+            );
+            result.usage := (
+              SELECT
+                SUM(credits)
+              FROM
+                get_logs_per_projects(
+                  CASE WHEN dev_id IS NULL THEN param_user_id ELSE dev_id::text END,
+                  now()::timestamp,
+                  (now() - interval '1' month)::timestamp
+                )
+            );
+            result.rate_limit := (
+              select
+                auth_users.rate_limit
+              from
+                auth_users
+              WHERE id = CASE WHEN dev_id IS NULL THEN param_user_id ELSE dev_id::text END
+              LIMIT 1
+            );
+            result.premium := (
+              select
+                auth_users.premium
+              from
+                auth_users
+              WHERE id = CASE WHEN dev_id IS NULL THEN param_user_id ELSE dev_id::text END
+              LIMIT 1
+            );
+            result.openai_token := (
+              select
+                auth_users.openai_token
+              from
+                auth_users
+              WHERE id = CASE WHEN dev_id IS NULL THEN param_user_id ELSE dev_id::text END
+              LIMIT 1
+            );
+            result.openai_org := (
+              select
+                auth_users.openai_org
+              from
+                auth_users
+              WHERE id = CASE WHEN dev_id IS NULL THEN param_user_id ELSE dev_id::text END
+              LIMIT 1
+            );
+            RETURN result;
+        END
+        $$;
+        CREATE FUNCTION public.get_project_stats(param_auth_id uuid, param_before timestamp without time zone, param_after timestamp without time zone, param_slug text) RETURNS TABLE(project_name text, creation_date timestamp with time zone, slug text, allow_anonymous_auth boolean, default_monthly_credit_rate_limit bigint, total_project_users bigint, avg_monthly_credit_rate_limit_per_user bigint, latest_user_joined_date timestamp with time zone, total_monthly_token_rate_limit bigint, total_credits_consumed bigint, total_tokens_input bigint, total_tokens_output bigint, last_request_date timestamp with time zone)
+            LANGUAGE plpgsql
+            AS $$
+        BEGIN
+            RETURN QUERY
+        WITH project_data AS (
+            SELECT 
+                projects.name AS project_name,
+                projects.created_at AS creation_date,
+                projects.slug AS slug,
+                projects.allow_anonymous_auth,
+                projects.default_monthly_credit_rate_limit,
+                COUNT(DISTINCT project_users.id) AS total_project_users,
+                COALESCE(CAST(AVG(project_users.monthly_credit_rate_limit) AS BIGINT), 0) AS avg_monthly_credit_rate_limit_per_user,
+                MAX(project_users.created_at) AS latest_user_joined_date,
+                COALESCE(CAST(SUM(project_users.monthly_token_rate_limit) AS BIGINT), 0) AS total_monthly_token_rate_limit
+            FROM projects
+            LEFT JOIN project_users ON projects.id = project_users.project_id
+            WHERE 
+               projects.slug = param_slug
+            GROUP BY projects.id
+        ),
+            usage_data AS (
+                SELECT 
+                    COALESCE(CAST(SUM(request_logs.credits) AS BIGINT), 0) AS total_credits_consumed,
+                    COALESCE(CAST(SUM(request_logs.input_token_count) AS BIGINT), 0) AS total_tokens_input,
+                    COALESCE(CAST(SUM(request_logs.output_token_count) AS BIGINT), 0) AS total_tokens_output,
+                    MAX(request_logs.created_at) AS last_request_date
+                FROM request_logs
+                JOIN project_users ON request_logs.user_id::text = project_users.id::text
+                JOIN projects ON project_users.project_id = projects.id
+                WHERE 
+                    request_logs.created_at BETWEEN param_after AND param_before
+                    AND projects.slug = param_slug
+            )
+           SELECT 
+                project_data.project_name,
+                project_data.creation_date,
+                project_data.slug,
+                project_data.allow_anonymous_auth,
+                project_data.default_monthly_credit_rate_limit,
+                project_data.total_project_users,
+                project_data.avg_monthly_credit_rate_limit_per_user,
+                project_data.latest_user_joined_date,
+                project_data.total_monthly_token_rate_limit,
+                usage_data.total_credits_consumed,
+                usage_data.total_tokens_input,
+                usage_data.total_tokens_output,
+                usage_data.last_request_date
+            FROM project_data, usage_data;
+        END;
+        $$;
+        CREATE FUNCTION public.get_project_stats_and_cost(param_auth_id uuid, param_before timestamp without time zone, param_after timestamp without time zone, param_slug text) RETURNS TABLE(project_name text, creation_date timestamp with time zone, slug text, allow_anonymous_auth boolean, default_monthly_credit_rate_limit bigint, total_project_users bigint, avg_monthly_credit_rate_limit_per_user bigint, latest_user_joined_date timestamp with time zone, total_monthly_token_rate_limit bigint, total_credits_consumed bigint, total_tokens_input bigint, total_tokens_output bigint, last_request_date timestamp with time zone, cost double precision)
+            LANGUAGE plpgsql
+            AS $$
+        BEGIN
+            RETURN QUERY
+        WITH project_data AS (
+            SELECT 
+                projects.name AS project_name,
+                projects.created_at AS creation_date,
+                projects.slug AS slug,
+                projects.allow_anonymous_auth,
+                projects.default_monthly_credit_rate_limit,
+                COUNT(DISTINCT project_users.id) AS total_project_users,
+                COALESCE(CAST(AVG(project_users.monthly_credit_rate_limit) AS BIGINT), 0) AS avg_monthly_credit_rate_limit_per_user,
+                MAX(project_users.created_at) AS latest_user_joined_date,
+                COALESCE(CAST(SUM(project_users.monthly_token_rate_limit) AS BIGINT), 0) AS total_monthly_token_rate_limit
+            FROM projects
+            LEFT JOIN project_users ON projects.id = project_users.project_id
+            WHERE 
+               projects.slug = param_slug
+            GROUP BY projects.id
+        ),
+            usage_data AS (
+                SELECT 
+                    COALESCE(CAST(SUM(request_logs.credits) AS BIGINT), 0) AS total_credits_consumed,
+                    COALESCE(CAST(SUM(request_logs.input_token_count) AS BIGINT), 0) AS total_tokens_input,
+                    COALESCE(CAST(SUM(request_logs.output_token_count) AS BIGINT), 0) AS total_tokens_output,
+                    MAX(request_logs.created_at) AS last_request_date
+                FROM request_logs
+                JOIN project_users ON request_logs.user_id = project_users.id::text
+                JOIN projects ON project_users.project_id = projects.id
+                WHERE 
+                    request_logs.created_at BETWEEN param_after AND param_before
+                    AND projects.slug = param_slug
+            )
+           SELECT 
+                project_data.project_name,
+                project_data.creation_date,
+                project_data.slug,
+                project_data.allow_anonymous_auth,
+                project_data.default_monthly_credit_rate_limit,
+                project_data.total_project_users,
+                project_data.avg_monthly_credit_rate_limit_per_user,
+                project_data.latest_user_joined_date,
+                project_data.total_monthly_token_rate_limit,
+                usage_data.total_credits_consumed,
+                usage_data.total_tokens_input,
+                usage_data.total_tokens_output,
+                usage_data.last_request_date,
+                usage_data.total_credits_consumed::DOUBLE PRECISION / 10000000 AS cost
+            FROM project_data, usage_data;
+        END;
+        $$;
+        CREATE FUNCTION public.get_project_stats_with_cost(param_auth_id uuid, param_before timestamp without time zone, param_after timestamp without time zone, param_slug text) RETURNS TABLE(project_name text, creation_date timestamp with time zone, slug text, allow_anonymous_auth boolean, default_monthly_credit_rate_limit bigint, total_project_users bigint, avg_monthly_credit_rate_limit_per_user bigint, latest_user_joined_date timestamp with time zone, total_monthly_token_rate_limit bigint, total_credits_consumed bigint, total_tokens_input bigint, total_tokens_output bigint, last_request_date timestamp with time zone, cost bigint)
+            LANGUAGE plpgsql
+            AS $$
+        BEGIN
+            RETURN QUERY
+        WITH project_data AS (
+            SELECT 
+                projects.name AS project_name,
+                projects.created_at AS creation_date,
+                projects.slug AS slug,
+                projects.allow_anonymous_auth,
+                projects.default_monthly_credit_rate_limit,
+                COUNT(DISTINCT project_users.id) AS total_project_users,
+                COALESCE(CAST(AVG(project_users.monthly_credit_rate_limit) AS BIGINT), 0) AS avg_monthly_credit_rate_limit_per_user,
+                MAX(project_users.created_at) AS latest_user_joined_date,
+                COALESCE(CAST(SUM(project_users.monthly_token_rate_limit) AS BIGINT), 0) AS total_monthly_token_rate_limit
+            FROM projects
+            LEFT JOIN project_users ON projects.id = project_users.project_id
+            WHERE 
+               projects.slug = param_slug
+            GROUP BY projects.id
+        ),
+            usage_data AS (
+                SELECT 
+                    COALESCE(CAST(SUM(request_logs.credits) AS BIGINT), 0) AS total_credits_consumed,
+                    COALESCE(CAST(SUM(request_logs.input_token_count) AS BIGINT), 0) AS total_tokens_input,
+                    COALESCE(CAST(SUM(request_logs.output_token_count) AS BIGINT), 0) AS total_tokens_output,
+                    MAX(request_logs.created_at) AS last_request_date
+                FROM request_logs
+                JOIN project_users ON request_logs.user_id::text = project_users.id::text
+                JOIN projects ON project_users.project_id = projects.id
+                WHERE 
+                    request_logs.created_at BETWEEN param_after AND param_before
+                    AND projects.slug = param_slug
+            )
+           SELECT 
+                project_data.project_name,
+                project_data.creation_date,
+                project_data.slug,
+                project_data.allow_anonymous_auth,
+                project_data.default_monthly_credit_rate_limit,
+                project_data.total_project_users,
+                project_data.avg_monthly_credit_rate_limit_per_user,
+                project_data.latest_user_joined_date,
+                project_data.total_monthly_token_rate_limit,
+                usage_data.total_credits_consumed,
+                usage_data.total_tokens_input,
+                usage_data.total_tokens_output,
+                usage_data.last_request_date,
+                usage_data.total_credits_consumed / 10000000 AS cost
+            FROM project_data, usage_data;
+        END;
+        $$;
+        CREATE FUNCTION public.get_project_usage_stats(param_project_id uuid, param_after timestamp with time zone, param_before timestamp with time zone) RETURNS TABLE(total_project_users bigint, cost double precision)
+            LANGUAGE plpgsql
+            AS $$
+        BEGIN
+            RETURN QUERY
+            WITH project_data AS (
+                SELECT 
+                    COUNT(DISTINCT project_users.id) AS total_project_users
+                FROM project_users
+                WHERE project_users.project_id = param_project_id
+            ),
+            usage_data AS (
+                SELECT 
+                    COALESCE(CAST(SUM(request_logs.credits) AS BIGINT), 0) AS total_credits_consumed
+                FROM request_logs
+                JOIN project_users ON request_logs.user_id::uuid = project_users.id
+                WHERE 
+                    request_logs.created_at BETWEEN param_after AND param_before
+                    AND project_users.project_id = param_project_id
+            )
+            SELECT 
+                project_data.total_project_users,
+                usage_data.total_credits_consumed::DOUBLE PRECISION / 10000000 AS cost
+            FROM project_data
+            CROSS JOIN usage_data;
+        END $$;
+        CREATE FUNCTION public.get_prompts_likes_info(userid uuid, promptid uuid) RETURNS TABLE(prompt_id uuid, prompt_name text, description text, prompt text, created_at timestamp with time zone, updated_at timestamp with time zone, use bigint, tags text[], public boolean, user_id uuid, likes_count bigint, user_has_liked boolean)
+            LANGUAGE plpgsql
+            AS $$
+        BEGIN
+            RETURN QUERY
+            WITH LikesCount AS (
+                SELECT 
+                    prompts_likes.prompt_id,
+                    COUNT(*) AS total_likes
+                FROM
+                    prompts_likes
+                GROUP BY
+                    prompts_likes.prompt_id
+            )
+            SELECT 
+                p.id AS prompt_id,
+                p.name AS prompt_name,
+                p.description AS description,
+                p.prompt AS prompt,
+                p.created_at AS created_at,
+                p.updated_at AS updated_at,
+                p.use AS use,
+                p.tags AS tags,
+                p.public AS public,
+                p.user_id AS user_id,
+                COALESCE(lc.total_likes, 0) AS likes_count,
+                CASE WHEN pl.id IS NOT NULL THEN TRUE ELSE FALSE END AS user_has_liked
+            FROM
+                prompts p
+            LEFT JOIN
+                LikesCount lc ON p.id = lc.prompt_id
+            LEFT JOIN 
+                prompts_likes pl ON p.id = pl.prompt_id AND pl.user_id = userid
+            WHERE 
+                p.id = promptid OR promptid IS NULL;
+        END;
+        $$;
+        CREATE FUNCTION public.get_prompts_likes_info(userid uuid, promptid uuid, light boolean) RETURNS TABLE(prompt_id uuid, prompt_name text, description text, prompt text, created_at timestamp with time zone, updated_at timestamp with time zone, use bigint, tags text[], public boolean, user_id uuid, likes_count bigint, user_has_liked boolean)
+            LANGUAGE plpgsql
+            AS $$
+        BEGIN
+            RETURN QUERY
+            WITH LikesCount AS (
+                SELECT 
+                    prompts_likes.prompt_id,
+                    COUNT(*) AS total_likes
+                FROM
+                    prompts_likes
+                GROUP BY
+                    prompts_likes.prompt_id
+            )
+            SELECT 
+                p.id AS prompt_id,
+                p.name AS prompt_name,
+                p.description AS description,
+                CASE WHEN light THEN NULL ELSE p.prompt END AS prompt,
+                p.created_at AS created_at,
+                p.updated_at AS updated_at,
+                p.use AS use,
+                p.tags AS tags,
+                p.public AS public,
+                p.user_id AS user_id,
+                COALESCE(lc.total_likes, 0) AS likes_count,
+                CASE WHEN pl.id IS NOT NULL THEN TRUE ELSE FALSE END AS user_has_liked
+            FROM
+                prompts p
+            LEFT JOIN
+                LikesCount lc ON p.id = lc.prompt_id
+            LEFT JOIN 
+                prompts_likes pl ON p.id = pl.prompt_id AND pl.user_id = userid
+            WHERE 
+                p.id = promptid OR promptid IS NULL;
+        END;
+        $$;
+        CREATE FUNCTION public.get_prompts_likes_info(userid uuid, promptid uuid, light boolean, filters text[]) RETURNS TABLE(prompt_id uuid, prompt_name text, description text, prompt text, created_at timestamp with time zone, updated_at timestamp with time zone, use bigint, tags text[], public boolean, user_id uuid, likes_count bigint, user_has_liked boolean)
+            LANGUAGE plpgsql
+            AS $$
+        DECLARE
+            filter TEXT;
+            column_name TEXT;
+            operation TEXT;
+            value TEXT;
+            dynamic_sql TEXT;
+        BEGIN
+            dynamic_sql := 
+            'WITH LikesCount AS (
+                SELECT 
+                    prompts_likes.prompt_id,
+                    COUNT(*) AS total_likes
+                FROM
+                    prompts_likes
+                GROUP BY
+                    prompts_likes.prompt_id
+            )
+            SELECT 
+                p.id AS prompt_id,
+                p.name AS prompt_name,
+                p.description AS description,
+                CASE WHEN light THEN p.prompt ELSE NULL END AS prompt,
+                p.created_at AS created_at,
+                p.updated_at AS updated_at,
+                p.use AS use,
+                p.tags AS tags,
+                p.public AS public,
+                p.user_id::text AS user_id,
+                COALESCE(lc.total_likes, 0) AS likes_count,
+                CASE WHEN pl.id IS NOT NULL THEN TRUE ELSE FALSE END AS user_has_liked
+            FROM
+                prompts p
+            LEFT JOIN
+                LikesCount lc ON p.id = lc.prompt_id
+            LEFT JOIN 
+                prompts_likes pl ON p.id = pl.prompt_id AND pl.user_id = userid
+            WHERE 
+                p.id = promptid OR promptid IS NULL';
+            FOREACH filter IN ARRAY filters
+            LOOP
+                column_name := split_part(filter, ',', 1);
+                operation := split_part(filter, ',', 2);
+                value := split_part(filter, ',', 3);
+                
+                dynamic_sql := dynamic_sql || ' AND ' || column_name || ' ' || operation || ' ' || quote_literal(value);
+            END LOOP;
+            IF userId != '' THEN
+                dynamic_sql := dynamic_sql || ' AND p.user_id = ' || quote_literal(userId);
+            ELSE
+                dynamic_sql := dynamic_sql || ' AND p.public = true';
+            END IF;
+            RETURN QUERY EXECUTE dynamic_sql;
+        END;
+        $$;
+        CREATE FUNCTION public.retrieve_embeddings(query_embedding vector, match_threshold double precision, match_count integer, memoryid uuid[], userid text) RETURNS TABLE(id uuid, content text, similarity double precision)
+            LANGUAGE sql STABLE
+            AS $$SELECT
+          embeddings.id,
+          embeddings.content,
+          1 - (embeddings.embedding <=> query_embedding) as similarity
+        FROM embeddings
+        JOIN memories ON embeddings.memory_id = memories.id
+        WHERE 
+          1 - (embeddings.embedding <=> query_embedding) > match_threshold 
+          AND embeddings.memory_id = ANY(memoryid)
+          AND (
+            memories.user_id::text = userid
+            OR memories.public = true
+          )
+        ORDER BY similarity DESC
+        LIMIT match_count;
+        $$;
+        CREATE FUNCTION public.try_cast_uuid(p_in text, p_default uuid DEFAULT NULL::uuid) RETURNS uuid
+            LANGUAGE plpgsql
+            AS $_$
+        begin
+          begin
+            return $1::uuid;
+          exception 
+            when others then
+               return p_default;
+          end;
+        end;
+        $_$;
+        ALTER TABLE ONLY public.project_users
+            ADD CONSTRAINT auth_id_project_unique UNIQUE (auth_id, project_id);
+        ALTER TABLE ONLY public.auth_users
+            ADD CONSTRAINT auth_users_duplicate_pkey PRIMARY KEY (id);
+        ALTER TABLE ONLY public.chat_messages
+            ADD CONSTRAINT chat_message_pkey PRIMARY KEY (id);
+        ALTER TABLE ONLY public.chats
+            ADD CONSTRAINT chats_pkey PRIMARY KEY (id);
+        ALTER TABLE ONLY public.completion_cache
+            ADD CONSTRAINT completion_cache_pkey PRIMARY KEY (id);
+        ALTER TABLE ONLY public.completion_cache
+            ADD CONSTRAINT completion_cache_sha256sum_key UNIQUE (sha256sum);
+        ALTER TABLE ONLY public.embeddings
+            ADD CONSTRAINT embeddings_pkey PRIMARY KEY (id);
+        ALTER TABLE ONLY public.events
+            ADD CONSTRAINT events_pkey PRIMARY KEY (id);
+        ALTER TABLE ONLY public.kvs
+            ADD CONSTRAINT kvs_key_key UNIQUE (key);
+        ALTER TABLE ONLY public.kvs
+            ADD CONSTRAINT kvs_pkey PRIMARY KEY (id);
+        ALTER TABLE ONLY public.memories
+            ADD CONSTRAINT memories_pkey PRIMARY KEY (id);
+        ALTER TABLE ONLY public.model_aliases
+            ADD CONSTRAINT model_aliases_pkey PRIMARY KEY (id);
+        ALTER TABLE ONLY public.models
+            ADD CONSTRAINT models_model_key UNIQUE (model);
+        ALTER TABLE ONLY public.models
+            ADD CONSTRAINT models_pkey PRIMARY KEY (id);
+        ALTER TABLE ONLY public.projects
+            ADD CONSTRAINT project_slug_unique UNIQUE (slug);
+        ALTER TABLE ONLY public.project_users
+            ADD CONSTRAINT project_users_pkey PRIMARY KEY (id);
+        ALTER TABLE ONLY public.projects
+            ADD CONSTRAINT projects_pkey PRIMARY KEY (id);
+        ALTER TABLE ONLY public.prompts_uses
+            ADD CONSTRAINT prompt_uses_pkey PRIMARY KEY (id);
+        ALTER TABLE ONLY public.prompts_likes
+            ADD CONSTRAINT prompts_likes_pkey PRIMARY KEY (id);
+        ALTER TABLE ONLY public.prompts
+            ADD CONSTRAINT prompts_name_key UNIQUE (name);
+        ALTER TABLE ONLY public.prompts
+            ADD CONSTRAINT prompts_pkey PRIMARY KEY (id);
+        ALTER TABLE ONLY public.prompts
+            ADD CONSTRAINT prompts_slug_key UNIQUE (slug);
+        ALTER TABLE ONLY public.refresh_tokens
+            ADD CONSTRAINT refresh_tokens_pkey PRIMARY KEY (refresh_token);
+        ALTER TABLE ONLY public.request_logs
+            ADD CONSTRAINT request_logs_pkey PRIMARY KEY (id);
+        ALTER TABLE ONLY public.tts_voices
+            ADD CONSTRAINT tts_voices_pkey PRIMARY KEY (id);
+        CREATE INDEX chat_message_chat_id ON public.chat_messages USING btree (chat_id);
+        CREATE INDEX chat_message_created_at ON public.chat_messages USING btree (created_at);
+        CREATE INDEX chat_user_id ON public.chats USING btree (user_id);
+        CREATE INDEX embedding_memory_id ON public.embeddings USING btree (memory_id);
+        CREATE INDEX embedding_user_id ON public.embeddings USING btree (user_id);
+        CREATE INDEX embeddings_embedding_idx ON public.embeddings USING ivfflat (embedding vector_cosine_ops) WITH (lists='100');
+        CREATE INDEX event_project_id ON public.events USING btree (project_id);
+        CREATE INDEX event_user_id ON public.events USING btree (user_id);
+        CREATE INDEX kvs_key_id ON public.kvs USING btree (key);
+        CREATE INDEX kvs_user_id ON public.kvs USING btree (user_id);
+        CREATE INDEX memory_user_id ON public.memories USING btree (user_id);
+        CREATE INDEX project_user_auth_id ON public.project_users USING btree (auth_id);
+        CREATE INDEX project_user_project_id ON public.project_users USING btree (project_id);
+        CREATE INDEX request_log_user_id ON public.request_logs USING btree (user_id);
+        ALTER TABLE ONLY public.chat_messages
+            ADD CONSTRAINT chat_messages_chat_id_fkey FOREIGN KEY (chat_id) REFERENCES public.chats(id) ON DELETE CASCADE;
+        ALTER TABLE ONLY public.chats
+            ADD CONSTRAINT chats_system_prompt_id_fkey FOREIGN KEY (system_prompt_id) REFERENCES public.prompts(id) ON DELETE SET NULL;
+        ALTER TABLE ONLY public.chats
+            ADD CONSTRAINT chats_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.project_users(id);
+        ALTER TABLE ONLY public.embeddings
+            ADD CONSTRAINT embeddings_memory_id_fkey FOREIGN KEY (memory_id) REFERENCES public.memories(id);
+        ALTER TABLE ONLY public.embeddings
+            ADD CONSTRAINT embeddings_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.project_users(id);
+        ALTER TABLE ONLY public.events
+            ADD CONSTRAINT events_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.projects(id);
+        ALTER TABLE ONLY public.events
+            ADD CONSTRAINT events_prompt_id_fkey FOREIGN KEY (prompt_id) REFERENCES public.prompts(id);
+        ALTER TABLE ONLY public.events
+            ADD CONSTRAINT events_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.project_users(id);
+        ALTER TABLE ONLY public.kvs
+            ADD CONSTRAINT kvs_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.projects(id);
+        ALTER TABLE ONLY public.kvs
+            ADD CONSTRAINT kvs_project_slug_fkey FOREIGN KEY (project_slug) REFERENCES public.projects(slug);
+        ALTER TABLE ONLY public.memories
+            ADD CONSTRAINT memories_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.project_users(id);
+        ALTER TABLE ONLY public.model_aliases
+            ADD CONSTRAINT model_aliases_model_id_fkey FOREIGN KEY (model_id) REFERENCES public.models(id);
+        ALTER TABLE ONLY public.model_aliases
+            ADD CONSTRAINT model_aliases_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.projects(id);
+        ALTER TABLE ONLY public.project_users
+            ADD CONSTRAINT project_users_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.projects(id);
+        ALTER TABLE ONLY public.prompts_likes
+            ADD CONSTRAINT prompts_likes_prompt_id_fkey FOREIGN KEY (prompt_id) REFERENCES public.prompts(id);
+        ALTER TABLE ONLY public.prompts
+            ADD CONSTRAINT prompts_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.projects(id);
+        ALTER TABLE ONLY public.prompts
+            ADD CONSTRAINT prompts_project_slug_fkey FOREIGN KEY (project_slug) REFERENCES public.projects(slug);
+        ALTER TABLE ONLY public.prompts_uses
+            ADD CONSTRAINT prompts_uses_prompt_id_fkey FOREIGN KEY (prompt_id) REFERENCES public.prompts(id) ON DELETE CASCADE;
+        ALTER TABLE ONLY public.refresh_tokens
+            ADD CONSTRAINT refresh_tokens_project_id_fkey FOREIGN KEY (project_id) REFERENCES public.projects(id);
+        ALTER TABLE ONLY public.request_logs
+            ADD CONSTRAINT request_logs_model_name_fkey FOREIGN KEY (model_name) REFERENCES public.models(model);
+        ALTER TABLE ONLY public.request_logs
+            ADD CONSTRAINT request_logs_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.project_users(id);
+    """)
+    if rls:
+        cur.execute("""
+            ALTER FUNCTION public.fetch_project_users_info(p_project_id uuid) OWNER TO postgres;
+            ALTER TABLE public.memories OWNER TO postgres;
+            ALTER FUNCTION public.get_project_stats(param_auth_id uuid, param_before timestamp without time zone, param_after timestamp without time zone, param_slug text) OWNER TO postgres;
+            ALTER TABLE public.refresh_tokens OWNER TO postgres;
+            ALTER TABLE public.chat_messages OWNER TO postgres;
+            ALTER FUNCTION public.get_prompts_likes_info(userid uuid, promptid uuid) OWNER TO postgres;
+            ALTER FUNCTION public.get_model_info_by_project_id(param_project_id uuid) OWNER TO postgres;
+            ALTER TYPE public.usage_rate_limit OWNER TO postgres;
+            ALTER TABLE public.projects OWNER TO postgres;
+            ALTER TABLE public.completion_cache OWNER TO postgres;
+            ALTER FUNCTION public.try_cast_uuid(p_in text, p_default uuid) OWNER TO postgres;
+            ALTER FUNCTION public.get_prompts_likes_info(userid uuid, promptid uuid, light boolean, filters text[]) OWNER TO postgres;
+            ALTER FUNCTION public.get_project_stats_with_cost(param_auth_id uuid, param_before timestamp without time zone, param_after timestamp without time zone, param_slug text) OWNER TO postgres;
+            ALTER FUNCTION public.get_monthly_token_usage(userid text) OWNER TO postgres;
+            ALTER FUNCTION public.get_dev_email_project_id(project_id uuid) OWNER TO postgres;
+            ALTER FUNCTION public.events_with_emails() OWNER TO postgres;
+            ALTER TABLE public.tts_voices OWNER TO postgres;
+            ALTER TABLE public.prompts_likes OWNER TO postgres;
+            ALTER TABLE public.models OWNER TO postgres;
+            ALTER TABLE public.events OWNER TO postgres;
+            ALTER TABLE public.chats OWNER TO postgres;
+            ALTER TABLE public.auth_users OWNER TO postgres;
+            ALTER FUNCTION public.retrieve_embeddings(query_embedding vector, match_threshold double precision, match_count integer, memoryid uuid[], userid text) OWNER TO postgres;
+            ALTER FUNCTION public.get_prompts_likes_info(userid uuid, promptid uuid, light boolean) OWNER TO postgres;
+            ALTER FUNCTION public.get_project_usage_stats(param_project_id uuid, param_after timestamp with time zone, param_before timestamp with time zone) OWNER TO postgres;
+            ALTER FUNCTION public.get_project_stats_and_cost(param_auth_id uuid, param_before timestamp without time zone, param_after timestamp without time zone, param_slug text) OWNER TO postgres;
+            ALTER FUNCTION public.get_monthly_token_usage_user_id_projects(param_user_id text) OWNER TO postgres;
+            ALTER FUNCTION public.get_monthly_credit_usage(userid text) OWNER TO postgres;
+            ALTER FUNCTION public.get_logs_per_projects(param_auth_id text, param_before timestamp without time zone, param_after timestamp without time zone) OWNER TO postgres;
+            ALTER FUNCTION public.get_credits_per_projects(param_auth_id text, param_before timestamp without time zone, param_after timestamp without time zone) OWNER TO postgres;
+            ALTER FUNCTION public.events_with_emails_light() OWNER TO postgres;
+            ALTER FUNCTION public.add_credits_to_user(user_id text, credits_to_add bigint) OWNER TO postgres;
+            ALTER SCHEMA public OWNER TO postgres;
+            ALTER TABLE public.request_logs OWNER TO postgres;
+            ALTER TABLE public.prompts_uses OWNER TO postgres;
+            ALTER TABLE public.prompts OWNER TO postgres;
+            ALTER TABLE public.project_users OWNER TO postgres;
+            ALTER TABLE public.model_aliases OWNER TO postgres;
+            ALTER TABLE public.kvs OWNER TO postgres;
+            ALTER TABLE public.embeddings OWNER TO postgres;
+            REVOKE USAGE ON SCHEMA public FROM PUBLIC;
+            GRANT ALL ON FUNCTION public.get_monthly_token_usage(userid text) TO authenticated;
+            GRANT ALL ON TABLE public.completion_cache TO service_role;
+            ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON SEQUENCES TO postgres;
+            GRANT ALL ON FUNCTION public.get_prompts_likes_info(userid uuid, promptid uuid, light boolean, filters text[]) TO authenticated;
+            GRANT ALL ON FUNCTION public.events_with_emails() TO authenticated;
+            GRANT ALL ON TABLE public.project_users TO authenticated;
+            GRANT ALL ON FUNCTION public.try_cast_uuid(p_in text, p_default uuid) TO authenticated;
+            GRANT ALL ON FUNCTION public.get_project_stats_with_cost(param_auth_id uuid, param_before timestamp without time zone, param_after timestamp without time zone, param_slug text) TO authenticated;
+            GRANT ALL ON FUNCTION public.get_dev_email_project_id(project_id uuid) TO authenticated;
+            ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON TABLES TO postgres;
+            GRANT ALL ON TABLE public.prompts_uses TO authenticated;
+            GRANT ALL ON TABLE public.memories TO authenticated;
+            GRANT ALL ON TABLE public.chat_messages TO authenticated;
+            GRANT ALL ON FUNCTION public.get_prompts_likes_info(userid uuid, promptid uuid) TO authenticated;
+            GRANT ALL ON FUNCTION public.get_project_stats(param_auth_id uuid, param_before timestamp without time zone, param_after timestamp without time zone, param_slug text) TO authenticated;
+            GRANT ALL ON FUNCTION public.get_model_info_by_project_id(param_project_id uuid) TO authenticated;
+            GRANT ALL ON FUNCTION public.fetch_project_users_info(p_project_id uuid) TO authenticated;
+            GRANT USAGE ON SCHEMA public TO authenticated;
+            ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON FUNCTIONS TO postgres;
+            GRANT ALL ON TABLE public.request_logs TO authenticated;
+            GRANT ALL ON TABLE public.prompts TO authenticated;
+            GRANT ALL ON TABLE public.models TO authenticated;
+            GRANT ALL ON TABLE public.events TO authenticated;
+            GRANT ALL ON TABLE public.chats TO authenticated;
+            GRANT ALL ON TABLE public.auth_users TO authenticated;
+            GRANT ALL ON FUNCTION public.retrieve_embeddings(query_embedding vector, match_threshold double precision, match_count integer, memoryid uuid[], userid text) TO authenticated;
+            GRANT ALL ON FUNCTION public.get_prompts_likes_info(userid uuid, promptid uuid, light boolean) TO authenticated;
+            GRANT ALL ON FUNCTION public.get_project_usage_stats(param_project_id uuid, param_after timestamp with time zone, param_before timestamp with time zone) TO authenticated;
+            GRANT ALL ON FUNCTION public.get_project_stats_and_cost(param_auth_id uuid, param_before timestamp without time zone, param_after timestamp without time zone, param_slug text) TO authenticated;
+            GRANT ALL ON FUNCTION public.get_monthly_token_usage_user_id_projects(param_user_id text) TO authenticated;
+            GRANT ALL ON FUNCTION public.get_monthly_credit_usage(userid text) TO authenticated;
+            GRANT ALL ON FUNCTION public.get_logs_per_projects(param_auth_id text, param_before timestamp without time zone, param_after timestamp without time zone) TO authenticated;
+            GRANT ALL ON FUNCTION public.get_credits_per_projects(param_auth_id text, param_before timestamp without time zone, param_after timestamp without time zone) TO authenticated;
+            GRANT ALL ON FUNCTION public.events_with_emails_light() TO authenticated;
+            GRANT ALL ON FUNCTION public.add_credits_to_user(user_id text, credits_to_add bigint) TO authenticated;
+            ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON TABLES TO service_role;
+            ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON FUNCTIONS TO service_role;
+            ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON SEQUENCES TO service_role;
+            GRANT ALL ON TABLE public.tts_voices TO authenticated;
+            GRANT ALL ON TABLE public.refresh_tokens TO authenticated;
+            GRANT ALL ON TABLE public.prompts_likes TO authenticated;
+            GRANT ALL ON TABLE public.projects TO authenticated;
+            GRANT ALL ON SEQUENCE public.models_id_seq TO authenticated;
+            GRANT ALL ON TABLE public.model_aliases TO authenticated;
+            GRANT ALL ON TABLE public.kvs TO authenticated;
+            GRANT ALL ON TABLE public.embeddings TO authenticated;
+            GRANT ALL ON TABLE public.chats TO service_role;
+            GRANT ALL ON TABLE public.chat_messages TO service_role;
+            GRANT ALL ON TABLE public.auth_users TO service_role;
+            GRANT ALL ON FUNCTION public.try_cast_uuid(p_in text, p_default uuid) TO service_role;
+            GRANT ALL ON FUNCTION public.retrieve_embeddings(query_embedding vector, match_threshold double precision, match_count integer, memoryid uuid[], userid text) TO service_role;
+            GRANT ALL ON FUNCTION public.get_prompts_likes_info(userid uuid, promptid uuid, light boolean, filters text[]) TO service_role;
+            GRANT ALL ON FUNCTION public.get_prompts_likes_info(userid uuid, promptid uuid, light boolean) TO service_role;
+            GRANT ALL ON FUNCTION public.get_prompts_likes_info(userid uuid, promptid uuid) TO service_role;
+            GRANT ALL ON FUNCTION public.get_project_usage_stats(param_project_id uuid, param_after timestamp with time zone, param_before timestamp with time zone) TO service_role;
+            GRANT ALL ON FUNCTION public.get_project_stats_with_cost(param_auth_id uuid, param_before timestamp without time zone, param_after timestamp without time zone, param_slug text) TO service_role;
+            GRANT ALL ON FUNCTION public.get_project_stats_and_cost(param_auth_id uuid, param_before timestamp without time zone, param_after timestamp without time zone, param_slug text) TO service_role;
+            GRANT ALL ON FUNCTION public.get_project_stats(param_auth_id uuid, param_before timestamp without time zone, param_after timestamp without time zone, param_slug text) TO service_role;
+            GRANT ALL ON FUNCTION public.get_monthly_token_usage_user_id_projects(param_user_id text) TO service_role;
+            GRANT ALL ON FUNCTION public.get_monthly_token_usage(userid text) TO service_role;
+            GRANT ALL ON FUNCTION public.get_monthly_credit_usage(userid text) TO service_role;
+            GRANT ALL ON FUNCTION public.get_model_info_by_project_id(param_project_id uuid) TO service_role;
+            GRANT ALL ON FUNCTION public.get_logs_per_projects(param_auth_id text, param_before timestamp without time zone, param_after timestamp without time zone) TO service_role;
+            GRANT ALL ON FUNCTION public.get_dev_email_project_id(project_id uuid) TO service_role;
+            GRANT ALL ON FUNCTION public.get_credits_per_projects(param_auth_id text, param_before timestamp without time zone, param_after timestamp without time zone) TO service_role;
+            GRANT ALL ON FUNCTION public.fetch_project_users_info(p_project_id uuid) TO service_role;
+            GRANT ALL ON FUNCTION public.events_with_emails_light() TO service_role;
+            GRANT ALL ON FUNCTION public.events_with_emails() TO service_role;
+            GRANT ALL ON FUNCTION public.add_credits_to_user(user_id text, credits_to_add bigint) TO service_role;
+            GRANT USAGE ON SCHEMA public TO service_role;
+            ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON TABLES TO authenticated;
+            ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON FUNCTIONS TO authenticated;
+            ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON SEQUENCES TO authenticated;
+            GRANT ALL ON TABLE public.tts_voices TO service_role;
+            GRANT ALL ON TABLE public.request_logs TO service_role;
+            GRANT ALL ON TABLE public.refresh_tokens TO service_role;
+            GRANT ALL ON TABLE public.prompts_uses TO service_role;
+            GRANT ALL ON TABLE public.prompts_likes TO service_role;
+            GRANT ALL ON TABLE public.prompts TO service_role;
+            GRANT ALL ON TABLE public.projects TO service_role;
+            GRANT ALL ON TABLE public.project_users TO service_role;
+            GRANT ALL ON SEQUENCE public.models_id_seq TO service_role;
+            GRANT ALL ON TABLE public.models TO service_role;
+            GRANT ALL ON TABLE public.model_aliases TO service_role;
+            GRANT ALL ON TABLE public.memories TO service_role;
+            GRANT ALL ON TABLE public.kvs TO service_role;
+            GRANT ALL ON TABLE public.events TO service_role;
+            GRANT ALL ON TABLE public.embeddings TO service_role;
+            GRANT ALL ON TABLE public.completion_cache TO authenticated;
+            GRANT ALL ON TABLE public.chats TO anon;
+            GRANT ALL ON TABLE public.tts_voices TO anon;
+            GRANT ALL ON FUNCTION public.get_monthly_credit_usage(userid text) TO anon;
+            GRANT ALL ON SEQUENCE public.models_id_seq TO anon;
+            GRANT ALL ON FUNCTION public.get_prompts_likes_info(userid uuid, promptid uuid, light boolean) TO anon;
+            GRANT ALL ON FUNCTION public.add_credits_to_user(user_id text, credits_to_add bigint) TO anon;
+            GRANT ALL ON TABLE public.prompts_likes TO anon;
+            GRANT ALL ON TABLE public.kvs TO anon;
+            GRANT ALL ON FUNCTION public.retrieve_embeddings(query_embedding vector, match_threshold double precision, match_count integer, memoryid uuid[], userid text) TO anon;
+            GRANT ALL ON FUNCTION public.get_project_stats_and_cost(param_auth_id uuid, param_before timestamp without time zone, param_after timestamp without time zone, param_slug text) TO anon;
+            GRANT ALL ON FUNCTION public.get_credits_per_projects(param_auth_id text, param_before timestamp without time zone, param_after timestamp without time zone) TO anon;
+            ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON FUNCTIONS TO anon;
+            GRANT ALL ON TABLE public.refresh_tokens TO anon;
+            GRANT ALL ON TABLE public.projects TO anon;
+            GRANT ALL ON TABLE public.model_aliases TO anon;
+            GRANT ALL ON TABLE public.embeddings TO anon;
+            GRANT ALL ON TABLE public.auth_users TO anon;
+            GRANT ALL ON FUNCTION public.get_project_usage_stats(param_project_id uuid, param_after timestamp with time zone, param_before timestamp with time zone) TO anon;
+            GRANT ALL ON FUNCTION public.get_monthly_token_usage_user_id_projects(param_user_id text) TO anon;
+            GRANT ALL ON FUNCTION public.get_logs_per_projects(param_auth_id text, param_before timestamp without time zone, param_after timestamp without time zone) TO anon;
+            GRANT ALL ON FUNCTION public.events_with_emails_light() TO anon;
+            ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON TABLES TO anon;
+            ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON SEQUENCES TO anon;
+            GRANT ALL ON TABLE public.request_logs TO anon;
+            GRANT ALL ON TABLE public.prompts_uses TO anon;
+            GRANT ALL ON TABLE public.prompts TO anon;
+            GRANT ALL ON TABLE public.project_users TO anon;
+            GRANT ALL ON TABLE public.models TO anon;
+            GRANT ALL ON TABLE public.memories TO anon;
+            GRANT ALL ON TABLE public.events TO anon;
+            GRANT ALL ON TABLE public.completion_cache TO anon;
+            GRANT ALL ON TABLE public.chat_messages TO anon;
+            GRANT ALL ON FUNCTION public.try_cast_uuid(p_in text, p_default uuid) TO anon;
+            GRANT ALL ON FUNCTION public.get_prompts_likes_info(userid uuid, promptid uuid, light boolean, filters text[]) TO anon;
+            GRANT ALL ON FUNCTION public.get_prompts_likes_info(userid uuid, promptid uuid) TO anon;
+            GRANT ALL ON FUNCTION public.get_project_stats_with_cost(param_auth_id uuid, param_before timestamp without time zone, param_after timestamp without time zone, param_slug text) TO anon;
+            GRANT ALL ON FUNCTION public.get_project_stats(param_auth_id uuid, param_before timestamp without time zone, param_after timestamp without time zone, param_slug text) TO anon;
+            GRANT ALL ON FUNCTION public.get_monthly_token_usage(userid text) TO anon;
+            GRANT ALL ON FUNCTION public.get_model_info_by_project_id(param_project_id uuid) TO anon;
+            GRANT ALL ON FUNCTION public.get_dev_email_project_id(project_id uuid) TO anon;
+            GRANT ALL ON FUNCTION public.fetch_project_users_info(p_project_id uuid) TO anon;
+            GRANT ALL ON FUNCTION public.events_with_emails() TO anon;
+            GRANT USAGE ON SCHEMA public TO anon;
+            ALTER TABLE public.events ENABLE ROW LEVEL SECURITY;
+            ALTER TABLE public.prompts_likes ENABLE ROW LEVEL SECURITY;
+            ALTER TABLE public.tts_voices ENABLE ROW LEVEL SECURITY;
+            ALTER TABLE public.models ENABLE ROW LEVEL SECURITY;
+            ALTER TABLE public.chat_messages ENABLE ROW LEVEL SECURITY;
+            ALTER TABLE public.refresh_tokens ENABLE ROW LEVEL SECURITY;
+            ALTER TABLE public.projects ENABLE ROW LEVEL SECURITY;
+            ALTER TABLE public.memories ENABLE ROW LEVEL SECURITY;
+            ALTER TABLE public.completion_cache ENABLE ROW LEVEL SECURITY;
+            CREATE POLICY "UserCanReadOwnData" ON public.auth_users FOR SELECT USING (((id)::uuid = auth.uid()));
+            ALTER TABLE public.auth_users ENABLE ROW LEVEL SECURITY;
+            ALTER TABLE public.request_logs ENABLE ROW LEVEL SECURITY;
+            ALTER TABLE public.prompts_uses ENABLE ROW LEVEL SECURITY;
+            ALTER TABLE public.prompts ENABLE ROW LEVEL SECURITY;
+            ALTER TABLE public.project_users ENABLE ROW LEVEL SECURITY;
+            ALTER TABLE public.model_aliases ENABLE ROW LEVEL SECURITY;
+            ALTER TABLE public.kvs ENABLE ROW LEVEL SECURITY;
+            ALTER TABLE public.embeddings ENABLE ROW LEVEL SECURITY;
+            ALTER TABLE public.chats ENABLE ROW LEVEL SECURITY;
+        """)
+
+def rollback(cur, rls=False):
+    raise ValueError("Cannot rollback initial database creation")

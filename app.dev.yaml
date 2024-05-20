@@ -1,4 +1,4 @@
-service: polyfire
+service: {{APP_SERVICE_NAME}}
 runtime: custom
 env: flex
 

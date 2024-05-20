@@ -1,4 +1,4 @@
-name: Deploy on Google App Engine
+name: Deploy Production
 
 on:
   push:
@@ -26,6 +26,7 @@ jobs:
       name: 'Deploying to Google Cloud App Engine'
       run: 'make deploy'
       env:
+        APP_SERVICE_NAME: 'polyfire'
         SUPABASE_URL: '${{ secrets.SUPABASE_URL }}'
         SUPABASE_KEY: '${{ secrets.SUPABASE_KEY }}'
         OPENAI_API_KEY: '${{ secrets.OPENAI_API_KEY }}'
