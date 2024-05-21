@@ -23,7 +23,12 @@ type RequestLog struct {
 	Kind             Kind   `json:"kind"`
 }
 
-func tokenToCredit(providerName string, modelName string, inputTokenCount int, outputTokenCount int) int {
+func tokenToCredit(
+	providerName string,
+	modelName string,
+	inputTokenCount int,
+	outputTokenCount int,
+) int {
 	switch providerName {
 	case "openai":
 		switch modelName {
@@ -150,7 +155,7 @@ func (db DB) LogEvents(
 			@id,
 			@path,
 			(CASE WHEN @user_id = '' THEN NULL ELSE @user_id END)::uuid,
-			@project_id,
+			(CASE WHEN @project_id = '00000000-0000-0000-0000-000000000000' THEN NULL ELSE @project_id END)::uuid,
 			@request_body,
 			@response_body,
 			@error,
