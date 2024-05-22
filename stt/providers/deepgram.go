@@ -63,8 +63,8 @@ func wordsToDialogue(words []Word) []DialogueElement {
 	for _, wordRaw := range words {
 		speakerID := *wordRaw.Speaker
 
-		if dialogueElement.Text == "" || dialogueElement.Speaker != speakerID {
-			if dialogueElement.Text != "" {
+		if text == "" || dialogueElement.Speaker != speakerID {
+			if text != "" {
 				dialogueElement.Text = text
 				dialogue = append(dialogue, dialogueElement)
 				text = ""
@@ -77,7 +77,10 @@ func wordsToDialogue(words []Word) []DialogueElement {
 			}
 		}
 		end := wordRaw.End
-		text += " " + wordRaw.PunctuatedWord
+		if text != "" {
+			text += " "
+		}
+		text += wordRaw.PunctuatedWord
 		dialogueElement.End = end
 	}
 
