@@ -33,13 +33,17 @@ func tokenToCredit(
 	case "openai":
 		switch modelName {
 		case "gpt-3.5-turbo":
-			return (inputTokenCount * 15) + (outputTokenCount * 20)
+			return (inputTokenCount * 5) + (outputTokenCount * 15)
 		case "gpt-3.5-turbo-16k":
-			return (inputTokenCount * 30) + (outputTokenCount * 40)
+			return (inputTokenCount * 5) + (outputTokenCount * 15)
 		case "gpt-4":
 			return (inputTokenCount * 300) + (outputTokenCount * 600)
 		case "gpt-4-32k":
 			return (inputTokenCount * 600) + (outputTokenCount * 1200)
+		case "gpt-4o":
+			return (inputTokenCount * 50) + (outputTokenCount * 150)
+		case "gpt-4-turbo":
+			return (inputTokenCount * 100) + (outputTokenCount * 300)
 		case "text-embedding-ada-002":
 			return inputTokenCount * 1
 		case "dall-e-2":
