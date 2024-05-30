@@ -18,7 +18,11 @@ var ErrUnknownModel = errors.New("Unknown model")
 type Provider interface {
 	Name() string
 	ProviderModel() (string, string)
-	Generate(prompt string, c options.ProviderCallback, opts *options.ProviderOptions) chan options.Result
+	Generate(
+		prompt string,
+		c options.ProviderCallback,
+		opts *options.ProviderOptions,
+	) chan options.Result
 	DoesFollowRateLimit() bool
 }
 
@@ -35,11 +39,15 @@ func getAvailableModels(model string) (string, string) {
 	case "gpt-3.5-turbo":
 		return "openai", "gpt-3.5-turbo"
 	case "gpt-3.5-turbo-16k":
-		return "openai", "gpt-3.5-turbo-16k"
+		return "openai", "gpt-3.5-turbo"
 	case "gpt-4":
 		return "openai", "gpt-4"
 	case "gpt-4-32k":
 		return "openai", "gpt-4-32k"
+	case "gpt-4o":
+		return "openai", "gpt-4o"
+	case "gpt-4-turbo":
+		return "openai", "gpt-4-turbo"
 	case "cohere":
 		return "cohere", "cohere_command"
 	case "llama-2-70b-chat":
@@ -59,7 +67,11 @@ func getAvailableModels(model string) (string, string) {
 	return "", ""
 }
 
-func getModelWithAliases(ctx context.Context, modelAlias string, projectID string) (string, string) {
+func getModelWithAliases(
+	ctx context.Context,
+	modelAlias string,
+	projectID string,
+) (string, string) {
 	db := ctx.Value(utils.ContextKeyDB).(database.Database)
 	provider, model := getAvailableModels(modelAlias)
 
