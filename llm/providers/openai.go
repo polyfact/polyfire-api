@@ -84,6 +84,17 @@ func (m OpenAIStreamProvider) Generate(
 			Stream: true,
 		}
 
+		if opts.JSONFormat {
+			// The OpenAI api requires the message to mention the word json
+			if !strings.Contains(strings.ToLower(task), "json") {
+				chanRes <- options.Result{Err: "json_format_must_mention_json"}
+				return
+			}
+			req.ResponseFormat = &goOpenai.ChatCompletionResponseFormat{
+				Type: goOpenai.ChatCompletionResponseFormatTypeJSONObject,
+			}
+		}
+
 		if opts.StopWords != nil {
 			req.Stop = *opts.StopWords
 		}
@@ -97,13 +108,13 @@ func (m OpenAIStreamProvider) Generate(
 		}
 
 		stream, err := m.Client.CreateChatCompletionStream(ctx, req)
-		if err != nil {
-			if strings.Contains(err.Error(), "Incorrect API key provided") && m.IsCustomToken {
-				chanRes <- options.Result{Err: "openai_invalid_api_key"}
-			} else {
-				fmt.Println(err)
-				chanRes <- options.Result{Err: "generation_error"}
-			}
+		if err != nil && strings.Contains(err.Error(), "Incorrect API key provided") &&
+			m.IsCustomToken {
+			chanRes <- options.Result{Err: "openai_invalid_api_key"}
+			return
+		} else if err != nil {
+			fmt.Println(err)
+			chanRes <- options.Result{Err: "generation_error"}
 			return
 		}
 
@@ -127,7 +138,10 @@ func (m OpenAIStreamProvider) Generate(
 
 			totalOutput += tokenUsage.Output
 
-			result := options.Result{Result: completion.Choices[0].Delta.Content, TokenUsage: tokenUsage}
+			result := options.Result{
+				Result:     completion.Choices[0].Delta.Content,
+				TokenUsage: tokenUsage,
+			}
 
 			totalCompletion += completion.Choices[0].Delta.Content
 

@@ -10,6 +10,7 @@ import (
 type ProviderOptions struct {
 	StopWords   *[]string
 	Temperature *float32
+	JSONFormat  bool
 }
 
 type TokenUsage struct {
