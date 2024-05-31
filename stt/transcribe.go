@@ -31,11 +31,11 @@ func DownloadFromBucket(bucket string, path string) ([]byte, error) {
 }
 
 type TranscribeRequestBody struct {
-	FilePath     string   `json:"file_path"`
-	Provider     string   `json:"provider"`
-	Language     *string  `json:"language,omitempty"`
-	Keywords     []string `json:"keywords,omitempty"`
-	OutputFormat *string  `json:"output_format,omitempty"`
+	FilePath     string                   `json:"file_path"`
+	Provider     string                   `json:"provider"`
+	Language     *string                  `json:"language,omitempty"`
+	Keywords     []providers.KeywordBoost `json:"keywords,omitempty"`
+	OutputFormat *string                  `json:"output_format,omitempty"`
 }
 
 type Result struct {
@@ -143,11 +143,15 @@ func Transcribe(w http.ResponseWriter, r *http.Request, _ router.Params) {
 				utils.RespondError(w, record, "transcription_error")
 				return
 			}
-			resTmp, err := provider.Transcribe(ctx, noSilenceFileReader, providers.TranscriptionInputOptions{
-				Format:   "mpeg",
-				Language: input.Language,
-				Keywords: input.Keywords,
-			})
+			resTmp, err := provider.Transcribe(
+				ctx,
+				noSilenceFileReader,
+				providers.TranscriptionInputOptions{
+					Format:   "mpeg",
+					Language: input.Language,
+					Keywords: input.Keywords,
+				},
+			)
 			if err != nil {
 				fmt.Printf("%v\n", err)
 				utils.RespondError(w, record, "transcription_error")

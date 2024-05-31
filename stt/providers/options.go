@@ -2,6 +2,7 @@ package providers
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
 )
@@ -16,11 +17,41 @@ type Word struct {
 	SpeakerConfidence float64 `json:"speaker_confidence"`
 }
 
+type KeywordBoost struct {
+	Keyword string
+	Boost   float64
+}
+
+func (k *KeywordBoost) UnmarshalJSON(data []byte) error {
+	var keywordWithBoost struct {
+		Keyword string  `json:"keyword"`
+		Boost   float64 `json:"boost"`
+	}
+
+	var keyword string
+
+	if err := json.Unmarshal(data, &keywordWithBoost); err == nil {
+		*k = KeywordBoost{
+			Keyword: keywordWithBoost.Keyword,
+			Boost:   keywordWithBoost.Boost,
+		}
+	} else if err := json.Unmarshal(data, &keyword); err == nil {
+		*k = KeywordBoost{
+			Keyword: keyword,
+			Boost:   1,
+		}
+	} else {
+		return errors.New("Could not unmarshal keyword object")
+	}
+
+	return nil
+}
+
 type TranscriptionInputOptions struct {
 	Format       string
 	Language     *string
 	OutputFormat *string
-	Keywords     []string
+	Keywords     []KeywordBoost
 }
 
 type DialogueElement struct {
