@@ -38,6 +38,16 @@ func canSpeakerChangeAssemblyAI(words []aai.TranscriptWord, index int) bool {
 	return canSpeakerChange(currentWord, nextWord)
 }
 
+func keywordBoostToAssemblyAIKeyword(keywordBoosts []KeywordBoost) []string {
+	results := make([]string, len(keywordBoosts))
+
+	for i, kb := range keywordBoosts {
+		results[i] = kb.Keyword
+	}
+
+	return results
+}
+
 func (AssemblyAIProvider) Transcribe(
 	_ context.Context,
 	reader io.Reader,
@@ -55,7 +65,7 @@ func (AssemblyAIProvider) Transcribe(
 	params := aai.TranscriptOptionalParams{
 		LanguageCode:  aai.TranscriptLanguageCode(language),
 		SpeakerLabels: &speakerLabel,
-		WordBoost:     opts.Keywords,
+		WordBoost:     keywordBoostToAssemblyAIKeyword(opts.Keywords),
 	}
 
 	transcript, err := client.Transcripts.TranscribeFromReader(

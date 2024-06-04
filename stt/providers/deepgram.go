@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/deepgram-devs/deepgram-go-sdk/deepgram"
@@ -91,11 +92,26 @@ func wordsToDialogue(words []Word) []DialogueElement {
 	return dialogue
 }
 
+func keywordBoostToDeepgramKeyword(keywordBoosts []KeywordBoost) []string {
+	results := make([]string, len(keywordBoosts))
+
+	for i, kb := range keywordBoosts {
+		results[i] = kb.Keyword
+		if kb.Boost != 1 {
+			results[i] += ":" + strconv.FormatFloat(kb.Boost, 'f', -1, 64)
+		}
+	}
+
+	return results
+}
+
 func (DeepgramProvider) Transcribe(
 	_ context.Context,
 	reader io.Reader,
 	opts TranscriptionInputOptions,
 ) (*TranscriptionResult, error) {
+	fmt.Println(opts.Keywords)
+	fmt.Println(keywordBoostToDeepgramKeyword(opts.Keywords))
 	credentials := os.Getenv("DEEPGRAM_API_KEY")
 	dg := deepgram.NewClient(credentials)
 
@@ -116,7 +132,7 @@ func (DeepgramProvider) Transcribe(
 			Language:   language,
 			Utterances: true,
 			Model:      "nova-2",
-			Keywords:   opts.Keywords,
+			Keywords:   keywordBoostToDeepgramKeyword(opts.Keywords),
 		},
 	)
 	if err != nil {
