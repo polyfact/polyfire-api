@@ -42,7 +42,11 @@ var ErrorMessages = map[string]APIError{
 		Message:    "Invalid format for Authorization header.",
 		StatusCode: http.StatusUnauthorized,
 	},
-	"invalid_token": {Code: "invalid_token", Message: "Invalid token.", StatusCode: http.StatusUnauthorized},
+	"invalid_token": {
+		Code:       "invalid_token",
+		Message:    "Invalid token.",
+		StatusCode: http.StatusUnauthorized,
+	},
 	"missing_authorization": {
 		Code:       "missing_authorization",
 		Message:    "Authorization header is missing.",
@@ -53,7 +57,11 @@ var ErrorMessages = map[string]APIError{
 		Message:    "User ID not found.",
 		StatusCode: http.StatusUnauthorized,
 	},
-	"no_token": {Code: "no_token", Message: "No token provided.", StatusCode: http.StatusUnauthorized},
+	"no_token": {
+		Code:       "no_token",
+		Message:    "No token provided.",
+		StatusCode: http.StatusUnauthorized,
+	},
 	"token_exchange_failed": {
 		Code:       "token_exchange_failed",
 		Message:    "Failed to exchange user token.",
@@ -134,6 +142,11 @@ var ErrorMessages = map[string]APIError{
 	"generation_error": {
 		Code:       "generation_error",
 		Message:    "An error occurred while starting the generation. Please try again.",
+		StatusCode: http.StatusBadRequest,
+	},
+	"json_format_must_mention_json": {
+		Code:       "json_format_must_mention_json",
+		Message:    "Json format enforcing needs the word \"json\" to be mentioned in the task",
 		StatusCode: http.StatusBadRequest,
 	},
 	"invalid_model_provider": {
@@ -234,14 +247,26 @@ var ErrorMessages = map[string]APIError{
 	},
 
 	// Not Found Errors
-	"data_not_found": {Code: "data_not_found", Message: "The requested data was not found.", StatusCode: http.StatusNotFound},
-	"not_found":      {Code: "not_found", Message: "Requested resource not found.", StatusCode: http.StatusNotFound},
+	"data_not_found": {
+		Code:       "data_not_found",
+		Message:    "The requested data was not found.",
+		StatusCode: http.StatusNotFound,
+	},
+	"not_found": {
+		Code:       "not_found",
+		Message:    "Requested resource not found.",
+		StatusCode: http.StatusNotFound,
+	},
 	"not_found_error": {
 		Code:       "not_found_error",
 		Message:    "Resource not found. Please check your request.",
 		StatusCode: http.StatusNotFound,
 	},
-	"user_id_error": {Code: "user_id_error", Message: "User ID not found in context.", StatusCode: http.StatusNotFound},
+	"user_id_error": {
+		Code:       "user_id_error",
+		Message:    "User ID not found in context.",
+		StatusCode: http.StatusNotFound,
+	},
 	"voice_not_found": {
 		Code:       "voice_not_found",
 		Message:    "The requested voice was not found. You can find the list of available voices at https://docs.polyfire.com/reference/text-to-speech#available-voices-list",
@@ -363,7 +388,11 @@ var ErrorMessages = map[string]APIError{
 
 	// Fallback error
 
-	"unknown_error": {Code: "unknown_error", Message: "An unknown error occurred.", StatusCode: http.StatusInternalServerError},
+	"unknown_error": {
+		Code:       "unknown_error",
+		Message:    "An unknown error occurred.",
+		StatusCode: http.StatusInternalServerError,
+	},
 }
 
 func RespondError(w http.ResponseWriter, record RecordFunc, errorCode string, message ...string) {

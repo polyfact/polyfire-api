@@ -27,6 +27,7 @@ type GenerateRequestBody struct {
 	Cache          *bool       `json:"cache,omitempty"`
 	Infos          bool        `json:"infos,omitempty"`
 	AutoComplete   bool        `json:"auto_complete,omitempty"`
+	JSONFormat     bool        `json:"json_format,omitempty"`
 }
 
 func getLanguageCompletion(language *string) string {
@@ -36,7 +37,11 @@ func getLanguageCompletion(language *string) string {
 	return ""
 }
 
-func GenerationStart(ctx context.Context, userID string, input GenerateRequestBody) (*chan options.Result, error) {
+func GenerationStart(
+	ctx context.Context,
+	userID string,
+	input GenerateRequestBody,
+) (*chan options.Result, error) {
 	db := ctx.Value(utils.ContextKeyDB).(database.Database)
 	resources := []database.MatchResult{}
 
@@ -84,7 +89,9 @@ func GenerationStart(ctx context.Context, userID string, input GenerateRequestBo
 	}
 
 	// Get Options
-	opts := options.ProviderOptions{}
+	opts := options.ProviderOptions{
+		JSONFormat: input.JSONFormat,
+	}
 	if input.Stop != nil {
 		opts.StopWords = input.Stop
 	}
@@ -119,7 +126,8 @@ func GenerationStart(ctx context.Context, userID string, input GenerateRequestBo
 
 	var embeddings []float32
 
-	if input.Temperature != nil && *(input.Temperature) == 0.0 && (input.Cache == nil || *(input.Cache)) {
+	if input.Temperature != nil && *(input.Temperature) == 0.0 &&
+		(input.Cache == nil || *(input.Cache)) {
 		result, err = CheckExactCache(ctx, prompt, providerName, modelName)
 	}
 
@@ -166,7 +174,14 @@ func GenerationStart(ctx context.Context, userID string, input GenerateRequestBo
 		result <- options.Result{Resources: resources, Warnings: warnings}
 		if (input.Temperature != nil && *(input.Temperature) == 0.0 && (input.Cache == nil || *(input.Cache))) ||
 			input.FuzzyCache {
-			_ = db.AddCompletionCache(embeddings, prompt, totalCompletion, providerName, modelName, input.FuzzyCache)
+			_ = db.AddCompletionCache(
+				embeddings,
+				prompt,
+				totalCompletion,
+				providerName,
+				modelName,
+				input.FuzzyCache,
+			)
 		}
 	}()
 	return &result, nil
