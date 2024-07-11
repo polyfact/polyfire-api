@@ -21,14 +21,16 @@ import (
 var isDevelopment = os.Getenv("APP_MODE") == "development"
 
 func RecoverFromPanic(w http.ResponseWriter, r *http.Request) {
-	if rec := recover(); rec != nil {
-		errorMessage := getErrorMessage(rec)
+	defer func() {
+		if rec := recover(); rec != nil {
+			errorMessage := getErrorMessage(rec)
 
-		fmt.Println(errorMessage)
+			fmt.Println(errorMessage)
 
-		record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
-		utils.RespondError(w, record, "unknown_error", errorMessage)
-	}
+			record := r.Context().Value(utils.ContextKeyRecordEvent).(utils.RecordFunc)
+			utils.RespondError(w, record, "unknown_error", errorMessage)
+		}
+	}()
 }
 
 func getErrorMessage(rec interface{}) string {
