@@ -92,7 +92,10 @@ func GetContext(content []ContentElement, tokenLimit int) (string, error) {
 				continue
 			}
 
-			importantAndHelpfulContent = append(importantAndHelpfulContent, contextElementFromContentElement(item))
+			importantAndHelpfulContent = append(
+				importantAndHelpfulContent,
+				contextElementFromContentElement(item),
+			)
 
 			tokenCount += minimumSize
 		}
@@ -106,7 +109,10 @@ func GetContext(content []ContentElement, tokenLimit int) (string, error) {
 				continue
 			}
 
-			importantAndHelpfulContent = append(importantAndHelpfulContent, contextElementFromContentElement(item))
+			importantAndHelpfulContent = append(
+				importantAndHelpfulContent,
+				contextElementFromContentElement(item),
+			)
 
 			tokenCount += minimumSize
 		}
@@ -117,7 +123,9 @@ func GetContext(content []ContentElement, tokenLimit int) (string, error) {
 		importantAndHelpfulContent[i].Recommended = item.ContentElement.GetContentFittingIn(
 			item.RecommendedSize,
 		)
-		importantAndHelpfulContent[i].RecommendedSize = tokens.CountTokens(importantAndHelpfulContent[i].Recommended)
+		importantAndHelpfulContent[i].RecommendedSize = tokens.CountTokens(
+			importantAndHelpfulContent[i].Recommended,
+		)
 
 		if (tokenCount + importantAndHelpfulContent[i].RecommendedSize - importantAndHelpfulContent[i].MinimumSize) > tokenLimit {
 			continue

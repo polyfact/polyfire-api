@@ -114,7 +114,11 @@ func (Model) TableName() string {
 	return "models"
 }
 
-func (db DB) GetModelByAliasAndProjectID(alias string, projectID string, modelType string) (*Model, error) {
+func (db DB) GetModelByAliasAndProjectID(
+	alias string,
+	projectID string,
+	modelType string,
+) (*Model, error) {
 	model := Model{}
 
 	err := db.sql.Raw(

@@ -51,7 +51,10 @@ func AddSilenceToWordTimestamps(silences []Silence, words []providers.Word) []pr
 	return res
 }
 
-func AddSilenceToDialogueTimestamps(silences []Silence, words []providers.DialogueElement) []providers.DialogueElement {
+func AddSilenceToDialogueTimestamps(
+	silences []Silence,
+	words []providers.DialogueElement,
+) []providers.DialogueElement {
 	res := make([]providers.DialogueElement, 0)
 	for _, w := range words {
 		res = append(res, providers.DialogueElement{
@@ -82,8 +85,8 @@ func RemoveSilence(file io.Reader) ([]Silence, io.Reader, func(), error) {
 		return nil, nil, closeFunc, err
 	}
 
-	b, err := exec.Command("bash", "-c", "ffmpeg -i \"/tmp/"+id+"/audio-file\" -af \"silencedetect=d=1\" -f null - 2>&1 | tr '\\r' '\\n' | grep silence_end || true").CombinedOutput()
-
+	b, err := exec.Command("bash", "-c", "ffmpeg -i \"/tmp/"+id+"/audio-file\" -af \"silencedetect=d=1\" -f null - 2>&1 | tr '\\r' '\\n' | grep silence_end || true").
+		CombinedOutput()
 	if err != nil {
 		return nil, nil, closeFunc, err
 	}

@@ -60,7 +60,11 @@ func (mdb MockDatabase) GetProjectByID(_ string) (*Project, error) {
 	panic("Mock GetProjectByID Unimplemented")
 }
 
-func (mdb MockDatabase) MatchEmbeddings(memoryIDs []string, userID string, embedding []float32) ([]MatchResult, error) {
+func (mdb MockDatabase) MatchEmbeddings(
+	memoryIDs []string,
+	userID string,
+	embedding []float32,
+) ([]MatchResult, error) {
 	if mdb.MockMatchEmbeddings != nil {
 		return mdb.MockMatchEmbeddings(memoryIDs, userID, embedding)
 	}
@@ -98,7 +102,13 @@ func (mdb MockDatabase) AddChatMessage(_ string, _ bool, _ string) error {
 	panic("Mock AddChatMessage Unimplemented")
 }
 
-func (mdb MockDatabase) GetChatMessages(_ string, _ string, _ bool, _ int, _ int) ([]ChatMessage, error) {
+func (mdb MockDatabase) GetChatMessages(
+	_ string,
+	_ string,
+	_ bool,
+	_ int,
+	_ int,
+) ([]ChatMessage, error) {
 	panic("Mock GetChatMessages Unimplemented")
 }
 
@@ -165,7 +175,15 @@ func (mdb MockDatabase) LogEvents(
 	panic("Mock LogEvents Unimplemented")
 }
 
-func (mdb MockDatabase) LogRequestsCredits(_ string, _ string, _ string, _ int, _ int, _ int, _ Kind) {
+func (mdb MockDatabase) LogRequestsCredits(
+	_ string,
+	_ string,
+	_ string,
+	_ int,
+	_ int,
+	_ int,
+	_ Kind,
+) {
 	panic("Mock LogRequestsCredits Unimplemented")
 }
 
@@ -195,18 +213,33 @@ func (mdb MockDatabase) LogRequests(
 	panic("Mock LogRequests Unimplemented")
 }
 
-func (mdb MockDatabase) GetExactCompletionCacheByHash(provider string, model string, input string) (*CompletionCache, error) {
+func (mdb MockDatabase) GetExactCompletionCacheByHash(
+	provider string,
+	model string,
+	input string,
+) (*CompletionCache, error) {
 	if mdb.MockGetExactCompletionCacheByHash != nil {
 		return mdb.MockGetExactCompletionCacheByHash(provider, model, input)
 	}
 	panic("GetExactCompletionCacheByHash Mock not found")
 }
 
-func (mdb MockDatabase) AddCompletionCache(_ []float32, _ string, _ string, _ string, _ string, _ bool) error {
+func (mdb MockDatabase) AddCompletionCache(
+	_ []float32,
+	_ string,
+	_ string,
+	_ string,
+	_ string,
+	_ bool,
+) error {
 	panic("Mock AddCompletionCache Unimplemented")
 }
 
-func (mdb MockDatabase) GetCompletionCacheByInput(provider string, model string, input []float32) (*CompletionCache, error) {
+func (mdb MockDatabase) GetCompletionCacheByInput(
+	provider string,
+	model string,
+	input []float32,
+) (*CompletionCache, error) {
 	if mdb.MockGetCompletionCacheByInput != nil {
 		return mdb.MockGetCompletionCacheByInput(provider, model, input)
 	}
@@ -248,7 +281,10 @@ func (mdb MockDatabase) RemoveCreditsFromDev(_ string, _ int) error {
 	panic("Mock RemoveCreditsFromDev Unimplemented")
 }
 
-func (mdb MockDatabase) CheckDBVersionRateLimit(_ string, _ int) (*UserInfos, RateLimitStatus, CreditsStatus, error) {
+func (mdb MockDatabase) CheckDBVersionRateLimit(
+	_ string,
+	_ int,
+) (*UserInfos, RateLimitStatus, CreditsStatus, error) {
 	panic("Mock CheckDBVersionRateLimit Unimplemented")
 }
 

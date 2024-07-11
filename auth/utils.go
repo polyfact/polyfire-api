@@ -17,7 +17,9 @@ import (
 
 var (
 	ErrEmailDomainUnauthorized = errors.New("403 Forbidden. This email domain is not authorized")
-	ErrFreeUserInitDisabled    = errors.New("403 Forbidden. This project has forbidden new users from being created")
+	ErrFreeUserInitDisabled    = errors.New(
+		"403 Forbidden. This project has forbidden new users from being created",
+	)
 )
 
 func checkEmailDomains(project database.Project, email string) bool {

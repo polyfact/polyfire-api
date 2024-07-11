@@ -135,7 +135,6 @@ func Add(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	}
 
 	err = db.AddMemories(requestBody.ID, results)
-
 	if err != nil {
 		utils.RespondError(w, record, "db_insert_error")
 		return
@@ -181,7 +180,12 @@ func Get(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	_ = json.NewEncoder(w).Encode(response)
 }
 
-func Embedder(ctx context.Context, userID string, memoryID []string, task string) ([]database.MatchResult, error) {
+func Embedder(
+	ctx context.Context,
+	userID string,
+	memoryID []string,
+	task string,
+) ([]database.MatchResult, error) {
 	db := ctx.Value(utils.ContextKeyDB).(database.Database)
 	callback := func(model_name string, input_count int) {
 		db.LogRequests(

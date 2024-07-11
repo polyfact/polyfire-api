@@ -24,7 +24,10 @@ func TestAddSpace(t *testing.T) {
 	}
 
 	if resultStr != " john doe" {
-		t.Fatalf(`AddSpaceIfNeeded("My name is", "john doe") should give " john doe". Result = "%v"`, resultStr)
+		t.Fatalf(
+			`AddSpaceIfNeeded("My name is", "john doe") should give " john doe". Result = "%v"`,
+			resultStr,
+		)
 	}
 }
 
@@ -47,6 +50,9 @@ func TestDontAddSpace(t *testing.T) {
 	}
 
 	if resultStr != "s john doe" {
-		t.Fatalf(`AddSpaceIfNeeded("My name i", "s john doe") should give "s john doe". Result = "%v"`, resultStr)
+		t.Fatalf(
+			`AddSpaceIfNeeded("My name i", "s john doe") should give "s john doe". Result = "%v"`,
+			resultStr,
+		)
 	}
 }

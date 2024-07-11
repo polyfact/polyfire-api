@@ -37,7 +37,11 @@ func (db DB) GetCompletionCache(id string) (*CompletionCache, error) {
 	return &cache[0], nil
 }
 
-func (db DB) GetCompletionCacheByInput(provider string, model string, input []float32) (*CompletionCache, error) {
+func (db DB) GetCompletionCacheByInput(
+	provider string,
+	model string,
+	input []float32,
+) (*CompletionCache, error) {
 	embeddingstr := "["
 	for _, v := range input {
 		embeddingstr += strconv.FormatFloat(float64(v), 'f', 6, 64) + ","
@@ -94,7 +98,11 @@ func (db DB) AddCompletionCache(
 	return err
 }
 
-func (db DB) GetExactCompletionCacheByHash(provider string, model string, input string) (*CompletionCache, error) {
+func (db DB) GetExactCompletionCacheByHash(
+	provider string,
+	model string,
+	input string,
+) (*CompletionCache, error) {
 	sha256sum := sha256.Sum256([]byte(input))
 	sha256sumHex := hex.EncodeToString(sha256sum[:])
 

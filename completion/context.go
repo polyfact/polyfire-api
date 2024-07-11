@@ -39,28 +39,45 @@ func GetContextString(
 	var wg sync.WaitGroup
 	contextElements := make([]completionContext.ContentElement, 0)
 
-	launchContextFillingGoRouting(&wg, &contextElements, func() (completionContext.ContentElement, error) {
-		return completionContext.GetMemory(ctx, userID, utils.StringOptionalArray(input.MemoryID), input.Task)
-	})
+	launchContextFillingGoRouting(
+		&wg,
+		&contextElements,
+		func() (completionContext.ContentElement, error) {
+			return completionContext.GetMemory(
+				ctx,
+				userID,
+				utils.StringOptionalArray(input.MemoryID),
+				input.Task,
+			)
+		},
+	)
 
 	var warnings []string
-	launchContextFillingGoRouting(&wg, &contextElements, func() (completionContext.ContentElement, error) {
-		var systemPrompt completionContext.ContentElement
-		var err error
-		systemPrompt, warnings, err = completionContext.GetSystemPrompt(
-			ctx,
-			userID,
-			input.SystemPromptID,
-			input.SystemPrompt,
-			input.ChatID,
-		)
-		return systemPrompt, err
-	})
+	launchContextFillingGoRouting(
+		&wg,
+		&contextElements,
+		func() (completionContext.ContentElement, error) {
+			var systemPrompt completionContext.ContentElement
+			var err error
+			systemPrompt, warnings, err = completionContext.GetSystemPrompt(
+				ctx,
+				userID,
+				input.SystemPromptID,
+				input.SystemPrompt,
+				input.ChatID,
+			)
+			return systemPrompt, err
+		},
+	)
 
 	if input.WebRequest {
-		launchContextFillingGoRouting(&wg, &contextElements, func() (completionContext.ContentElement, error) {
-			return completionContext.GetWebContext(input.Task)
-		})
+		launchContextFillingGoRouting(
+			&wg,
+			&contextElements,
+			func() (completionContext.ContentElement, error) {
+				return completionContext.GetWebContext(input.Task)
+			},
+		)
 	}
 
 	if input.ChatID != nil && len(*input.ChatID) > 0 {
@@ -69,9 +86,13 @@ func GetContextString(
 			return "", warnings, err
 		}
 
-		launchContextFillingGoRouting(&wg, &contextElements, func() (completionContext.ContentElement, error) {
-			return completionContext.GetChatHistoryContext(ctx, userID, *input.ChatID)
-		})
+		launchContextFillingGoRouting(
+			&wg,
+			&contextElements,
+			func() (completionContext.ContentElement, error) {
+				return completionContext.GetChatHistoryContext(ctx, userID, *input.ChatID)
+			},
+		)
 	}
 
 	wg.Wait()

@@ -82,14 +82,22 @@ func RedirectAuth(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 	http.Redirect(w, r, url, http.StatusFound)
 }
 
-func wrapSupabaseRefreshToken(db database.Database, refreshToken string, projectID string) (string, error) {
+func wrapSupabaseRefreshToken(
+	db database.Database,
+	refreshToken string,
+	projectID string,
+) (string, error) {
 	wrappedRefreshToken := make([]byte, 32)
 	_, err := rand.Read(wrappedRefreshToken)
 	if err != nil {
 		return "", err
 	}
 
-	wrappedRefreshTokenString := strings.ReplaceAll(base64.StdEncoding.EncodeToString(wrappedRefreshToken), "/", "_")
+	wrappedRefreshTokenString := strings.ReplaceAll(
+		base64.StdEncoding.EncodeToString(wrappedRefreshToken),
+		"/",
+		"_",
+	)
 	wrappedRefreshTokenString = strings.ReplaceAll(wrappedRefreshTokenString, "+", "-")
 	wrappedRefreshTokenString = strings.ReplaceAll(wrappedRefreshTokenString, "=", "")
 
@@ -157,7 +165,12 @@ func CallbackAuth(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 		return
 	}
 
-	http.Redirect(w, r, redirectTo+"#access_token="+token+"&refresh_token="+wrappedRefreshToken, http.StatusFound)
+	http.Redirect(
+		w,
+		r,
+		redirectTo+"#access_token="+token+"&refresh_token="+wrappedRefreshToken,
+		http.StatusFound,
+	)
 }
 
 type RefreshTokenRequest struct {
@@ -231,13 +244,22 @@ func RefreshToken(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 		return
 	}
 
-	wrappedRefreshToken, err := wrapSupabaseRefreshToken(db, refreshTokenResponse.RefreshToken, project.ID)
+	wrappedRefreshToken, err := wrapSupabaseRefreshToken(
+		db,
+		refreshTokenResponse.RefreshToken,
+		project.ID,
+	)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	token, err := ExchangeToken(r.Context(), refreshTokenResponse.AccessToken, *project, GetUserFromSupabaseToken)
+	token, err := ExchangeToken(
+		r.Context(),
+		refreshTokenResponse.AccessToken,
+		*project,
+		GetUserFromSupabaseToken,
+	)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

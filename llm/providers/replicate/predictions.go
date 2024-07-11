@@ -74,7 +74,11 @@ func (m ReplicateProvider) ReplicateStart(
 		return ReplicateStartResponse{}, "generation_error"
 	}
 
-	req, err := http.NewRequest("POST", "https://api.replicate.com/v1/predictions", strings.NewReader(string(input)))
+	req, err := http.NewRequest(
+		"POST",
+		"https://api.replicate.com/v1/predictions",
+		strings.NewReader(string(input)),
+	)
 	if err != nil {
 		return ReplicateStartResponse{}, "generation_error"
 	}

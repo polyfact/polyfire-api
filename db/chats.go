@@ -38,7 +38,12 @@ func (db DB) GetChatByID(id string) (*Chat, error) {
 	return result, nil
 }
 
-func (db DB) CreateChat(userID string, systemPrompt *string, SystemPromptID *string, name *string) (*Chat, error) {
+func (db DB) CreateChat(
+	userID string,
+	systemPrompt *string,
+	SystemPromptID *string,
+	name *string,
+) (*Chat, error) {
 	var result *Chat
 
 	err := db.sql.Raw("INSERT INTO chats (user_id, system_prompt, system_prompt_id, name) VALUES (?::uuid, ?, ?, ?) RETURNING *", userID, systemPrompt, SystemPromptID, name).
@@ -104,7 +109,13 @@ func (ChatMessage) TableName() string {
 	return "chat_messages"
 }
 
-func (db DB) GetChatMessages(userID string, chatID string, orderByDESC bool, limit int, offset int) ([]ChatMessage, error) {
+func (db DB) GetChatMessages(
+	userID string,
+	chatID string,
+	orderByDESC bool,
+	limit int,
+	offset int,
+) ([]ChatMessage, error) {
 	var results []ChatMessage
 
 	query := db.sql.

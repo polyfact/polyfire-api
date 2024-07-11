@@ -14,7 +14,11 @@ import (
 //go:embed firebase_public-keys.json
 var publicKeys []byte
 
-func getUserFromFirebaseToken(ctx context.Context, firebaseToken string, projectID string) (string, string, error) {
+func getUserFromFirebaseToken(
+	ctx context.Context,
+	firebaseToken string,
+	projectID string,
+) (string, string, error) {
 	db := ctx.Value(utils.ContextKeyDB).(database.Database)
 	project, err := db.GetProjectByID(projectID)
 	if err != nil {

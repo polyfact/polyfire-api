@@ -55,11 +55,17 @@ func TestContextStructureWithLotOfSpace(t *testing.T) {
 	}
 
 	if tokens.CountTokens(result) != maxTokens {
-		t.Fatalf(`Result string is different than max Tokens. %v > Expected size (%v)`, tokens.CountTokens(result), maxTokens)
+		t.Fatalf(
+			`Result string is different than max Tokens. %v > Expected size (%v)`,
+			tokens.CountTokens(result),
+			maxTokens,
+		)
 	}
 
 	if !strings.Contains(result, "abcabcabcabcabc") {
-		t.Fatalf(`HELPFUL content should be at recommended size when total recommended size < maxTokens`)
+		t.Fatalf(
+			`HELPFUL content should be at recommended size when total recommended size < maxTokens`,
+		)
 	}
 
 	if !strings.Contains(result, "defdefdefdefdefdefdefdefdefdefdefdefdefdefdef") {
@@ -80,11 +86,17 @@ func TestContextStructureWithSomeSpace(t *testing.T) {
 	}
 
 	if tokens.CountTokens(result) != maxTokens {
-		t.Fatalf(`Result string is different than max Tokens. %v > Expected size (%v)`, tokens.CountTokens(result), maxTokens)
+		t.Fatalf(
+			`Result string is different than max Tokens. %v > Expected size (%v)`,
+			tokens.CountTokens(result),
+			maxTokens,
+		)
 	}
 
 	if !strings.Contains(result, "abc") {
-		t.Fatalf(`HELPFUL content should be at minimum size when total recommended size > maxTokens`)
+		t.Fatalf(
+			`HELPFUL content should be at minimum size when total recommended size > maxTokens`,
+		)
 	}
 
 	if !strings.Contains(result, "defdefdefdefdef") {
@@ -105,7 +117,11 @@ func TestContextStructureWithFewSpace(t *testing.T) {
 	}
 
 	if tokens.CountTokens(result) != maxTokens {
-		t.Fatalf(`Result string is different than max Tokens. %v > Expected size (%v)`, tokens.CountTokens(result), maxTokens)
+		t.Fatalf(
+			`Result string is different than max Tokens. %v > Expected size (%v)`,
+			tokens.CountTokens(result),
+			maxTokens,
+		)
 	}
 
 	if !strings.Contains(result, "abc") {
@@ -130,7 +146,11 @@ func TestContextStructureWithVeryFewSpace(t *testing.T) {
 	}
 
 	if tokens.CountTokens(result) != maxTokens {
-		t.Fatalf(`Result string is different than max Tokens. %v > Expected size (%v)`, tokens.CountTokens(result), maxTokens)
+		t.Fatalf(
+			`Result string is different than max Tokens. %v > Expected size (%v)`,
+			tokens.CountTokens(result),
+			maxTokens,
+		)
 	}
 
 	if !strings.Contains(result, "def") {

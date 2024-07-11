@@ -11,7 +11,11 @@ import (
 	"github.com/polyfire/api/utils"
 )
 
-func getUserFromAnonymousToken(ctx context.Context, token string, projectID string) (string, string, error) {
+func getUserFromAnonymousToken(
+	ctx context.Context,
+	token string,
+	projectID string,
+) (string, string, error) {
 	db := ctx.Value(utils.ContextKeyDB).(database.Database)
 	project, err := db.GetProjectByID(projectID)
 	if err != nil {

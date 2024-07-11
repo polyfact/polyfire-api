@@ -62,7 +62,12 @@ type Embedding struct {
 }
 
 func (db DB) CreateMemory(memoryID string, userID string, public bool) error {
-	err := db.sql.Exec("INSERT INTO memories (id, user_id, public) VALUES (?, ?::uuid, ?)", memoryID, userID, public).Error
+	err := db.sql.Exec(
+		"INSERT INTO memories (id, user_id, public) VALUES (?, ?::uuid, ?)",
+		memoryID,
+		userID,
+		public,
+	).Error
 	if err != nil {
 		return err
 	}
@@ -137,7 +142,13 @@ func (db DB) AddMemories(memoryID string, embeddings []Embedding) error {
 
 		query += " (?, ?::uuid, ?, string_to_array(?, ',')::float[])"
 
-		params = append(params, embedding.MemoryID, embedding.UserID, embedding.Content, embeddingstr)
+		params = append(
+			params,
+			embedding.MemoryID,
+			embedding.UserID,
+			embedding.Content,
+			embeddingstr,
+		)
 	}
 
 	err = db.sql.Exec(
@@ -185,7 +196,11 @@ func (db DB) GetMemoryIDs(userID string) ([]MemoryRecord, error) {
 	return results, nil
 }
 
-func (db DB) MatchEmbeddings(memoryIDs []string, userID string, embedding []float32) ([]MatchResult, error) {
+func (db DB) MatchEmbeddings(
+	memoryIDs []string,
+	userID string,
+	embedding []float32,
+) ([]MatchResult, error) {
 	params := MatchParams{
 		QueryEmbedding: embedding,
 		MatchTreshold:  0.70,
@@ -203,7 +218,6 @@ func (db DB) MatchEmbeddings(memoryIDs []string, userID string, embedding []floa
 
 	var results []MatchResult
 	err = json.Unmarshal([]byte(response), &results)
-
 	if err != nil {
 		return nil, err
 	}

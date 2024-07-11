@@ -173,7 +173,10 @@ func Stream(w http.ResponseWriter, r *http.Request, _ router.Params) {
 
 	var recordProps []utils.KeyValue = make([]utils.KeyValue, 0)
 	if input.SystemPromptID != nil {
-		recordProps = append(recordProps, utils.KeyValue{Key: "PromptID", Value: *input.SystemPromptID})
+		recordProps = append(
+			recordProps,
+			utils.KeyValue{Key: "PromptID", Value: *input.SystemPromptID},
+		)
 	}
 	record(totalResult, recordProps...)
 

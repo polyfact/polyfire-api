@@ -11,7 +11,10 @@ import (
 
 type Database interface {
 	getUserInfos(userID string) (*UserInfos, error)
-	CheckDBVersionRateLimit(userID string, version int) (*UserInfos, RateLimitStatus, CreditsStatus, error)
+	CheckDBVersionRateLimit(
+		userID string,
+		version int,
+	) (*UserInfos, RateLimitStatus, CreditsStatus, error)
 	RemoveCreditsFromDev(userID string, credits int) error
 	CreateRefreshToken(refreshToken string, refreshTokenSupabase string, projectID string) error
 	GetAndDeleteRefreshToken(refreshToken string) (*RefreshToken, error)
@@ -20,9 +23,24 @@ type Database interface {
 	CreateProjectUser(authID string, projectID string, monthlyCreditRateLimit *int) (*string, error)
 	GetTTSVoice(slug string) (TTSVoice, error)
 	GetCompletionCache(id string) (*CompletionCache, error)
-	GetCompletionCacheByInput(provider string, model string, input []float32) (*CompletionCache, error)
-	AddCompletionCache(input []float32, prompt string, result string, provider string, model string, exact bool) error
-	GetExactCompletionCacheByHash(provider string, model string, input string) (*CompletionCache, error)
+	GetCompletionCacheByInput(
+		provider string,
+		model string,
+		input []float32,
+	) (*CompletionCache, error)
+	AddCompletionCache(
+		input []float32,
+		prompt string,
+		result string,
+		provider string,
+		model string,
+		exact bool,
+	) error
+	GetExactCompletionCacheByHash(
+		provider string,
+		model string,
+		input string,
+	) (*CompletionCache, error)
 	LogRequests(
 		eventID string,
 		userID string,
@@ -62,11 +80,22 @@ type Database interface {
 	GetPromptByIDOrSlug(id string) (*Prompt, error)
 	RetrieveSystemPromptID(systemPromptIDOrSlug *string) (*string, error)
 	GetChatByID(id string) (*Chat, error)
-	CreateChat(userID string, systemPrompt *string, SystemPromptID *string, name *string) (*Chat, error)
+	CreateChat(
+		userID string,
+		systemPrompt *string,
+		SystemPromptID *string,
+		name *string,
+	) (*Chat, error)
 	ListChats(userID string) ([]ChatWithLatestMessage, error)
 	DeleteChat(userID string, id string) error
 	UpdateChat(userID string, id string, name string) (*Chat, error)
-	GetChatMessages(userID string, chatID string, orderByDESC bool, limit int, offset int) ([]ChatMessage, error)
+	GetChatMessages(
+		userID string,
+		chatID string,
+		orderByDESC bool,
+		limit int,
+		offset int,
+	) ([]ChatMessage, error)
 	AddChatMessage(chatID string, isUserMessage bool, content string) error
 	CreateMemory(memoryID string, userID string, public bool) error
 	GetMemory(memoryID string) (*Memory, error)

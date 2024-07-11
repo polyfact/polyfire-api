@@ -29,7 +29,8 @@ func SplitFile(file io.Reader) ([]io.Reader, int, func(), error) {
 		return nil, 0, nil, err
 	}
 
-	err = exec.Command("ffmpeg", "-i", "/tmp/"+id+"/audio-file", "/tmp/"+id+"/audio-file.ts", "-ar", "44100").Run()
+	err = exec.Command("ffmpeg", "-i", "/tmp/"+id+"/audio-file", "/tmp/"+id+"/audio-file.ts", "-ar", "44100").
+		Run()
 	if err != nil {
 		return nil, 0, nil, err
 	}
@@ -67,7 +68,8 @@ func SplitFile(file io.Reader) ([]io.Reader, int, func(), error) {
 	res := make([]io.Reader, 0)
 	for _, file := range files {
 		if file.Name() != "audio-file" && file.Name() != "audio-file.mpeg" {
-			err := exec.Command("ffmpeg", "-i", "/tmp/"+id+"/"+file.Name(), "/tmp/"+id+"/"+file.Name()+".mp3").Run()
+			err := exec.Command("ffmpeg", "-i", "/tmp/"+id+"/"+file.Name(), "/tmp/"+id+"/"+file.Name()+".mp3").
+				Run()
 			if err != nil {
 				return nil, 0, nil, err
 			}

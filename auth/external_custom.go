@@ -9,7 +9,11 @@ import (
 	"github.com/polyfire/api/utils"
 )
 
-func getUserFromCustomSignature(ctx context.Context, customToken string, projectID string) (string, string, error) {
+func getUserFromCustomSignature(
+	ctx context.Context,
+	customToken string,
+	projectID string,
+) (string, string, error) {
 	db := ctx.Value(utils.ContextKeyDB).(database.Database)
 	project, err := db.GetProjectByID(projectID)
 	if err != nil {

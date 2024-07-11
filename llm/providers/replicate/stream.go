@@ -289,7 +289,14 @@ func (m ReplicateProvider) Stream(
 
 		if c != nil {
 			credits := int(duration.Seconds()*m.CreditsPerSecond) + 1
-			(*c)("replicate", m.Model, tokenUsage.Input, totalOutputTokens, totalCompletion, &credits)
+			(*c)(
+				"replicate",
+				m.Model,
+				tokenUsage.Input,
+				totalOutputTokens,
+				totalCompletion,
+				&credits,
+			)
 		}
 	}()
 

@@ -8,13 +8,20 @@ import (
 	"github.com/polyfire/api/memory"
 )
 
-var memoryTemplate = template.Must(template.New("memory_context").Parse(`Here are some informations you remember:
+var memoryTemplate = template.Must(
+	template.New("memory_context").Parse(`Here are some informations you remember:
 {{range .Data}} - {{.}}
-{{end}}`))
+{{end}}`),
+)
 
 type MemoryContext = TemplateContext
 
-func GetMemory(ctx context.Context, userID string, memoryIDs []string, task string) (*MemoryContext, error) {
+func GetMemory(
+	ctx context.Context,
+	userID string,
+	memoryIDs []string,
+	task string,
+) (*MemoryContext, error) {
 	results := []database.MatchResult{}
 	var err error
 

@@ -45,7 +45,11 @@ func createUserContext(
 	newCtx = context.WithValue(newCtx, utils.ContextKeyCreditsStatus, creditsStatus)
 	if user != nil {
 		newCtx = context.WithValue(newCtx, utils.ContextKeyProjectUserUsage, user.ProjectUserUsage)
-		newCtx = context.WithValue(newCtx, utils.ContextKeyProjectUserRateLimit, user.ProjectUserRateLimit)
+		newCtx = context.WithValue(
+			newCtx,
+			utils.ContextKeyProjectUserRateLimit,
+			user.ProjectUserRateLimit,
+		)
 		newCtx = context.WithValue(newCtx, utils.ContextKeyProjectID, user.ProjectID)
 		if user.OpenaiToken != "" {
 			newCtx = context.WithValue(newCtx, utils.ContextKeyOpenAIToken, user.OpenaiToken)
@@ -57,7 +61,11 @@ func createUserContext(
 			newCtx = context.WithValue(newCtx, utils.ContextKeyReplicateToken, user.ReplicateToken)
 		}
 		if user.ElevenlabsToken != "" {
-			newCtx = context.WithValue(newCtx, utils.ContextKeyElevenlabsToken, user.ElevenlabsToken)
+			newCtx = context.WithValue(
+				newCtx,
+				utils.ContextKeyElevenlabsToken,
+				user.ElevenlabsToken,
+			)
 		}
 	}
 
@@ -123,7 +131,8 @@ func authenticateAndHandle(
 
 	if len(user.AuthorizedDomains) != 0 {
 		originDomain := r.Context().Value(utils.ContextKeyOriginDomain).(string)
-		if !utils.ContainsString(user.AuthorizedDomains, originDomain) && originDomain != "beta.polyfire.com" {
+		if !utils.ContainsString(user.AuthorizedDomains, originDomain) &&
+			originDomain != "beta.polyfire.com" {
 			utils.RespondError(w, record, "invalid_origin")
 			return
 		}

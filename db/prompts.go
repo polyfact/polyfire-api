@@ -96,7 +96,11 @@ func (db DB) RetrieveSystemPromptID(systemPromptIDOrSlug *string) (*string, erro
 		return systemPromptIDOrSlug, nil
 	}
 
-	err := db.sql.Table("prompts").Select("id").Where("slug = ?", systemPromptIDOrSlug).First(&prompt).Error
+	err := db.sql.Table("prompts").
+		Select("id").
+		Where("slug = ?", systemPromptIDOrSlug).
+		First(&prompt).
+		Error
 	if err != nil {
 		return nil, err
 	}

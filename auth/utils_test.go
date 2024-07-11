@@ -20,11 +20,17 @@ func TestExchangeToken(t *testing.T) {
 
 	MockGetUserFromToken := func(_ context.Context, token string, projectID string) (string, string, error) {
 		if token != "this-is-a-test-token" {
-			t.Fatalf(`ExchangeToken expected to pass token "this-is-a-test-token" but got "%s"`, token)
+			t.Fatalf(
+				`ExchangeToken expected to pass token "this-is-a-test-token" but got "%s"`,
+				token,
+			)
 		}
 
 		if projectID != "this-is-a-test-project-id" {
-			t.Fatalf(`ExchangeToken expected to pass project-id "this-is-a-test-project-id" but got "%s"`, projectID)
+			t.Fatalf(
+				`ExchangeToken expected to pass project-id "this-is-a-test-project-id" but got "%s"`,
+				projectID,
+			)
 		}
 		return "test-user-id", "email@example.com", nil
 	}
@@ -68,11 +74,17 @@ func TestExchangeTokenWithAuthorizedDomainSuccess(t *testing.T) {
 
 	MockGetUserFromToken := func(_ context.Context, token string, projectID string) (string, string, error) {
 		if token != "test-token-user-1" && token != "test-token-user-2" {
-			t.Fatalf(`ExchangeToken expected to pass token "this-is-a-test-token" but got "%s"`, token)
+			t.Fatalf(
+				`ExchangeToken expected to pass token "this-is-a-test-token" but got "%s"`,
+				token,
+			)
 		}
 
 		if projectID != "this-is-a-test-project-id" {
-			t.Fatalf(`ExchangeToken expected to pass project-id "this-is-a-test-project-id" but got "%s"`, projectID)
+			t.Fatalf(
+				`ExchangeToken expected to pass project-id "this-is-a-test-project-id" but got "%s"`,
+				projectID,
+			)
 		}
 
 		if token == "test-token-user-2" {

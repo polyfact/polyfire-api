@@ -23,7 +23,11 @@ type LLaMaProvider struct {
 	Model string
 }
 
-func (m LLaMaProvider) Generate(task string, c options.ProviderCallback, opts *options.ProviderOptions) chan options.Result {
+func (m LLaMaProvider) Generate(
+	task string,
+	c options.ProviderCallback,
+	opts *options.ProviderOptions,
+) chan options.Result {
 	chanRes := make(chan options.Result)
 
 	go func() {
@@ -42,7 +46,11 @@ func (m LLaMaProvider) Generate(task string, c options.ProviderCallback, opts *o
 		}
 		reqBody := string(input)
 		fmt.Println(reqBody)
-		resp, err := http.Post(os.Getenv("LLAMA_URL"), "application/json", strings.NewReader(reqBody))
+		resp, err := http.Post(
+			os.Getenv("LLAMA_URL"),
+			"application/json",
+			strings.NewReader(reqBody),
+		)
 		if err != nil {
 			chanRes <- options.Result{Err: "generation_error"}
 			return

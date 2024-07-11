@@ -85,7 +85,10 @@ func (db DB) getUserInfos(userID string) (*UserInfos, error) {
 	return &userInfos, nil
 }
 
-func (db DB) CheckDBVersionRateLimit(userID string, version int) (*UserInfos, RateLimitStatus, CreditsStatus, error) {
+func (db DB) CheckDBVersionRateLimit(
+	userID string,
+	version int,
+) (*UserInfos, RateLimitStatus, CreditsStatus, error) {
 	userInfos, err := db.getUserInfos(userID)
 	if err != nil {
 		return nil, RateLimitStatusNone, CreditsStatusNone, err
@@ -100,7 +103,8 @@ func (db DB) CheckDBVersionRateLimit(userID string, version int) (*UserInfos, Ra
 	}
 
 	rateLimitStatus := RateLimitStatusOk
-	if userInfos.ProjectUserRateLimit != nil && userInfos.ProjectUserUsage >= *userInfos.ProjectUserRateLimit {
+	if userInfos.ProjectUserRateLimit != nil &&
+		userInfos.ProjectUserUsage >= *userInfos.ProjectUserRateLimit {
 		rateLimitStatus = RateLimitStatusReached
 	}
 
@@ -133,7 +137,11 @@ type RefreshToken struct {
 	ProjectID            string `json:"project_id"`
 }
 
-func (db DB) CreateRefreshToken(refreshToken string, refreshTokenSupabase string, projectID string) error {
+func (db DB) CreateRefreshToken(
+	refreshToken string,
+	refreshTokenSupabase string,
+	projectID string,
+) error {
 	err := db.sql.Exec(`
 		INSERT INTO refresh_tokens (refresh_token, refresh_token_supabase, project_id)
 		VALUES (@refresh_token, @refresh_token_supabase, @project_id)
@@ -167,7 +175,9 @@ func (db DB) GetAndDeleteRefreshToken(refreshToken string) (*RefreshToken, error
 func (db DB) GetDevEmail(projectID string) (string, error) {
 	var devEmail []string
 
-	err := db.sql.Raw(`SELECT get_dev_email_project_id(@project_id)`, sql.Named("project_id", projectID)).Scan(&devEmail).Error
+	err := db.sql.Raw(`SELECT get_dev_email_project_id(@project_id)`, sql.Named("project_id", projectID)).
+		Scan(&devEmail).
+		Error
 	if err != nil {
 		return "", err
 	}

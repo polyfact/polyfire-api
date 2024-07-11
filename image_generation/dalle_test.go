@@ -22,7 +22,10 @@ func TestOpenAIProvider(t *testing.T) {
 	if _, err := io.Copy(h, reader); err != nil {
 		log.Fatal(err)
 	}
-	if fmt.Sprintf("%x", h.Sum(nil)) != "8d0171c19f9aae986bf4526226ba8d943447af59653d0cd1d8d89e605241f890" {
+	if fmt.Sprintf(
+		"%x",
+		h.Sum(nil),
+	) != "8d0171c19f9aae986bf4526226ba8d943447af59653d0cd1d8d89e605241f890" {
 		t.Fatalf("Image returned doesn't match checksum of red circle test image")
 	}
 }

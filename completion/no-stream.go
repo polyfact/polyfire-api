@@ -85,7 +85,10 @@ func Generate(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	response, _ := result.JSON()
 	recordProps := make([]utils.KeyValue, 0)
 	if input.SystemPromptID != nil {
-		recordProps = append(recordProps, utils.KeyValue{Key: "PromptID", Value: *input.SystemPromptID})
+		recordProps = append(
+			recordProps,
+			utils.KeyValue{Key: "PromptID", Value: *input.SystemPromptID},
+		)
 	}
 	record(string(response), recordProps...)
 
