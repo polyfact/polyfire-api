@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"gorm.io/datatypes"
+	"gorm.io/gorm"
 )
 
 type Memory struct {
@@ -227,6 +228,11 @@ func (db DB) MatchEmbeddings(
 		memoryIDs,
 		userID,
 	).First(&results).Error
+
+	if err == gorm.ErrRecordNotFound {
+		return []MatchResult{}, nil
+	}
+
 	if err != nil {
 		return nil, err
 	}
