@@ -58,6 +58,78 @@ func Create(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	}
 }
 
+type Input struct {
+	Content   string          `json:"content"`
+	Metadatas json.RawMessage `json:"metadatas"`
+}
+
+func (i *Input) UnmarshalJSON(data []byte) error {
+	var result struct {
+		Content   string          `json:"content"`
+		Metadatas json.RawMessage `json:"metadatas"`
+	}
+
+	err := json.Unmarshal(data, &result.Content)
+	if err != nil {
+		err = json.Unmarshal(data, &result)
+		if err != nil {
+			return err
+		}
+	}
+
+	i.Content = result.Content
+	i.Metadatas = result.Metadatas
+
+	return nil
+}
+
+type InputArray []Input
+
+func (i *InputArray) UnmarshalJSON(data []byte) error {
+	var result []Input
+
+	err := json.Unmarshal(data, &result)
+	if err != nil {
+		result = make([]Input, 1)
+		err = json.Unmarshal(data, &result[0])
+		if err != nil {
+			return err
+		}
+	}
+
+	*i = result
+
+	return nil
+}
+
+func ProcessEmbeddingAsBatch(
+	ctx context.Context,
+	inputs []Input,
+	callback *func(model_name string, input_count int),
+) ([][]float32, error) {
+	texts := make([]string, len(inputs))
+	for i, input := range inputs {
+		texts[i] = input.Content
+	}
+
+	var embeddings [][]float32
+
+	batches, err := tokens.BatchText(texts, 2000)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, batch := range batches {
+		embeddingsBatch, err := llm.Embed(ctx, batch, callback)
+		if err != nil {
+			return nil, err
+		}
+
+		embeddings = append(embeddings, embeddingsBatch[:]...)
+	}
+	return embeddings, nil
+}
+
 func Add(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	db := r.Context().Value(utils.ContextKeyDB).(database.Database)
 	decoder := json.NewDecoder(r.Body)
@@ -65,9 +137,9 @@ func Add(w http.ResponseWriter, r *http.Request, _ router.Params) {
 	userID := r.Context().Value(utils.ContextKeyUserID).(string)
 
 	var requestBody struct {
-		ID       string      `json:"id"`
-		Input    interface{} `json:"input"`
-		MaxToken int         `json:"max_token"`
+		ID       string     `json:"id"`
+		Input    InputArray `json:"input"`
+		MaxToken int        `json:"max_token"`
 	}
 
 	err := decoder.Decode(&requestBody)
@@ -84,19 +156,25 @@ func Add(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		chunkSize = BatchSize
 	}
 
-	chunks := make([]string, 0)
+	chunks := make([]Input, 0)
 
-	inputs := utils.StringOptionalArray(requestBody.Input)
+	inputs := requestBody.Input
 
-	if len(inputs) == 0 || (len(inputs) == 1 && len(inputs[0]) == 0) {
+	if len(inputs) == 0 || (len(inputs) == 1 && len(inputs[0].Content) == 0) {
 		utils.RespondError(w, record, "empty_input")
 		return
 	}
 
 	for _, input := range inputs {
-		chunk := tokens.SplitText(input, chunkSize)
+		stringChunks := tokens.SplitText(input.Content, chunkSize)
 
-		chunks = append(chunks, chunk[:]...)
+		for _, stringChunk := range stringChunks {
+			chunks = append(chunks, Input{
+				Content:   stringChunk,
+				Metadatas: input.Metadatas,
+			})
+		}
+
 	}
 
 	callback := func(model_name string, input_count int) {
@@ -104,23 +182,10 @@ func Add(w http.ResponseWriter, r *http.Request, _ router.Params) {
 			r.Context().Value(utils.ContextKeyEventID).(string),
 			userID, "openai", model_name, input_count, 0, "embedding", true)
 	}
-
-	var embeddings [][]float32
-
-	batches, err := tokens.BatchText(chunks, 2000)
+	embeddings, err := ProcessEmbeddingAsBatch(r.Context(), chunks, &callback)
 	if err != nil {
 		utils.RespondError(w, record, "embedding_error")
 		return
-	}
-
-	for _, batch := range batches {
-		embeddingsBatch, err := llm.Embed(r.Context(), batch, &callback)
-		if err != nil {
-			utils.RespondError(w, record, "embedding_error")
-			return
-		}
-
-		embeddings = append(embeddings, embeddingsBatch[:]...)
 	}
 
 	results := make([]database.Embedding, 0)
@@ -129,7 +194,8 @@ func Add(w http.ResponseWriter, r *http.Request, _ router.Params) {
 		results = append(results, database.Embedding{
 			UserID:    userID,
 			MemoryID:  requestBody.ID,
-			Content:   chunk,
+			Content:   chunk.Content,
+			Metadatas: chunk.Metadatas,
 			Embedding: embeddings[i],
 		})
 	}

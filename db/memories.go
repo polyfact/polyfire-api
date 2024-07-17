@@ -5,6 +5,8 @@ import (
 	"errors"
 	"strconv"
 	"strings"
+
+	"gorm.io/datatypes"
 )
 
 type Memory struct {
@@ -22,9 +24,10 @@ type MatchParams struct {
 }
 
 type MatchResult struct {
-	ID         string  `json:"id"`
-	Content    string  `json:"content"`
-	Similarity float64 `json:"similarity"`
+	ID         string         `json:"id"`
+	Content    string         `json:"content"`
+	Similarity float64        `json:"similarity"`
+	Metadatas  datatypes.JSON `json:"metadatas"`
 }
 
 type FloatArray []float32
@@ -55,10 +58,11 @@ func (FloatArray) GormDataType() string {
 }
 
 type Embedding struct {
-	MemoryID  string     `json:"memory_id"`
-	UserID    string     `json:"user_id"`
-	Content   string     `json:"content"`
-	Embedding FloatArray `json:"embedding"`
+	MemoryID  string          `json:"memory_id"`
+	UserID    string          `json:"user_id"`
+	Content   string          `json:"content"`
+	Metadatas json.RawMessage `json:"metadatas"`
+	Embedding FloatArray      `json:"embedding"`
 }
 
 func (db DB) CreateMemory(memoryID string, userID string, public bool) error {
@@ -121,7 +125,7 @@ func (db DB) AddMemories(memoryID string, embeddings []Embedding) error {
 		return err
 	}
 
-	query := "INSERT INTO embeddings (memory_id, user_id, content, embedding) VALUES"
+	query := "INSERT INTO embeddings (memory_id, user_id, content, embedding, metadatas) VALUES"
 	params := make([]interface{}, 0)
 
 	for i, embedding := range embeddings {
@@ -140,7 +144,15 @@ func (db DB) AddMemories(memoryID string, embeddings []Embedding) error {
 			query += ","
 		}
 
-		query += " (?, ?::uuid, ?, string_to_array(?, ',')::float[])"
+		query += " (?, ?::uuid, ?, string_to_array(?, ',')::float[], ?::json)"
+
+		metadatasJSON := []byte("{}")
+		if embedding.Metadatas != nil {
+			metadatasJSON, err = embedding.Metadatas.MarshalJSON()
+			if err != nil {
+				return err
+			}
+		}
 
 		params = append(
 			params,
@@ -148,6 +160,7 @@ func (db DB) AddMemories(memoryID string, embeddings []Embedding) error {
 			embedding.UserID,
 			embedding.Content,
 			embeddingstr,
+			string(metadatasJSON),
 		)
 	}
 
@@ -201,28 +214,20 @@ func (db DB) MatchEmbeddings(
 	userID string,
 	embedding []float32,
 ) ([]MatchResult, error) {
-	params := MatchParams{
-		QueryEmbedding: embedding,
-		MatchTreshold:  0.70,
-		MatchCount:     10,
-		MemoryID:       memoryIDs,
-		UserID:         userID,
+	embeddingstr := ""
+	for _, v := range embedding {
+		embeddingstr += strconv.FormatFloat(float64(v), 'f', 6, 64) + ","
 	}
-
-	client, err := CreateClient()
-	if err != nil {
-		return nil, err
-	}
-
-	response := client.Rpc("retrieve_embeddings", "", params)
+	embeddingstr = strings.TrimRight(embeddingstr, ",")
 
 	var results []MatchResult
-	err = json.Unmarshal([]byte(response), &results)
+	err := db.sql.Raw(
+		"SELECT id, content, similarity, metadatas FROM retrieve_embeddings(string_to_array(?, ',')::float[]::vector, 0.7::double precision, 10::integer, ARRAY[?]::uuid[], ?::text)",
+		embeddingstr,
+		memoryIDs,
+		userID,
+	).First(&results).Error
 	if err != nil {
-		return nil, err
-	}
-
-	if client.ClientError != nil {
 		return nil, err
 	}
 
