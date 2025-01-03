@@ -42,6 +42,8 @@ func tokenToCredit(
 			return (inputTokenCount * 600) + (outputTokenCount * 1200)
 		case "gpt-4o":
 			return (inputTokenCount * 50) + (outputTokenCount * 150)
+		case "gpt-4o-mini":
+			return (inputTokenCount * 50) + (outputTokenCount * 150)
 		case "gpt-4-turbo":
 			return (inputTokenCount * 100) + (outputTokenCount * 300)
 		case "text-embedding-ada-002":
