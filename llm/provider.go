@@ -46,6 +46,8 @@ func getAvailableModels(model string) (string, string) {
 		return "openai", "gpt-4-32k"
 	case "gpt-4o":
 		return "openai", "gpt-4o"
+	case "gpt-4o-mini":
+		return "openai", "gpt-4o-mini"
 	case "gpt-4-turbo":
 		return "openai", "gpt-4-turbo"
 	case "cohere":
